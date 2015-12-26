@@ -1,0 +1,79 @@
+args <- commandArgs()
+if(!any(args=='--args'))
+	args<- vector("numeric",0)
+if(any(args=='--args'))
+	args<- args[-(1:match("--args", args)) ]
+#	default args
+verbose			<- 1
+with.plot		<- 1	
+pipeline.args	<- NULL
+indir			<- NA
+outdir			<- NA
+infile.ind		<- NA
+infile.trm		<- NA
+infile.args		<- NA
+outfile.ind		<- NA
+outfile.trm		<- NA
+#
+if(exists("args"))
+{
+	#	args input
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,6),
+								indir= return(substr(arg,8,nchar(arg))),NA)	}))
+	if(length(tmp)>0) indir<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,11),
+								infile.ind= return(substr(arg,13,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile.ind<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,11),
+								infile.trm= return(substr(arg,13,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile.trm<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,12),
+								infile.args= return(substr(arg,14,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile.args<- tmp[1]
+	#	args output
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,7),
+								outdir= return(substr(arg,9,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outdir<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,12),
+								outfile.ind= return(substr(arg,14,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outfile.ind<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,12),
+								outfile.trm= return(substr(arg,14,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outfile.trm<- tmp[1]		
+}
+if(verbose)
+{
+	cat('\ninput args\n',paste(indir, infile.ind, infile.trm, outdir, outfile.ind, outfile.trm, sep='\n'))
+}	
+if(debug)
+{
+	indir			<- "/Users/Oliver/duke/2015_various/EpiSim"
+	outdir			<- "/Users/Oliver/duke/2015_various/TrChains"
+	infile.ind		<- "150129_HPTN071_scHF_IND.csv"
+	infile.trm		<- "150129_HPTN071_scHF_TRM.csv"
+	infile.args		<- "/Users/Oliver/duke/2015_various/150129_HPTN071_scHF_PipeArgs.R"
+	outfile.ind		<- "150129_HPTN071_scHF_IND.csv"
+	outfile.trm		<- "150129_HPTN071_scHF_TRM.csv"
+	
+}
+#	start script
+require(data.table)
+require(rPANGEAHIVsim)
+if(!is.na(infile.args))
+{
+	load(infile.args)	#expect 'pipeline.args'
+}
+if(is.null(pipeline.args))
+{
+	cat('\nCould not find pipeline.args, generating default')
+	pipeline.args	<- rPANGEAHIVsim.pipeline.args()
+}
+PANGEA.HPTN071.input.parser.v4(indir, infile.ind, infile.trm, outdir, outfile.ind, outfile.trm, pipeline.args, verbose=1, with.plot=1)
+	

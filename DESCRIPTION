@@ -1,0 +1,21 @@
+Package: PANGEA.HIV.sim
+Version: 1.0-1
+Date: 2015/12/26
+Title: PANGEA.HIV.sim
+Author: {Oliver Ratmann}
+Maintainer: Oliver Ratmann <oliver.ratmann@imperial.ac.uk>
+Depends:
+    R (>= 3.1),
+    gamlss,
+    ape,
+    phytools,
+    reshape2,
+    data.table,
+    RColorBrewer,
+    grid,
+    ggplot2,
+    igraph,
+    distr
+Description: HIV Phylogenetic Simulation Model for the PANGEA-HIV methods comparison exercise.
+License: GPL (>=2)
+LazyLoad: yes

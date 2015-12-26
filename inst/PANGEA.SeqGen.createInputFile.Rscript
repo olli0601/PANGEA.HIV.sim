@@ -1,0 +1,66 @@
+args <- commandArgs()
+if(!any(args=='--args'))
+	args<- vector("numeric",0)
+if(any(args=='--args'))
+	args<- args[-(1:match("--args", args)) ]
+#	default args
+verbose			<- 1
+with.plot		<- 1
+label.sep		<- '|'	
+#
+#	read I/O
+#
+indir.epi		<- '/Users/Oliver/git/HPTN071sim/tmp140914/TrChains'
+infile.epi		<- '140716_RUN001_SAVE.R'	
+indir.vts		<- '/Users/Oliver/git/HPTN071sim/tmp140914/VirusTreeSimulator'
+infile.prefix	<- '140716_RUN001_'	
+infile.args		<- '/Users/Oliver/git/HPTN071sim/tmp140914/140716_RUN001_PipeArgs.R'
+outdir.sg		<- '/Users/Oliver/git/HPTN071sim/tmp140914/SeqGen'	
+if(exists("args"))
+{
+	#	args input
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,10),
+								indir.epi= return(substr(arg,12,nchar(arg))),NA)	}))
+	if(length(tmp)>0) indir.epi<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,11),
+								infile.epi= return(substr(arg,13,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile.epi<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,10),
+								indir.vts= return(substr(arg,12,nchar(arg))),NA)	}))
+	if(length(tmp)>0) indir.vts<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,11),
+								infile.vts= return(substr(arg,13,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile.prefix<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,12),
+								infile.args= return(substr(arg,14,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile.args<- tmp[1]		
+	#	args output
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,7),
+								outdir= return(substr(arg,9,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outdir.sg<- tmp[1]		
+	
+}
+if(verbose)
+{
+	cat('\ninput args\n',paste(indir.epi, infile.epi, indir.vts, infile.prefix, outdir.sg, infile.args, sep='\n'))
+}	
+#	start script
+require(data.table)
+require(rPANGEAHIVsim)
+if(!is.na(infile.args))
+{
+	load(infile.args)	#expect 'pipeline.args'
+}
+if(is.null(pipeline.args))
+{
+	cat('\nCould not find pipeline.args, generating default')
+	pipeline.args	<- rPANGEAHIVsim.pipeline.args()
+}
+PANGEA.SeqGen.createInputFile(indir.epi, infile.epi, indir.vts, infile.prefix, outdir.sg, pipeline.args, verbose=1, with.plot=1, label.sep='|')
+	

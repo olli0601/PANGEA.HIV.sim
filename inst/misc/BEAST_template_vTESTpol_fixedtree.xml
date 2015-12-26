@@ -1,0 +1,267 @@
+<?xml version="1.0"?>
+<beast>
+  <!-- Fixed relative rate = 1 across all site models                             -->
+  <compoundParameter id="ALL.n100.rlx.gmrf.allMus">
+      <parameter idref="POL.n100.rlx.gmrf.CP1.mu"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP2.mu"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP3.mu"/>
+  </compoundParameter>
+  <!-- Define operators                                                        -->
+  <operators id="operators" optimizationSchedule="log">
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP1.ac"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP1.ag"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP1.at"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP1.cg"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP1.gt"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP2.ac"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP2.ag"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP2.at"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP2.cg"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP2.gt"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP3.ac"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP3.ag"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP3.at"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP3.cg"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP3.gt"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP1.alpha"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP2.alpha"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="0.1">
+      <parameter idref="POL.n100.rlx.gmrf.CP3.alpha"/>
+    </scaleOperator>
+    <deltaExchange delta="0.75" parameterWeights="948 948 948" weight="9">
+        <parameter idref="ALL.n100.rlx.gmrf.allMus"/>
+    </deltaExchange>
+    <scaleOperator scaleFactor="0.75" weight="3">
+      <parameter idref="ucld.mean"/>
+    </scaleOperator>
+    <scaleOperator scaleFactor="0.75" weight="3">
+      <parameter idref="ucld.stdev"/>
+    </scaleOperator>
+    <upDownOperator scaleFactor="0.75" weight="30">
+        <up>
+            <parameter idref="ucld.mean"/>
+        </up>
+        <down>
+            <parameter idref="demographic.populationMean"/>
+            <parameter idref="demographic.popSize"/>
+        </down>
+    </upDownOperator>
+    <scaleOperator scaleFactor="0.9" weight="3">
+        <parameter idref="demographic.populationMean"/>
+    </scaleOperator>
+    <sampleNonActiveOperator weight="15">
+        <distribution>
+            <parameter idref="demographic.populationMeanDist"/>
+        </distribution>
+        <data>
+            <parameter idref="demographic.popSize"/>
+        </data>
+        <indicators>
+            <parameter idref="demographic.indicators"/>
+        </indicators>
+    </sampleNonActiveOperator>
+    <bitFlipOperator weight="30">
+        <parameter idref="demographic.indicators"/>
+    </bitFlipOperator>
+    <scaleOperator scaleFactor="0.5" weight="6">
+        <parameter idref="demographic.popSize"/>
+        <indicators pickoneprob="1.0">
+            <parameter idref="demographic.indicators"/>
+        </indicators>
+    </scaleOperator>
+  </operators>
+  <!-- Define MCMC                                                             -->
+  <mcmc id="mcmc" chainLength="20000000" autoOptimize="true" operatorAnalysis="POL.alignment.n97.rlx.gmrf_Sun_Jul_27_09-00-00_2014.ops">
+    <posterior id="posterior">
+      <prior id="prior">
+        <uniformPrior lower="0.0" upper="1.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP1.ac"/>
+        </uniformPrior>
+        <gammaPrior shape="0.05" scale="20.0" offset="0.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP1.ag"/>
+        </gammaPrior>
+        <uniformPrior lower="0.0" upper="0.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP1.at"/>
+        </uniformPrior>
+        <uniformPrior lower="0.0" upper="1.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP1.cg"/>
+        </uniformPrior>
+        <uniformPrior lower="0.0" upper="0.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP1.gt"/>
+        </uniformPrior>
+        <uniformPrior lower="0.0" upper="1.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP2.ac"/>
+        </uniformPrior>
+        <gammaPrior shape="0.05" scale="20.0" offset="0.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP2.ag"/>
+        </gammaPrior>
+        <uniformPrior lower="0.0" upper="0.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP2.at"/>
+        </uniformPrior>
+        <uniformPrior lower="0.0" upper="1.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP2.cg"/>
+        </uniformPrior>
+        <uniformPrior lower="0.0" upper="0.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP2.gt"/>
+        </uniformPrior>
+        <uniformPrior lower="0.0" upper="1.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP3.ac"/>
+        </uniformPrior>
+        <gammaPrior shape="0.05" scale="20.0" offset="0.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP3.ag"/>
+        </gammaPrior>
+        <uniformPrior lower="0.0" upper="0.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP3.at"/>
+        </uniformPrior>
+        <uniformPrior lower="0.0" upper="1.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP3.cg"/>
+        </uniformPrior>
+        <uniformPrior lower="0.0" upper="0.5">
+          <parameter idref="POL.n100.rlx.gmrf.CP3.gt"/>
+        </uniformPrior>
+        <uniformPrior lower="0.1" upper="10.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP1.mu"/>
+        </uniformPrior>
+        <uniformPrior lower="0.1" upper="10.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP2.mu"/>
+        </uniformPrior>
+        <uniformPrior lower="0.1" upper="10.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP3.mu"/>
+        </uniformPrior>
+        <exponentialPrior mean="0.5" offset="0.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP1.alpha"/>
+        </exponentialPrior>
+        <exponentialPrior mean="0.5" offset="0.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP2.alpha"/>
+        </exponentialPrior>
+        <exponentialPrior mean="0.5" offset="0.0">
+          <parameter idref="POL.n100.rlx.gmrf.CP3.alpha"/>
+        </exponentialPrior>
+        <exponentialPrior mean="0.1" offset="0.0">
+          <parameter idref="ucld.stdev"/>
+        </exponentialPrior>
+        <uniformPrior lower="0.0001" upper="0.006">
+            <parameter idref="ucld.mean"/>
+        </uniformPrior>
+        <poissonPrior mean="0.6931471805599453" offset="0.0">
+            <statistic idref="demographic.populationSizeChanges"/>
+        </poissonPrior>
+        <oneOnXPrior>
+            <parameter idref="demographic.populationMean"/>
+        </oneOnXPrior>
+        <coalescentLikelihood idref="coalescent"/>
+        <mixedDistributionLikelihood>
+            <distribution0>
+                <exponentialDistributionModel idref="demographic.populationMeanDist"/>
+            </distribution0>
+            <distribution1>
+                <exponentialDistributionModel idref="demographic.populationMeanDist"/>
+            </distribution1>
+            <data>
+                <parameter idref="demographic.popSize"/>
+            </data>
+            <indicators>
+                <parameter idref="demographic.indicators"/>
+            </indicators>
+        </mixedDistributionLikelihood>
+      </prior>
+      <likelihood idref="likelihood"/>
+    </posterior>
+    <operators idref="operators"/>
+    <!-- write log to screen                                                     -->
+    <log id="screenLog" logEvery="10000">
+      <column label="Posterior" dp="4" width="12">
+        <posterior idref="posterior"/>
+      </column>
+      <column label="Prior" dp="4" width="12">
+        <prior idref="prior"/>
+      </column>
+      <column label="Likelihood" dp="4" width="12">
+        <likelihood idref="likelihood"/>
+      </column>
+      <column label="meanRate" sf="6" width="12">
+        <parameter idref="branchRates_meanRate"/>
+      </column>
+      <column label="ucld.mean" sf="6" width="12">
+        <parameter idref="ucld.mean"/>
+      </column>
+      <column label="d.populationMean" sf="6" width="12">
+        <parameter idref="demographic.populationMean"/>
+      </column>
+    </log>
+    <!-- write log to file                                                       -->
+    <log id="fileLog" logEvery="10000" fileName="POL.alignment.n97.rlx.gmrf_Sun_Jul_27_09-00-00_2014.log" overwrite="false">
+      <posterior idref="posterior"/>
+      <prior idref="prior"/>
+      <likelihood idref="likelihood"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP1.ac"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP1.ag"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP1.at"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP1.cg"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP1.gt"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP2.ac"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP2.ag"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP2.at"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP2.cg"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP2.gt"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP3.ac"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP3.ag"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP3.at"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP3.cg"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP3.gt"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP1.alpha"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP2.alpha"/>
+      <parameter idref="POL.n100.rlx.gmrf.CP3.alpha"/>
+      <compoundParameter idref="ALL.n100.rlx.gmrf.allMus"/>
+      <parameter idref="ucld.mean"/>
+      <parameter idref="ucld.stdev"/>
+      <rateStatistic idref="branchRates_meanRate"/>
+      <rateStatistic idref="branchRates_coefficientOfVariation"/>
+      <rateCovarianceStatistic idref="branchRates_covariance"/>
+      <sumStatistic idref="demographic.populationSizeChanges"/>
+      <parameter idref="demographic.populationMean"/>
+      <parameter idref="demographic.popSize"/>
+      <parameter idref="demographic.indicators"/>
+      <coalescentLikelihood idref="coalescent"/>
+    </log>
+  </mcmc>
+  <report>
+    <property name="timer">
+      <mcmc idref="mcmc"/>
+    </property>
+  </report>
+</beast>
