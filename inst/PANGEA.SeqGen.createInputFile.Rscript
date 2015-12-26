@@ -60,7 +60,7 @@ if(!is.na(infile.args))
 if(is.null(pipeline.args))
 {
 	cat('\nCould not find pipeline.args, generating default')
-	pipeline.args	<- rPANGEAHIVsim.pipeline.args()
+	pipeline.args	<- simulate.regional.args()
 }
 PANGEA.SeqGen.createInputFile(indir.epi, infile.epi, indir.vts, infile.prefix, outdir.sg, pipeline.args, verbose=1, with.plot=1, label.sep='|')
 	

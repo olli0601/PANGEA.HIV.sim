@@ -105,7 +105,7 @@ prog.PANGEA.AddGaps.run.v1<- function()
 #' @return data.table
 #' @example example/ex.pipeline.HPTN071.R
 #' @export
-rPANGEAHIVsim.pipeline.args<- function(	yr.start=1980, yr.end=2020, seed=42,										
+simulate.regional.args<- function(	yr.start=1980, yr.end=2020, seed=42,										
 										s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.25, s.PREV.base=exp(1), s.INTERVENTION.start=2015, 
 										s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50, s.MODEL='Prop2DiagB4I', s.PREV.max.n=NA, s.INTERVENTION.prop=NA,
 										epi.model='HPTN071', epi.acute='high', epi.intervention='fast', epi.dt=1/48, epi.import=0.1, root.edge.fixed=0,
@@ -228,7 +228,7 @@ prog.treecomparison.metrics<- function()
 #' @example example/ex.pipeline.HPTN071.R
 #' @example example/ex.pipeline.DSPS.R
 #' @export
-rPANGEAHIVsim.pipeline<- function(outdir, pipeline.args=rPANGEAHIVsim.pipeline.args() )
+simulate.regional<- function(outdir, pipeline.args=simulate.regional.args() )
 {
 	verbose			<- 1
 	#
@@ -239,7 +239,7 @@ rPANGEAHIVsim.pipeline<- function(outdir, pipeline.args=rPANGEAHIVsim.pipeline.a
 #######################################################
 #######################################################
 #
-# start: run rPANGEAHIVsim.pipeline
+# start: run simulate.regional
 #
 #######################################################
 #######################################################
@@ -282,7 +282,7 @@ rPANGEAHIVsim.pipeline<- function(outdir, pipeline.args=rPANGEAHIVsim.pipeline.a
 #######################################################
 #######################################################
 #
-# end: run rPANGEAHIVsim.pipeline
+# end: run simulate.regional
 #
 #######################################################
 #######################################################

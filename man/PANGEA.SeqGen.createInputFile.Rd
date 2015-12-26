@@ -45,7 +45,7 @@ dir.create(tmpdir.HPTN071, showWarnings=FALSE)
 infile.ind		<- '140716_RUN001_IND.csv'
 infile.trm		<- '140716_RUN001_TRM.csv'
 #	input arguments for the pipeline
-pipeline.args	<- rPANGEAHIVsim.pipeline.args()
+pipeline.args	<- simulate.regional.args()
 infile.args		<- paste(tmpdir,'/',substr(infile.ind, 1, nchar(infile.ind)-7), 'PipeArgs.R',sep='')
 save(pipeline.args, file=infile.args)
 #	get input into 'argv'. this is needed because the input parser is usually called from the command line, and 'argv' mimics the way input is provided when the parser is called from the command line

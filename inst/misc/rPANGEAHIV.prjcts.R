@@ -992,7 +992,7 @@ project.PANGEA.TEST.pipeline<- function()
 	infile.ind		<- '140716_RUN001'
 	infile.trm		<- '140716_RUN001'	
 	
-	pipeline.args	<- rPANGEAHIVsim.pipeline.args( yr.start=1980, yr.end=2020, seed=42,
+	pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
 													s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 													epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 													v.N0tau=3.58e4, v.r=2, v.T50=-1,
@@ -1012,7 +1012,7 @@ project.PANGEA.TEST.pipeline<- function()
 											#						
 											file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 											file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-											file			<- rPANGEAHIVsim.pipeline(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+											file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 											system(file)
 										}, by='label']										
 	

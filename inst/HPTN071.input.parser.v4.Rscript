@@ -73,7 +73,7 @@ if(!is.na(infile.args))
 if(is.null(pipeline.args))
 {
 	cat('\nCould not find pipeline.args, generating default')
-	pipeline.args	<- rPANGEAHIVsim.pipeline.args()
+	pipeline.args	<- simulate.regional.args()
 }
 PANGEA.HPTN071.input.parser.v4(indir, infile.ind, infile.trm, outdir, outfile.ind, outfile.trm, pipeline.args, verbose=1, with.plot=1)
 	

@@ -39,7 +39,7 @@ dir.create(tmpdir.HPTN071, showWarnings=FALSE)
 infile.ind		<- '150129_HPTN071_scA_IND.csv'
 infile.trm		<- '150129_HPTN071_scA_TRM.csv'
 #	input arguments for the pipeline
-pipeline.args	<- rPANGEAHIVsim.pipeline.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
+pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 			s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 			epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 			v.N0tau=1, v.r=2.851904, v.T50=-2,

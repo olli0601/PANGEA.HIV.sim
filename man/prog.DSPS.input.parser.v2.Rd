@@ -44,7 +44,7 @@ infile.trm		<- '140911_DSPS_RUN002_TRM.csv'
 oufile.trm		<- '140911_DSPS_RUN002_TRM.csv'
 oufile.ind		<- '140911_DSPS_RUN002_IND.csv'
 #	input arguments for the pipeline
-pipeline.args	<- rPANGEAHIVsim.pipeline.args( yr.start=1980, yr.end=2020, 
+pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, 
 												seed=42, s.PREV.min=0.03, s.PREV.max=0.70, 
 												epi.model='DSPS', epi.dt=1/48, epi.import=0.30)
 infile.args		<- paste(tmpdir,'/',substr(infile.trm, 1, nchar(infile.trm)-7), 'PipeArgs.R',sep='')
