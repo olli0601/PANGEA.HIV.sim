@@ -92,6 +92,7 @@ ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 
 ### Available variables on simulated individuals
 ￼
+
 *File name*         | *Description*
 --------------------|--------------------
 .fa                 | Fasta file of aligned, simulated sequences. One for each gene.
@@ -101,8 +102,8 @@ _DATEDTREE.newick   | Trees in newick format. Each tree corresponds to the simul
 
 *Individual level variable* | *Description*
 -------------------- | ------------------------------------------
-IDPOP | Identifier of individual
-GENDER | Gender NA if archival sequence
+IDPOP                | Identifier of individual
+GENDER               | Gender (NA if archival sequence)
 
 
 # Evolutionary model component
