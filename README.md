@@ -92,12 +92,18 @@ ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 
 ### Available variables on simulated individuals
 ￼
+*File name*         | *Description*
+--------------------|--------------------
+.fa                 | Fasta file of aligned, simulated sequences. One for each gene.
+_metadata.csv       | Information on sampled individuals.
+_SURVEY.csv         | Cross-sectional surveys conducted on a random subset of the simulated population.
+_DATEDTREE.newick   | Trees in newick format. Each tree corresponds to the simulated viral phylogeny among sampled individuals of one simulated transmission chain. One tree per line.
+
 *Individual level variable* | *Description*
 -------------------- | ------------------------------------------
 IDPOP | Identifier of individual
 GENDER | Gender NA if archival sequence
 
-x
 
 # Evolutionary model component
 
