@@ -98,12 +98,12 @@ IDPOP               | Identifier of individual that can be linked to sequences o
 GENDER              | Gender NA if archival sequence
 DOB                 | Date of birth NA if archival sequence
 DOD                 | Date of death NA if alive at end of simulation
-DIAG_T              | Time of diagnosis NA if archival sequence
+DIAGT              | Time of diagnosis NA if archival sequence
 DIAG_CD4            | CD4 count at diagnosis NA if archival sequence
-￼￼ART1_T              | ART start date NA if ART not started
-ART1_CD4            | CD4 count at ART start NA if ART not started
+￼￼ART1T              | ART start date NA if ART not started
+ART1CD4            | CD4 count at ART start NA if ART not started
 TIME_SEQ            | Date sequence taken
-RECENT_TR           | Y if transmission occurred at most 6 months after diagnosis N otherwise
+RECENTTR           | Y if transmission occurred at most 6 months after diagnosis N otherwise
 
 # Evolutionary model component
 
