@@ -95,18 +95,25 @@ ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 *Variable*          | *Description*
 --------------------|--------------------------------------------------------------------------------
 IDPOP               | Identifier of individual that can be linked to sequences or tips in the viral phylogeny
-GENDER              | Gender, NA if archival sequence
-DOB                 | Date of birth, NA if archival sequence
-DOD                 | Date of death, NA if alive at end of simulation
-DIAG_T              | Time of diagnosis, NA if archival sequence
-DIAG_CD4            | CD4 count at diagnosis, NA if archival sequence
-￼￼ART1_T              | ART start date, NA if ART not started
-ART1_CD4            | CD4 count at ART start, NA if ART not started
+GENDER              | Gender NA if archival sequence
+DOB                 | Date of birth NA if archival sequence
+DOD                 | Date of death NA if alive at end of simulation
+DIAG_T              | Time of diagnosis NA if archival sequence
+DIAG_CD4            | CD4 count at diagnosis NA if archival sequence
+￼￼ART1_T              | ART start date NA if ART not started
+ART1_CD4            | CD4 count at ART start NA if ART not started
 TIME_SEQ            | Date sequence taken
-RECENT_TR           | Y if transmission occurred at most 6 months after diagnosis, N otherwise
+RECENT_TR           | Y if transmission occurred at most 6 months after diagnosis N otherwise
 
+# Evolutionary model component
 
-x
+Available full genome subtype C sequences from sub Saharan Africa in the Los Alamos Sequence database were used to seed the simulation of HIV-1C viral variants in the study population. Separate viral introductions occurred at the introduction of HIV into the population in 1980, and thereafter at a constant rate over time. Viral introductions are simulated from a seed sequence. The date of the seed sequence was chosen so that the TMRCA of the simulated sequences falls is consistent with current phylogenetic estimates (Walker, Pybus, Rambaut, & Holmes, 2005).
+
+Within-host lineages that are not part of transmission lineages have a higher evolutionary rate in the simulation (Alizon & Fraser, 2013; Vrancken et al., 2014).
+
+A few ‘archival’ sequences are sampled for the period 1985 to 1999. Since 2000, sequences are more systematically sampled from infected individuals as part of HIV surveillance. Since 2015 until the end of the simulation, the population is more intensely sampled, with roughly the same number of sequences per year. Except of a few simulations, the sequence coverage of the HIV epidemic at the time point 2020.0 is below 10%. Sequence coverage may vary between some data sets. The number of sampled individuals is fixed to 1600 (or 3200 in a few data sets).
+
+For some data sets, the simulated viral phylogenies are provided for each transmission chain with at least one sampled individual in file “*_DATEDTREE.newick”. Each transmission chain phylogeny is in newick format, one phylogeny per line. Tip names match to individual level identifiers in file “*_metadata.csv”. For the remaining data sets, simulated sequences are provided. Sequence names match to individual level identifiers in file “*_metadata.csv”.
 
 
 
