@@ -92,11 +92,12 @@ ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 
 ### Available variables on simulated individuals
 ￼
-*Individual-level variable*          | *Description*
---------------------|--------------------
-IDPOP               | Identifier of individual
-GENDER              | Gender NA if archival sequence
+*Individual level variable* | *Description*
+--------------------|------------------------------------------
+IDPOP | Identifier of individual
+GENDER | Gender NA if archival sequence
 
+x
 
 # Evolutionary model component
 
