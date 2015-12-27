@@ -10,7 +10,7 @@
 # 	because the R files are re-loaded below
 #
 # usage from R:
-#> setwd("/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim"); source("misc/rPANGEAHIV.startme.R")
+#> setwd("/Users/Oliver/git/PANGEA.HIV.sim"); source("misc/rPANGEAHIV.startme.R")
 #
 ###############################################################################
 args <- commandArgs()
@@ -19,10 +19,10 @@ if(!any(args=='--args'))
 if(any(args=='--args'))
 	args<- args[-(1:match("--args", args)) ]
 #the package directory (local working copy of the code, not the installed package directory within the R directory 
-CODE.HOME	<<- "/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim"
+CODE.HOME	<<- "/Users/Oliver/git/PANGEA.HIV.sim"
 
 #the home directory of all projects
-HOME		<<- "/Users/Oliver/git/HPTN071sim/"
+HOME		<<- "/Users/Oliver/git/PANGEA.HIV.sim/"
 #HOME		<<- "/work/or105/UKCA_1309"
 #HOME		<<- "/work/or105/ATHENA_2013"
 DATA		<<- paste(HOME,"data",sep='/')
@@ -117,7 +117,7 @@ my.dumpframes<- function()
 }
 ###############################################################################
 #	re-load all R files
-require(rPANGEAHIVsim)
+require(PANGEA.HIV.sim)
 print(CODE.HOME)
 function.list<-c(list.files(path= paste(CODE.HOME,"R",sep='/'), pattern = ".R$", all.files = FALSE,
 				full.names = TRUE, recursive = FALSE),paste(CODE.HOME,"misc","rPANGEAHIV.prjcts.R",sep='/'))

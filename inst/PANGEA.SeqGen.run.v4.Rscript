@@ -61,7 +61,7 @@ if(!is.na(infile.args))
 if(is.null(pipeline.args))
 {
 	cat('\nCould not find pipeline.args, generating default')
-	pipeline.args	<- simulate.regional.args()
+	pipeline.args	<- sim.regional.args()
 }
 PANGEA.SeqGen.run.v4(indir.epi, infile.epi, indir.sg, infile.prefix, outdir, pipeline.args)
 	

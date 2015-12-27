@@ -20,7 +20,7 @@ dir.create(tmpdir.HPTN071, showWarnings=FALSE)
 infile.ind		<- '140716_RUN001_IND.csv'
 infile.trm		<- '140716_RUN001_TRM.csv'
 #	input arguments for the pipeline
-pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42, s.PREV.min=0.01, s.PREV.max=0.25, epi.dt=1/48, epi.import=0.1, 
+pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.PREV.min=0.01, s.PREV.max=0.25, epi.dt=1/48, epi.import=0.1, 
 												v.N0tau=3.58e4, v.r=2, v.T50=-1  )
 infile.args		<- paste(tmpdir,'/',substr(infile.ind, 1, nchar(infile.ind)-7), 'PipeArgs.R',sep='')
 save(pipeline.args, file=infile.args)

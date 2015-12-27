@@ -66,46 +66,47 @@ prog.PANGEA.AddGaps.run.v1<- function()
 ##--------------------------------------------------------------------------------------------------------
 ##	olli originally written 10-09-2014
 ##--------------------------------------------------------------------------------------------------------
-#' @title Arguments for rPANGEAHIV simulation pipeline
-#' @description Construct table with all input arguments to the rPANGEAHIV simulation pipeline.
-#' The demographic within host coealescent model is N0tau*(1+exp(-r*T50))/(1+exp(-r*(T50-t))). Default parameters are set
-#' so that the curve asymptotes at Ne*tau=3e5 and reaches half its asymptotic value 1 year post infection. Branch lengths are 
-#' multiplied by within host evolutionary rates, and within host branch lengths ending in a transmission event are multiplied
-#' in addition with a between-host evolutionary rate multiplier. 
-#' @param yr.start				Start year of the epi simulation (default 1980)
-#' @param yr.end				First year after the epi simulation (default 2020)
-#' @param seed					Random number seed
-#' @param s.MODEL				Sampling model to use
-#' @param s.INC.recent			Proportion of incident cases sampled (not used)
-#' @param s.INC.recent.len		Number of last year in which an exact proportion of incident cases is sampled (not used) 
-#' @param s.PREV.min			Proportion of infected cases sampled at start of the simulation
-#' @param s.PREV.max			Proportion of infected cases sampled at the end of the simulation
-#' @param s.PREV.max.n			Number of infected cases sampled (usually NA, only used for Prop2Untreated)
-#' @param s.INTERVENTION.prop	Proportion of infected cases that are sampled from after intervention start
-#' @param s.INTERVENTION.start	Year in which the community intervention starts
-#' @param s.INTERVENTION.mul	Multiplier of number of sequences sampled per year after start of the intervention
-#' @param s.ARCHIVAL.n			Total number of sequences sampled before diagnosis
-#' @param epi.model				The epi model used to create the epi simulation (default HPTN071, alternatively DSPS)
-#' @param epi.dt				Time increment of the epi simulation (default 1/48)
-#' @param epi.import			Proportion of imported cases of all cases (default 0.1)
-#' @param root.edge.fixed		Boolean; fix evolutionary rate of root edges to mean rate if true 
-#' @param v.N0tau				Parameter of BEAST::LogisticGrowthN0::N0 (default 3.58e4) 
-#' @param v.r					Parameter of BEAST::LogisticGrowthN0::r (default 2)
-#' @param v.T50					Parameter of BEAST::LogisticGrowthN0::T50
-#' @param wher.mu				Mean within host evolutionary rate of log normal density
-#' @param wher.sigma			Standard deviation in within host evolutionary rate of log normal density
-#' @param bwerm.mu				Mean between host evolutionary rate multiplier of log normal density
-#' @param bwerm.sigma			Standard deviation in between host evolutionary rate multiplier of log normal density
-#' @param sp.prop.of.sexactive	Proportion of population sampled in seroprevalence survey
-#' @param report.prop.recent	Proportion of individuals for whom recency of infection should be reported
-#' @param dbg.GTRparam			debug flag
-#' @param dbg.rER				debug flag
-#' @param startseq.mode			Number of different starting sequences either 'many' or 'one'.
-#' @param index.starttime.mode	distribution to sample times for starting sequence: Normal(1960,7) or Unif(1959.75, 1960.25)
-#' @return data.table
-#' @example example/ex.pipeline.HPTN071.R
+#' @title Input arguments to simulate sequences and viral phylogenetic trees\cr under the Regional Transmission and Intervention Model
+#' @description Set all input arguments to the simulation. Please see for model details \url{https://github.com/olli0601/PANGEA.HIV.sim}
+#' @seealso \code{\link{sim.regional}}
+#' @import data.table
+#' @param yr.start				Start year of the epi simulation (default: 1980)
+#' @param yr.end				First year after the epi simulation (default: 2020; optional 2018)
+#' @param seed					Random number seed (default: 42; optional integer)
+#' @param s.MODEL				Sampling model to use (default: 'Fixed2Prop')
+#' @param s.INC.recent			Deprecated
+#' @param s.INC.recent.len		Deprecated 
+#' @param s.PREV.min			Deprecated
+#' @param s.PREV.max			Deprecated
+#' @param s.PREV.max.n			Number of infected cases sampled (default: 1600; optional 3200)
+#' @param s.INTERVENTION.prop	Proportion of infected cases that are sampled from after intervention start (default: 0.5; optional 0.85)
+#' @param s.INTERVENTION.start	Year in which the community intervention starts (default: 2015)
+#' @param s.INTERVENTION.mul	Deprecated
+#' @param s.ARCHIVAL.n			Total number of sequences sampled at random from infected individuals before 2000 (default: 50)
+#' @param seqtime.mode			Time at which sequences are sampled (default: 'AtDiag')
+#' @param epi.model				The epi model used to create the epi simulation (default: 'HPTN071')
+#' @param epi.acute				The proportion of transmissions in 2015 from individuals in their first three months of infection (default: 'high'/40\%, optional: 'low'/10\%)
+#' @param epi.intervention		The scale of the intervention package (default:'fast', optional: 'slow', 'none')				 
+#' @param epi.dt				Time increment of the epi simulation (default: 1/48, this is fixed to the underlying epidemic simulation)
+#' @param epi.import			Proportion of viral introductions amongst new cases per year (default: 0.05, optional: 0.2)
+#' @param root.edge.fixed		Fix evolutionary rate of root edges of new lineages in the population to mean evolutionary rate (default: 1, optional: 0) 
+#' @param v.N0tau				Within host effective population size at time of infection, parameter BEAST::LogisticGrowthN0::N0 (default 1) 
+#' @param v.r					Parameter of BEAST::LogisticGrowthN0::r (default 2.851904)
+#' @param v.T50					Parameter of BEAST::LogisticGrowthN0::T50 (default -2)
+#' @param wher.mu				Mean of within host evolutionary rate (default: log(0.00447743)-0.5^2/2)
+#' @param wher.sigma			Standard deviation of within host evolutionary (default: 0.5)
+#' @param bwerm.mu				Mean of between host evolutionary rate (default: log(0.002239075)-0.3^2/2)
+#' @param bwerm.sigma			Standard deviation of between host evolutionary rate (default: 0.3)
+#' @param startseq.mode			Number of different starting sequences (default: 'one', optional 'many')
+#' @param index.starttime.mode	Sampling distribution of sampling times of starting sequences (default: 'fix1970', optional 'fix19XX' where XX between 45-79, 'normal' meaning Normal(1955,7))
+#' @param er.gamma				Site heterogeneity parameter (default: 4, optional 0)
+#' @param sp.prop.of.sexactive	Proportion of population sampled in seroprevalence survey (default: 0.05)
+#' @param report.prop.recent	Proportion of individuals in seroprevalence survey for whom recency of infection should be reported (default: 1)
+#' @param dbg.GTRparam			Use mean GTR rates instead of samples from empirical prior (default: 0, optional 1)
+#' @param dbg.rER				Use mean evolutionary rate instead of samples from empirical prior (default: 0, optional 1)
+#' @return data.table with columns 'stat' (name of input argument) and 'v' (value of input argument).
 #' @export
-simulate.regional.args<- function(	yr.start=1980, yr.end=2020, seed=42,										
+sim.regional.args<- function(	yr.start=1980, yr.end=2020, seed=42,										
 										s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.25, s.PREV.base=exp(1), s.INTERVENTION.start=2015, 
 										s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50, s.MODEL='Prop2DiagB4I', s.PREV.max.n=NA, s.INTERVENTION.prop=NA,
 										epi.model='HPTN071', epi.acute='high', epi.intervention='fast', epi.dt=1/48, epi.import=0.1, root.edge.fixed=0,
@@ -217,18 +218,29 @@ prog.treecomparison.metrics<- function()
 ##--------------------------------------------------------------------------------------------------------
 ##	olli originally written 08-09-2014
 ##--------------------------------------------------------------------------------------------------------
-#' @title rPANGEAHIV simulation pipeline
-#' @description Reads two files \code{infile.ind} and \code{infile.trm} from the epi simulator in directory \code{indir} and produces a UNIX batch
-#' file that contains all the simulation steps in directory \code{outdir}. 
-#' @param indir				Input directory
-#' @param infile.ind		Input file with individual metavariables
-#' @param infile.trm		Input file with transmission events
-#' @param pipeline.args		Input arguments for the simulation
-#' @return file name of qsub or UNIX batch file
+#' @title Simulate sequences and viral phylogenetic trees\cr under the Regional Transmission and Intervention Model
+#' @description The Regional Transmission and Intervention Model captures individual-level HIV transmission dynamics in a regional population of ~80,000 invididuals,  
+#' that is broadly similar to a site (cluster) of the HPTN071/PopART HIV prevention trial in South Africa (Hayes et al., 2014).
+#' \cr
+#' \cr 
+#' As of December 2015, this individual-level model is unpublished. 
+#' The model builds on work of the HIV modelling consortium (Eaton et al., 2012) as well as
+#' an earlier compartmental model that was used to inform the design of the HPTN071/PopART trial (Cori et al., 2014). 
+#' An extended version of this individual-level model will be used to help evaluate results from the HPTN071/PopART trial.
+#' \cr
+#' \cr 
+#' Please see for model details \url{https://github.com/olli0601/PANGEA.HIV.sim}
+#' @import data.table 
+#' @param outdir			Output directory. Must have write access.
+#' @param pipeline.args		Input arguments for the simulation, in form of a \code{data.table}, see \code{\link{sim.regional.args}}.
+#' @return File name of qsub or UNIX batch file.  
+#' @seealso \code{\link{sim.regional.args}}
 #' @example example/ex.pipeline.HPTN071.R
-#' @example example/ex.pipeline.DSPS.R
 #' @export
-simulate.regional<- function(outdir, pipeline.args=simulate.regional.args() )
+#' @references  Hayes R, Ayles H, Beyers N, Sabapathy K, Floyd S, et al. (2014) HPTN 071 (PopART): rationale and design of a cluster-randomised trial of the population impact of an HIV combination prevention intervention including universal testing and treatment - a study protocol for a cluster randomised trial. Trials 15: 57.
+#' @references	Eaton JW, Johnson LF, Salomon JA, Barnighausen T, Bendavid E, et al. (2012) HIV Treatment as Prevention: Systematic Comparison of Mathematical Models of the Potential Impact of Antiretroviral Therapy on HIV Incidence in South Africa. PLoS Med 9: e1001245.
+#' @references	Cori A, Ayles H, Beyers N, Schaap A, Floyd S, et al. (2014) HPTN 071 (PopART): a cluster-randomized trial of the population impact of an HIV combination prevention intervention including universal testing and treatment: mathematical model. PLoS One 9: e84511.
+sim.regional<- function(outdir, pipeline.args=sim.regional.args() )
 {
 	verbose			<- 1
 	#
@@ -239,7 +251,7 @@ simulate.regional<- function(outdir, pipeline.args=simulate.regional.args() )
 #######################################################
 #######################################################
 #
-# start: run simulate.regional
+# start: run sim.regional
 #
 #######################################################
 #######################################################
@@ -282,7 +294,7 @@ simulate.regional<- function(outdir, pipeline.args=simulate.regional.args() )
 #######################################################
 #######################################################
 #
-# end: run simulate.regional
+# end: run sim.regional
 #
 #######################################################
 #######################################################

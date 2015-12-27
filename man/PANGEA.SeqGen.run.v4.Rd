@@ -3,8 +3,8 @@
 \alias{PANGEA.SeqGen.run.v4}
 \title{Program to simulate gene sequences}
 \usage{
-PANGEA.SeqGen.run.v4(indir.epi, infile.epi, indir.sg, infile.sg, infile.prefix,
-  outdir, pipeline.args)
+PANGEA.SeqGen.run.v4(indir.epi, infile.epi, indir.sg, infile.prefix, outdir,
+  pipeline.args)
 }
 \value{
 NULL. Saves zip files with simulations.

@@ -1016,7 +1016,7 @@ project.PANGEA.TEST.scenarios<- function()
 		infile.ind		<- '170914_HPTN071_scA_rep1'
 		infile.trm		<- '170914_HPTN071_scA_rep1'	
 		label			<- ''
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1028,7 +1028,7 @@ project.PANGEA.TEST.scenarios<- function()
 		#						
 		file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 		file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-		file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+		file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 		#system(file)
 	}
 }
@@ -1207,7 +1207,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	if(0)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1248,7 +1248,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 											dir.create(tmpdir, showWarnings=FALSE)																													
 											file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind, label,'_IND.csv',sep=''))
 											file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm, label,'_TRM.csv',sep=''))
-											file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+											file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 											system(file)
 										}, by='label']
 	}
@@ -1258,7 +1258,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	if(0)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1294,7 +1294,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 					dir.create(tmpdir, showWarnings=FALSE)																													
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind, label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm, label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					#system(file)
 				}, by='label']
 	}
@@ -1304,7 +1304,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	if(1)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1334,7 +1334,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																													
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind, label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm, label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)
 					}, by='label']
 	}
@@ -1344,7 +1344,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	if(1)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1378,7 +1378,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 					dir.create(tmpdir, showWarnings=FALSE)																													
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind, label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm, label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					#system(file)
 				}, by='label']
 	}
@@ -1388,7 +1388,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	if(0)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1419,7 +1419,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 					dir.create(tmpdir, showWarnings=FALSE)																													
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind, label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm, label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					#system(file)
 				}, by='label']
 	}
@@ -1429,7 +1429,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	if(0)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
+		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1458,7 +1458,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.multi*0.073))
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -1472,7 +1472,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.multi*0.084))
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -1486,7 +1486,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.multi*0.075))
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -1500,7 +1500,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.multi*0.08))
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -1514,7 +1514,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.multi*0.078))
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -1528,7 +1528,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.multi*0.083))
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}					
 				}, by='label']
@@ -1539,7 +1539,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 		if(1)
 		{
 			indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-			pipeline.args	<- simulate.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I', report.prop.recent=1.0,
+			pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I', report.prop.recent=1.0,
 					s.PREV.max=NA, s.INTERVENTION.prop=NA, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 					epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 					v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1576,7 +1576,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							set(pipeline.args, which( pipeline.args$stat=='s.PREV.max.n' ), 'v', as.character(s.multi*s.PREV.max.n))
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}
 						if(1)
@@ -1590,7 +1590,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							set(pipeline.args, which( pipeline.args$stat=='s.PREV.max.n' ), 'v', as.character(s.multi*s.PREV.max.n))
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}
 						if(1)
@@ -1604,7 +1604,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							set(pipeline.args, which( pipeline.args$stat=='s.PREV.max.n' ), 'v', as.character(s.multi*s.PREV.max.n))
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}
 						if(1)
@@ -1618,7 +1618,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							set(pipeline.args, which( pipeline.args$stat=='s.PREV.max.n' ), 'v', as.character(s.multi*s.PREV.max.n))
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}
 						if(1)
@@ -1632,7 +1632,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							set(pipeline.args, which( pipeline.args$stat=='s.PREV.max.n' ), 'v', as.character(s.multi*s.PREV.max.n))
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}
 						if(1)
@@ -1646,7 +1646,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							set(pipeline.args, which( pipeline.args$stat=='s.PREV.max.n' ), 'v', as.character(s.multi*s.PREV.max.n))
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}					
 					}, by='label']
@@ -1657,7 +1657,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 		if(1)
 		{
 			indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-			pipeline.args	<- simulate.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
+			pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 					s.PREV.max.n=1600, s.INTERVENTION.prop=0.5, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 					epi.model='HPTN071', epi.dt=1/48, epi.import=0.05, root.edge.fixed=0,
 					v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1691,7 +1691,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							dir.create(tmpdir, showWarnings=FALSE)																															
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}					
 						if(1)
@@ -1704,7 +1704,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							dir.create(tmpdir, showWarnings=FALSE)																									
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}											
 					}, by='label']
@@ -1717,7 +1717,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 		if(1)
 		{			
 			indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-			pipeline.args	<- simulate.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
+			pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 					s.PREV.max.n=1600, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 					epi.model='HPTN071', epi.dt=1/48, epi.import=0.05, root.edge.fixed=1,
 					v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1742,7 +1742,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							dir.create(tmpdir, showWarnings=FALSE)																															
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}					
 						if(1)
@@ -1755,7 +1755,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 							dir.create(tmpdir, showWarnings=FALSE)																									
 							file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 							file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-							file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+							file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 							#system(file)													
 						}											
 					}, by='label']
@@ -1769,7 +1769,7 @@ project.PANGEA.treecomparison<- function()
 	if(1)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
+		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 				s.PREV.max.n=1600, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05, root.edge.fixed=1,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -1794,7 +1794,7 @@ project.PANGEA.treecomparison<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																															
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}					
 					if(1)
@@ -1807,7 +1807,7 @@ project.PANGEA.treecomparison<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																									
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}											
 				}, by='label']
@@ -2627,7 +2627,7 @@ project.PANGEA.TEST.pipeline.Feb2015.final<- function()
 	if(0)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1985, yr.end=NA, seed=NA, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
+		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=NA, seed=NA, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 				s.PREV.max.n=NA, s.INTERVENTION.prop=NA, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA, root.edge.fixed=0,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -2660,7 +2660,7 @@ project.PANGEA.TEST.pipeline.Feb2015.final<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																														
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)	
 						stop()
 					}
@@ -2674,7 +2674,7 @@ project.PANGEA.TEST.pipeline.Feb2015.final<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																		
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -2687,7 +2687,7 @@ project.PANGEA.TEST.pipeline.Feb2015.final<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																		
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -2700,7 +2700,7 @@ project.PANGEA.TEST.pipeline.Feb2015.final<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																		
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -2713,7 +2713,7 @@ project.PANGEA.TEST.pipeline.Feb2015.final<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																		
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -2726,7 +2726,7 @@ project.PANGEA.TEST.pipeline.Feb2015.final<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																									
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}					
 				}, by='label']
@@ -2742,7 +2742,7 @@ project.PANGEA.TEST.pipeline.Apr2015.Manon<- function()
 	if(0)
 	{
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
-		pipeline.args	<- simulate.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2SuggestedSampling', report.prop.recent=1.0,
+		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2SuggestedSampling', report.prop.recent=1.0,
 				s.PREV.max=NA, s.INTERVENTION.start=2015, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.2, root.edge.fixed=0,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -2773,7 +2773,7 @@ project.PANGEA.TEST.pipeline.Apr2015.Manon<- function()
 						dir.create(tmpdir, showWarnings=FALSE)																		
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',outfile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',outfile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(outfile.ind,label,'_IND.csv',sep=''), paste(outfile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(outfile.ind,label,'_IND.csv',sep=''), paste(outfile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}								
 				}, by='label']
@@ -3699,7 +3699,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	if(0)
 	{
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -3721,7 +3721,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 					set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.11')
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)					
 				}, by='label']
 	}
@@ -3729,7 +3729,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	if(1)
 	{
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.20,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -3753,7 +3753,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.11')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						system(file)													
 					}
 				}, by='label']
@@ -3762,7 +3762,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	if(1)
 	{
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -3786,7 +3786,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.11')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						system(file)													
 					}
 					if(0)
@@ -3800,7 +3800,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.15')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						system(file)						
 					}
 					if(0)
@@ -3814,7 +3814,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.185')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						system(file)	
 					}					
 				}, by='label']
@@ -3823,7 +3823,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	if(1)
 	{
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -3847,7 +3847,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.11')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -3861,7 +3861,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.15')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)						
 					}
 					if(1)
@@ -3875,7 +3875,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.185')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)	
 					}					
 				}, by='label']
@@ -3884,7 +3884,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	if(1)
 	{
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -3908,7 +3908,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.11')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)													
 					}
 					if(1)
@@ -3922,7 +3922,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.15')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)						
 					}
 					if(1)
@@ -3936,7 +3936,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.185')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						#system(file)	
 					}					
 				}, by='label']
@@ -3946,7 +3946,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	{
 		indir			<- '/Users/Oliver/duke/2014_Gates/methods_comparison_pipeline/Pangea_Oct28_2014_sim'
 		#indir			<- '/Users/Oliver/git/Pangea__Oct27_2014_code'
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -3966,7 +3966,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.11')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,'_IND.csv',sep=''), paste(infile.trm,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,'_IND.csv',sep=''), paste(infile.trm,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						system(file)	
 					}
 					if(1)
@@ -3980,7 +3980,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.15')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,'_IND.csv',sep=''), paste(infile.trm,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,'_IND.csv',sep=''), paste(infile.trm,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						system(file)						
 					}
 					if(1)
@@ -3994,7 +3994,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 						set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.185')
 						file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,'_IND.csv',sep=''))
 						file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,'_TRM.csv',sep=''))
-						file			<- simulate.regional(tmpdir, paste(infile.ind,'_IND.csv',sep=''), paste(infile.trm,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+						file			<- sim.regional(tmpdir, paste(infile.ind,'_IND.csv',sep=''), paste(infile.trm,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 						system(file)	
 					}					
 				}, by='label']
@@ -4012,7 +4012,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 				v.N0tau=3.58e4, v.r=2, v.T50=-1,
@@ -4031,7 +4031,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']	
 	}
@@ -4041,7 +4041,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=3.58e4, v.r=2, v.T50=-1,
@@ -4059,7 +4059,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 	}
@@ -4069,7 +4069,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=NA, v.T50=-2,
@@ -4086,7 +4086,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 	}							
@@ -4096,7 +4096,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4114,7 +4114,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 	}
@@ -4125,7 +4125,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4144,7 +4144,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 		#	rerun: bug?? NOPE!
@@ -4153,7 +4153,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4172,7 +4172,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4184,7 +4184,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.trm		<- '140716_RUN001'	
 		
 		#	scenario 3* faster WH up to 0.02
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4204,11 +4204,11 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 		#	scenario 2* faster WH limited to 0.01
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.2, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4227,7 +4227,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4238,7 +4238,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.ind		<- '170914_HPTN071_scA_rep1'
 		infile.trm		<- '170914_HPTN071_scA_rep1'	
 		#	scenario 2* faster WH limited to 0.01 
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4257,7 +4257,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4267,7 +4267,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		infile.ind		<- '170914_HPTN071_scA_rep1'
 		infile.trm		<- '170914_HPTN071_scA_rep1'	
 		#	scenario 2* faster WH limited to 0.01 
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4286,7 +4286,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4296,7 +4296,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			 
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4317,7 +4317,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 	}
@@ -4327,7 +4327,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			 
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4351,11 +4351,11 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 		#	debug only GTRparam
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4379,11 +4379,11 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 		#	no debug
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4407,7 +4407,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 		
@@ -4418,7 +4418,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4442,7 +4442,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 	}
@@ -4452,7 +4452,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4476,7 +4476,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4486,7 +4486,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.1,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4510,7 +4510,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4520,7 +4520,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4544,7 +4544,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 	}
@@ -4554,7 +4554,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4578,7 +4578,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 	}
@@ -4588,7 +4588,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4612,14 +4612,14 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 		
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4643,7 +4643,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4654,7 +4654,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4673,11 +4673,11 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												#						
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 		#
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4696,11 +4696,11 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 		#	try improve TMRCA?
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4719,7 +4719,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']		
 	}
@@ -4729,7 +4729,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'					
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4748,10 +4748,10 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4770,10 +4770,10 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4792,10 +4792,10 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4814,7 +4814,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4824,7 +4824,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'	
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4843,10 +4843,10 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4865,10 +4865,10 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4887,12 +4887,12 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 		
 		
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4911,10 +4911,10 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4933,10 +4933,10 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.1, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA,
 				v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4955,7 +4955,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					#						
 					file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 					file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-					file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+					file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 					system(file)
 				}, by='label']
 	}
@@ -4963,7 +4963,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	if(1)
 	{
 		indir			<- system.file(package="rPANGEAHIVsim", "misc")
-		pipeline.args	<- simulate.regional.args( yr.start=1980, yr.end=2020, seed=42,
+		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=NA, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
 														v.N0tau=1, v.r=2.851904, v.T50=-2,
@@ -4991,7 +4991,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.11')
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 												#	scenario B						
 												infile.ind		<- '180914_HPTN071_scB_rep1'
@@ -5002,7 +5002,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.15')
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 												#	scenario C						
 												infile.ind		<- '180914_HPTN071_scC_rep1'
@@ -5013,7 +5013,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', '0.185')
 												file.copy(paste(indir,'/',infile.ind,'_IND.csv',sep=''), paste(tmpdir,'/',infile.ind,label,'_IND.csv',sep=''))
 												file.copy(paste(indir,'/',infile.trm,'_TRM.csv',sep=''), paste(tmpdir,'/',infile.trm,label,'_TRM.csv',sep=''))
-												file			<- simulate.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
+												file			<- sim.regional(tmpdir, paste(infile.ind,label,'_IND.csv',sep=''), paste(infile.trm,label,'_TRM.csv',sep=''), tmpdir, pipeline.args=pipeline.args)
 												system(file)
 											}, by='label']
 	}

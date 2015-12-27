@@ -1,3 +1,20 @@
+.onAttach <- function(...) 
+{
+	packageStartupMessage("PANGEA.HIV.sim\nHIV Phylogenetic Simulation Model for the PANGEA-HIV methods comparison exercise\nhttps://github.com/olli0601/PANGEA.HIV.sim")
+}
+.onLoad <- function(...) 
+{
+	suppressMessages(library(gamlss))
+	suppressMessages(library(ape))
+	suppressMessages(library(phytools))
+	suppressMessages(library(reshape2))
+	suppressMessages(library(data.table))
+	suppressMessages(library(RColorBrewer))
+	suppressMessages(library(grid))
+	suppressMessages(library(ggplot2))
+	suppressMessages(library(igraph))
+	suppressMessages(library(distr))	
+}
 ##--------------------------------------------------------------------------------------------------------
 #	olli copied from hivclust
 ##--------------------------------------------------------------------------------------------------------
@@ -1076,7 +1093,6 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 	#
 	#	TRANSMISSION NETWORKS
 	#
-	require(igraph)
 	#	cluster with index case
 	tmp			<- subset(df.trms, select=c(IDTR, IDREC))			
 	tmp			<- graph.data.frame(tmp, directed=TRUE, vertices=NULL)
@@ -1100,8 +1116,6 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 	#
 	if(with.plot)
 	{
-		require(ggplot2)
-		require(reshape2)
 		#	plot numbers sampled, prevalent, incident
 		tmp		<- names(df.sample)[ which(as.character(sapply(df.sample, class))!='numeric') ]
 		for(x in tmp)
@@ -1303,7 +1317,6 @@ PANGEA.TransmissionEdgeEvolutionaryRate.create.sampler<- function(er.meanlog, er
 	}
 	if(0)
 	{
-		require(gamlss)		
 		file		<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_BEASTlog.R')	
 		cat(paste('\nreading GTR parameters from file',file))
 		load(file)	# expect log.df
@@ -1589,7 +1602,6 @@ PANGEA.add.gaps.maintain.triplets<- function(indir.simu, indir.gap, infile.simu,
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.BetweenHostEvolutionaryRateModifier.create.sampler.v1<- function(bwerm.mu=1.5, bwerm.sigma=0.12)
 {
-	require(gamlss)
 	if(0)
 	{
 		#from Vrancken et al:
@@ -1619,7 +1631,6 @@ PANGEA.BetweenHostEvolutionaryRateModifier.create.sampler.v1<- function(bwerm.mu
 #' @return R function
 PANGEA.WithinHostEvolutionaryRate.create.sampler.v1<- function(wher.mu=log(0.005), wher.sigma=0.8)
 {
-	require(gamlss)
 	if(0)
 	{	
 		#extremely basic model of within host evolutionary rate from HIV-1B pol estimates in the literature
@@ -1680,9 +1691,6 @@ PANGEA.WithinHostEvolutionaryRate.create.sampler.v1<- function(wher.mu=log(0.005
 #	return 		list of GAG POL ENV sequences in ape format 
 PANGEA.RootSeqSim.get.ancestral.seq.withDecompression<- function(tree, node.stat, bseq, tree.id.sep='_', tree.id.idx.mcmcit=2, tree.id.burnin=1, label.sep='|', label.idx.ctime=2)
 {
-	require(data.table)
-	require(ape)
-	
 	tree.id				<- names(tree)
 	#	add calendar time for inner node at NODE_ID to node.stat
 	node.stat[, CALENDAR_TIME:=NA_real_]		
@@ -1798,9 +1806,6 @@ PANGEA.RootSeqSim.get.ancestral.seq.withDecompression<- function(tree, node.stat
 #	return 		list of GAG POL ENV sequences in ape format 
 PANGEA.RootSeqSim.get.ancestral.seq.pg<- function(tree, node.stat, tree.id.sep='_', tree.id.idx.mcmcit=2, tree.id.burnin=1, label.sep='|', label.idx.ctime=5)
 {
-	require(data.table)
-	require(ape)
-	
 	tree.id				<- names(tree)
 	#	add calendar time for inner node at NODE_ID to node.stat
 	node.stat[, CALENDAR_TIME:=NA_real_]		
@@ -2435,20 +2440,8 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 ##--------------------------------------------------------------------------------------------------------
 ##	olli originally written 26-01-2015
 ##--------------------------------------------------------------------------------------------------------
-#' @title HPTN071 parser (version 4, uses date of diagnosis)
-#' @description Reads files from the epi simulator in directory \code{indir} and writes csv files
-#' in directory \code{outdir} for the virus tree simulator. The program samples sequences according to
-#' an exponentially increasing sampling fraction in the same way as \code{prog.HPTN071.input.parser.v1}.
-#' In addition, transmissions are broken and treated as imported from outside the simulated population.
-#' The infected of a broken transmission chain is considered a new index case of a transmission chain within the 
-#' simulated population. All input arguments are specified via the \code{argv} 
-#' string, see the Examples.
-#' @return NULL. Saves simulations to file.
-#' @example example/ex.seq.sampler.v4.R
-#' @export
 PANGEA.HPTN071.input.parser.v4<- function(indir, infile.ind, infile.trm, outdir, outfile.ind, outfile.trm, pipeline.args, verbose=1, with.plot=1)	
-{
-	require(data.table)			
+{			
 	stopifnot( all( c('yr.start', 'yr.end', 's.seed', 's.PREV.min', 's.PREV.max', 'epi.dt', 'epi.import')%in%pipeline.args[, stat] ) )
 	#		
 	infile.ind	<- paste(indir, '/', infile.ind, sep='')
@@ -2592,9 +2585,6 @@ PANGEA.HPTN071.input.parser.v4<- function(indir, infile.ind, infile.trm, outdir,
 #	return 		list of GAG POL ENV sequences in ape format 
 PANGEA.RootSeqSim.get.ancestral.seq<- function(tree, node.stat, tree.id.sep='_', tree.id.idx.mcmcit=2, tree.id.burnin=1, label.sep='|', label.idx.ctime=5)
 {
-	require(data.table)
-	require(ape)
-	
 	tree.id				<- names(tree)
 	#	add calendar time for inner node at NODE_ID to node.stat
 	node.stat[, CALENDAR_TIME:=NA_real_]		

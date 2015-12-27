@@ -890,7 +890,7 @@ prog.DSPS.input.parser.v2<- function()
 	if(is.null(pipeline.args))
 	{
 		cat('\nCould not find pipeline.args, generating default')
-		pipeline.args	<- simulate.regional.args()
+		pipeline.args	<- sim.regional.args()
 	}
 	stopifnot( all( c('yr.start', 'yr.end', 's.seed', 's.PREV.min', 's.PREV.max', 'epi.dt', 'epi.import')%in%pipeline.args[, stat] ) )
 	#
@@ -1131,7 +1131,7 @@ prog.HPTN071.input.parser.v1<- function()
 	if(is.null(pipeline.args))
 	{
 		cat('\nCould not find pipeline.args, generating default')
-		pipeline.args	<- simulate.regional.args()
+		pipeline.args	<- sim.regional.args()
 	}
 	stopifnot( all( c('yr.start', 'yr.end', 's.seed', 's.PREV.min', 's.PREV.max', 'epi.dt', 'epi.import')%in%pipeline.args[, stat] ) )
 	#
@@ -1406,7 +1406,7 @@ prog.HPTN071.input.parser.v2<- function()
 	if(is.null(pipeline.args))
 	{
 		cat('\nCould not find pipeline.args, generating default')
-		pipeline.args	<- simulate.regional.args()
+		pipeline.args	<- sim.regional.args()
 	}
 	stopifnot( all( c('yr.start', 'yr.end', 's.seed', 's.PREV.min', 's.PREV.max', 'epi.dt', 'epi.import')%in%pipeline.args[, stat] ) )
 	#
@@ -1578,7 +1578,7 @@ prog.HPTN071.input.parser.v3<- function()
 	if(is.null(pipeline.args))
 	{
 		cat('\nCould not find pipeline.args, generating default')
-		pipeline.args	<- simulate.regional.args()
+		pipeline.args	<- sim.regional.args()
 	}
 	stopifnot( all( c('yr.start', 'yr.end', 's.seed', 's.PREV.min', 's.PREV.max', 'epi.dt', 'epi.import')%in%pipeline.args[, stat] ) )
 	#
@@ -1781,7 +1781,7 @@ prog.PANGEA.SeqGen.createInputFile.v2<- function()
 	if(is.null(pipeline.args))
 	{
 		cat('\nCould not find pipeline.args, generating default')
-		pipeline.args	<- simulate.regional.args()
+		pipeline.args	<- sim.regional.args()
 	}	
 	stopifnot( all( c('s.seed','wher.mu','wher.sigma','bwerm.mu')%in%pipeline.args[, stat] ) )
 	#
@@ -2013,7 +2013,7 @@ prog.PANGEA.SeqGen.createInputFile.v1<- function()
 	if(is.null(pipeline.args))
 	{
 		cat('\nCould not find pipeline.args, generating default')
-		pipeline.args	<- simulate.regional.args()
+		pipeline.args	<- sim.regional.args()
 	}	
 	stopifnot( all( c('s.seed','wher.mu','wher.sigma','bwerm.mu','bwerm.sigma')%in%pipeline.args[, stat] ) )
 	#
@@ -2234,7 +2234,7 @@ prog.PANGEA.SeqGen.run.WINDOWScompatible<- function()
 	if(is.null(pipeline.args))
 	{
 		cat('\nCould not find pipeline.args, generating default')
-		pipeline.args	<- simulate.regional.args()
+		pipeline.args	<- sim.regional.args()
 	}	
 	stopifnot( all( c('s.seed')%in%pipeline.args[, stat] ) )	
 	set.seed(pipeline.args['s.seed',][, as.numeric(v)])
@@ -2447,7 +2447,7 @@ prog.PANGEA.SeqGen.run<- function()
 	if(is.null(pipeline.args))
 	{
 		cat('\nCould not find pipeline.args, generating default')
-		pipeline.args	<- simulate.regional.args()
+		pipeline.args	<- sim.regional.args()
 	}	
 	#
 	file		<- paste(indir.epi, '/', infile.epi, sep='')
