@@ -82,7 +82,8 @@ Variables in the simulated cross-sectional surveys in file `_SURVEY.csv` are:
 YR                  | Time at which the survey was taken 
 Gender              | Gender
 AGE                 | Age
-*Count by group*    |
+
+*Count by group*    | *Description*
 --------------------|--------------------
 ALIVE_N             | Number of sexually active individuals
 ALIVE_AND_DIAG_N    | Number of diagnosed individuals
@@ -91,21 +92,21 @@ ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 
 Variables of simulated individuals in file `_metadata.csv` are:
 ￼
-Variable            | Description
---------------------|--------------------
+*Variable*          | *Description*
+--------------------|--------------------------------------------------------------------------------
 IDPOP               | Identifier of individual that can be linked to sequences or tips in the viral phylogeny
-GENDER              | Gender (NA if archival sequence)
-DOB                 | Date of birth (NA if archival sequence)
-DOD                 | Date of death (NA if alive at end of simulation)
-DIAG_T              | Time of diagnosis (NA if archival sequence)
-DIAG_CD4            | CD4 count at diagnosis (NA if archival sequence)
-￼￼ART1_T              | ART start date (NA if ART not started)
-ART1_CD4            | CD4 count at ART start (NA if ART not started)
+GENDER              | Gender, NA if archival sequence
+DOB                 | Date of birth, NA if archival sequence
+DOD                 | Date of death, NA if alive at end of simulation
+DIAG_T              | Time of diagnosis, NA if archival sequence
+DIAG_CD4            | CD4 count at diagnosis, NA if archival sequence
+￼￼ART1_T              | ART start date, NA if ART not started
+ART1_CD4            | CD4 count at ART start, NA if ART not started
 TIME_SEQ            | Date sequence taken
 RECENT_TR           | Y if transmission occurred at most 6 months after diagnosis, N otherwise
 
 
-
+x
 
 
 
