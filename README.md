@@ -97,6 +97,7 @@ ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 IDPOP               | Identifier of individual
 GENDER              | Gender NA if archival sequence
 
+
 # Evolutionary model component
 
 Available full genome subtype C sequences from sub Saharan Africa in the Los Alamos Sequence database were used to seed the simulation of HIV-1C viral variants in the study population. Separate viral introductions occurred at the introduction of HIV into the population in 1980, and thereafter at a constant rate over time. Viral introductions are simulated from a seed sequence. The date of the seed sequence was chosen so that the TMRCA of the simulated sequences falls is consistent with current phylogenetic estimates (Walker, Pybus, Rambaut, & Holmes, 2005).
