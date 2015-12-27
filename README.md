@@ -91,7 +91,6 @@ ALIVE_AND_ART_N     | Number of individuals that started ART
 ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 
 ### Available variables on simulated individuals
-￼
 
 *Individual level variable* | *Description*
 -------------------- | ------------------------------------------
