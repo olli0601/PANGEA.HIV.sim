@@ -66,7 +66,7 @@ the PANGEA-HIV tree data sets to address the secondary objectives of the methods
 
 # Output of the simulation
 
-`PANGEA.HIV.sim` produces the following files:
+One simulation produces the following files:
 
 *File name*         | *Description*
 --------------------|--------------------
@@ -75,7 +75,7 @@ _metadata.csv       | Information on sampled individuals.
 _SURVEY.csv         | Cross-sectional surveys conducted on a random subset of the simulated population.
 _DATEDTREE.newick   | Trees in newick format. Each tree corresponds to the simulated viral phylogeny among sampled individuals of one simulated transmission chain. One tree per line.
 
-Variables in the simulated cross-sectional surveys in file `_SURVEY.csv` are:
+### Available variables in the simulated cross-sectional surveys
 
 *Group variable*    | *Description*
 --------------------|--------------------
@@ -90,7 +90,7 @@ ALIVE_AND_DIAG_N    | Number of diagnosed individuals
 ALIVE_AND_ART_N     | Number of individuals that started ART 
 ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 
-Variables of simulated individuals in file `_metadata.csv` are:
+### Available variables on simulated individuals
 ￼
 *Variable*          | *Description*
 --------------------|--------------------------------------------------------------------------------
