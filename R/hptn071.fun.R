@@ -1299,9 +1299,9 @@ PANGEA.TransmissionEdgeEvolutionaryRate.create.sampler<- function(er.meanlog, er
 		#	times 2				
 		x		<- seq(0.0005, 0.01, 0.00001)
 		tmp		<- data.table(	x=x, 
-								TransmissionLineage=dLOGNO(x, mu=log(0.002239075)-0.13^2/2, sigma=0.13),
-								TransmissionLineage2=dLOGNO(x, mu=log(0.002239075)-0.3^2/2, sigma=0.3),
-								TransmissionLineage3=dLOGNO(x, mu=log(0.002239075)-0.2^2/2, sigma=0.2),
+								#TransmissionLineage2=dLOGNO(x, mu=log(0.002239075)-0.13^2/2, sigma=0.13),
+								TransmissionLineage=dLOGNO(x, mu=log(0.002239075)-0.3^2/2, sigma=0.3),
+								#TransmissionLineage3=dLOGNO(x, mu=log(0.002239075)-0.2^2/2, sigma=0.2),
 								TipBranch=dLOGNO(x, mu=log(0.00447743)-0.5^2/2, sigma=0.5)
 								)
 		#	times 1.5				
@@ -1313,7 +1313,12 @@ PANGEA.TransmissionEdgeEvolutionaryRate.create.sampler<- function(er.meanlog, er
 		#						TipBranch=dLOGNO(x, mu=log(0.003)-0.2^2/2, sigma=0.2))
 						
 		tmp		<- melt(tmp, id.var='x')
-		ggplot(tmp, aes(x=x, y=value, group=variable, colour=variable)) + geom_line() + scale_x_continuous(breaks=seq(0,0.02,0.001))		
+		set(tmp, NULL, 'variable',tmp[,factor(variable,levels=c('TransmissionLineage','TipBranch'),labels=c('Transmission lineage','Non-transmission lineage'))])
+		ggplot(tmp, aes(x=x, y=value, group=variable, colour=variable)) + geom_line() + 
+				scale_x_continuous(breaks=seq(0,0.02,0.001)) +
+				theme(legend.position='bottom') +
+				labs(x='\nevolutionary rate',y='',colour='')
+		ggsave(file='~/git/PANGEA.HIV.sim/man/fig_ERmodel.png', width=8, height=5)
 	}
 	if(0)
 	{

@@ -183,10 +183,13 @@ Source code of the VirusTreeSimulator was provided by Matthew Hall.
 
 To convert branch lengths from calendar times into substitutions per site, evolutionary rates are assigned to each branch. 
 Non-transmission lineages are assigned higher evolutionary rates than transmission lineages (Alizon & Fraser, 2013; Vrancken et al., 2014).
-Evolutionary rates of non-transmission lineages are sampled from a log normal model with mean `wher.mu` and standard deviation `wher.sigma`.
-Evolutionary rates of transmission lineages are sampled from a log normal model with mean `XXX` and standard deviation `XXX`.
+Evolutionary rates of non-transmission lineages are sampled from a log normal model with mean `wher.mu` and 
+standard deviation `wher.sigma` on the log scale. Evolutionary rates of transmission lineages are sampled from a 
+log normal model with mean `bwerm.mu` and standard deviation `bwerm.sigma` on the log scale. The following figure shows the
+evolutionary rate model for transmission and non-transmission lineages under default parameters:
+<img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_ERmodel.png" width="66%">
 
-Matt’s virus tree simulator produces branch lengths in units of calendar time. These need to be translated into units of substitutions/site.
+Optionally,
 
 Each transmission chain phylogeny has a long root branch dating to between 1945-1960 in order to select a starting sequence. The evolutionary rate for these root branches was set to the estimated overall mean evolutionary rate across all genes (2.2e-3 subst/site/year).
 
