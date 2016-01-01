@@ -112,6 +112,13 @@ The model simulates viral phylogenies of sampled transmission chains in the regi
 HIV sequences comprising the gag gene (from p17 start, length 1440 nt), the pol gene (from protease start, length 2844) 
 and the env gene (from TVA signal peptide start, length 2523, V loops excluded) of sampled individuals.
 
+The model comprises the following components, which are described in detail below:
+1. [Viral introductions and seed sequences](#Viral-introductions-and-seed-sequences)
+2. Dated viral phylogenies
+3. Evolutionary rate model
+4. Substitution model
+5. Sequence sampling model
+
 ## Viral introductions and seed sequences
 
 The evolutionary model starts in 1980. By 1980, between 100-200 infected individuals exist in the epidemic simulation. 
