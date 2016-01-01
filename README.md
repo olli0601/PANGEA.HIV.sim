@@ -113,11 +113,16 @@ HIV sequences comprising the gag gene (from p17 start, length 1440 nt), the pol 
 and the env gene (from TVA signal peptide start, length 2523, V loops excluded) of sampled individuals.
 
 The model comprises the following components, which are described in detail below:
-1. [Viral introductions and seed sequences](#Viral-introductions-and-seed-sequences)
-2. [Dated viral phylogenies](#Dated-viral-phylogenies)
-3. [Evolutionary rate model](#Evolutionary-rate-model)
-4. [Substitution model](#Substitution-model)
-5. [Sequence sampling model](#Sequence-sampling-model)
+
+1. [Viral introductions and seed sequences](#viral-introductions-and-seed-sequences)
+
+2. [Dated viral phylogenies](#dated-viral-phylogenies)
+
+3. [Evolutionary rate model](#evolutionary-rate-model)
+
+4. [Substitution model](#substitution-model)
+
+5. [Sequence sampling model](#sequence-sampling-model)
 
 ## Viral introductions and seed sequences
 
