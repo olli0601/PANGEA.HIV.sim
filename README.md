@@ -63,17 +63,19 @@ This will show a first example on how to use the simulation code, followed by co
 sequences data sets to address the primary objectives of the methods comparison exercise, and code to simulate 
 the PANGEA-HIV tree data sets to address the secondary objectives of the methods comparison exercise.
 
+****
 
 # Output of the simulation
 
 One simulation produces the following files:
 
-*File name*         | *Description*
---------------------|--------------------
-.fa                 | Fasta file of aligned, simulated sequences. One for each gene.
-_metadata.csv       | Information on sampled individuals.
-_SURVEY.csv         | Cross-sectional surveys conducted on a random subset of the simulated population.
-_DATEDTREE.newick   | Trees in newick format. Each tree corresponds to the simulated viral phylogeny among sampled individuals of one simulated transmission chain. One tree per line.
+*File name*             | *Description*
+------------------------|--------------------
+.fa                     | Fasta file of aligned, simulated sequences. One for each gene.
+_metadata.csv           | Information on sampled individuals.
+_SURVEY.csv             | Cross-sectional surveys conducted on a random subset of the simulated population.
+_DATEDTREE.newick       | Trees in newick format. Each tree corresponds to the simulated viral phylogeny among sampled individuals of one simulated transmission chain. One tree per line.
+_SIMULATED_INTERNAL.R  | Further internal R objects from which the output files are built. Part of the _Internal.zip file.
 
 ### Available variables in the simulated cross-sectional surveys
 
@@ -105,6 +107,7 @@ ART1_CD4            | CD4 count at ART start (NA if ART not started)
 TIME_SEQ            | Date sequence taken
 RECENT_TR           | Y if transmission occurred at most 6 months after diagnosis N otherwise
 
+****
 
 # Evolutionary model component
 
@@ -130,9 +133,9 @@ The evolutionary model starts in 1980. By 1980, between 100-200 infected individ
 The evolutionary model considers these individuals as index cases. After 1980, viral introductions occurred in proportion 
 to the number of new infections per year (parameter `epi.import`). The epidemic model does not explicitly describe transmissions by
 individuals outside the regional population. Instead, the evolutionary model selects new index cases at random among existing 
-infected individuals. Sources of index cases are coded with a negative population ID. The corresponding transmission chains
-can be reconstructed from the output file XXX. Column XXX of data.table XXX in output file XXX lists the simulated proportion of viral 
-introductions per year.
+infected individuals. Sources of index cases are coded with a negative population ID `IDPOP`. The corresponding transmission chains
+can be reconstructed from data.table `df.trms` (in file ending `_SIMULATED_INTERNAL.R`). Column `IMPORTp` of data.table `df.epi` 
+(in file ending `_SIMULATED_INTERNAL.R`) lists the simulated proportion of viral introductions per year.
 
 Each index case is assigned a seed sequence. The date associated with the sequence is either 1980.0 or, for viral introductions 
 after 1980, the time of infection of the index case. To assign seed sequences, the evolutionary model proceeds by default as follows. 
@@ -143,10 +146,12 @@ phylogenetic estimates of the origin of subtype C sequences in sub-Saharan Afric
 multiple starting sequences, each for one index case, can be randomly sampled from a pool of pre-specified sequences from 1970 
 (parameter `startseq.mode`). Optionally, the date of the starting sequences can be set further into the past (parameter `index.starttime.mode`).
 
+![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_viralintro.png)
+
 The starting sequence was selected from a pool of pre-specified, historical full genome subtype C sequences. This pool was generated
 through ancestral state reconstruction with BEAST 1.8 from 390 full genome subtype C sequences from the Los Alamos Sequence database. The alignment
-of these 390 sequences was manually curated and is available here LINK https://github.com/PangeaHIV/HPTN071sim/tree/master/raw_rootseq. 
-The pool of dated historical sequences is available as part of the R package, XXX.
+of these 390 sequences was manually curated and is [available here](https://github.com/PangeaHIV/HPTN071sim/tree/master/raw_rootseq). 
+The pool of dated historical sequences is [available here](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/inst/misc/PANGEA_SSAfgBwhRc-_140907_n390_AncSeq.R).
 
 ## Dated viral phylogenies
 
