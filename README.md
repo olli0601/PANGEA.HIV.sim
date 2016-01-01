@@ -157,8 +157,7 @@ through ancestral state reconstruction with BEAST 1.8 from 390 full genome subty
 of these 390 sequences was manually curated and is [available here](https://github.com/PangeaHIV/HPTN071sim/tree/master/raw_rootseq). 
 The pool of dated historical sequences is [available here](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/inst/misc/PANGEA_SSAfgBwhRc-_140907_n390_AncSeq.R). The following figure shows a histogram of the available starting sequences by their sampling date.
 
-![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_PANGEA_SSAfgBwhRc-_140811_n390_geneENV_AncSeq_Times.png)
-
+<img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_PANGEA_SSAfgBwhRc-_140811_n390_geneENV_AncSeq_Times.png" width="200px">
 
 ## Dated viral phylogenies
 
