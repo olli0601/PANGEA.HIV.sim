@@ -129,13 +129,19 @@ The model comprises the following components, which are described in detail belo
 
 ## Viral introductions and seed sequences
 
+#### Viral introductions
+
 The evolutionary model starts in 1980. By 1980, between 100-200 infected individuals exist in the epidemic simulation. 
-The evolutionary model considers these individuals as index cases. After 1980, viral introductions occurred in proportion 
-to the number of new infections per year (parameter `epi.import`). The epidemic model does not explicitly describe transmissions by
-individuals outside the regional population. Instead, the evolutionary model selects new index cases at random among existing 
-infected individuals. Sources of index cases are coded with a negative population ID `IDPOP`. The corresponding transmission chains
+The evolutionary model considers these individuals as index cases. 
+After 1980, viral introductions occur in proportion to the number of new infections per year (parameter `epi.import`). 
+New index cases representing viral introductions into the regional population are selected at random among existing infected individuals. 
+By default, we set `epi.import=0.05` in line with baseline assumptions of the HPTN071/PopART model 
+(Cori A, Ayles H, Beyers N, Schaap A, Floyd S, et al. PLoS One 2014). 
+Sources of index cases are coded with a negative population ID `IDPOP`. The corresponding transmission chains
 can be reconstructed from data.table `df.trms` (in file ending `_SIMULATED_INTERNAL.R`). Column `IMPORTp` of data.table `df.epi` 
 (in file ending `_SIMULATED_INTERNAL.R`) lists the simulated proportion of viral introductions per year.
+
+#### Seed sequences
 
 Each index case is assigned a seed sequence. The date associated with the sequence is either 1980.0 or, for viral introductions 
 after 1980, the time of infection of the index case. To assign seed sequences, the evolutionary model proceeds by default as follows. 
@@ -151,6 +157,8 @@ correspond to four transmission chains after their introduction in the regional 
 from the index case to the starting sequence.
 
 ![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_viralintro.png)
+
+#### Starting sequences
 
 The starting sequence was selected from a pool of pre-specified, historical full genome subtype C sequences. This pool was generated
 through ancestral state reconstruction with BEAST 1.8 from 390 full genome subtype C sequences from the Los Alamos Sequence database. The alignment
@@ -177,6 +185,7 @@ with all sampled inviduals in the same transmission chain.
 The following figure shows the lognormal model of the within-host effective population size under default 
 parameters `v.N0tau=1`, `v.r=2.851904`, `v.T50=-2`. These were chosen such that the initial population size is 1 and that 
 the final effective population size is broadly similar to estimates typically obtained with a BEAST Skyline model.
+
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_EffPopSize.png" width="66%">
 
 Source code of the VirusTreeSimulator was provided by Matthew Hall.
@@ -190,6 +199,7 @@ standard deviation `wher.sigma` on the log scale. Evolutionary rates of transmis
 log normal model with mean `bwerm.mu` and standard deviation `bwerm.sigma` on the log scale. The following figure shows the
 evolutionary rate model for transmission and non-transmission lineages under default parameters `wher.mu=log(0.00447743)-0.5^2/2`, `wher.sigma=0.5`, 
 `bwerm.mu=log(0.002239075)-0.3^2/2`, `bwerm.sigma=0.3`. These were chosen such that XXX
+
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_ERmodel.png" width="66%">
 
 Optionally,
