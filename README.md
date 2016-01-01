@@ -146,12 +146,19 @@ phylogenetic estimates of the origin of subtype C sequences in sub-Saharan Afric
 multiple starting sequences, each for one index case, can be randomly sampled from a pool of pre-specified sequences from 1970 
 (parameter `startseq.mode`). Optionally, the date of the starting sequences can be set further into the past (parameter `index.starttime.mode`).
 
+The following figure shows part of a simulated phylogeny: a single starting sequence evolves into four sub-clades. These four sub-clades 
+correspond to four transmission chains after their introduction in the regional population. The four sub-clades are connected with a root edge
+from the index case to the starting sequence.
+
 ![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_viralintro.png)
 
 The starting sequence was selected from a pool of pre-specified, historical full genome subtype C sequences. This pool was generated
 through ancestral state reconstruction with BEAST 1.8 from 390 full genome subtype C sequences from the Los Alamos Sequence database. The alignment
 of these 390 sequences was manually curated and is [available here](https://github.com/PangeaHIV/HPTN071sim/tree/master/raw_rootseq). 
-The pool of dated historical sequences is [available here](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/inst/misc/PANGEA_SSAfgBwhRc-_140907_n390_AncSeq.R).
+The pool of dated historical sequences is [available here](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/inst/misc/PANGEA_SSAfgBwhRc-_140907_n390_AncSeq.R). The following figure shows a histogram of the available starting sequences by their sampling date.
+
+![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_PANGEA_SSAfgBwhRc-_140811_n390_geneENV_AncSeq_Times.png)
+
 
 ## Dated viral phylogenies
 
