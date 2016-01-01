@@ -167,7 +167,7 @@ coalescent model that is more fully described elsewhere (Didelot X, Gardy J, Col
 Starting with every index case, viral phylogenies with branch lengths in calendar time are generated through recursive 
 application of a neutral within-host coalescent model. The infection time of the index case is considered as root of the 
 within-host phylogeny of the index case, and any onward transmission events or sampling events as tips. 
-Infection and onward transmission times come from the epidemic simulation, and sampling events are described below.  
+Infection and onward transmission times come from the epidemic simulation, and sampling events are described below. 
 Under these tip and date constrains, the within-host phylogeny of the index case is simulated assuming an increasing
 effective population size (lognormal model, parameters `v.N0tau`, `v.r`, `v.T50`). For each new infection, the process is repeated and the 
 within-host phylogenies are concatenated. The model assumes that a single transmitted virion leads to clinical infection of
@@ -175,7 +175,7 @@ the newly infected individual. The simulation produces a dated viral phylogeny t
 with all sampled inviduals in the same transmission chain. 
 
 The following figure shows the lognormal model of the within-host effective population size under default parameters:
-![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_EffPopSize.png)
+<img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_EffPopSize.png" width="66%">
 
 Source code of the VirusTreeSimulator was provided by Matthew Hall.
 
