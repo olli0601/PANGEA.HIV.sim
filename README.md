@@ -174,7 +174,9 @@ within-host phylogenies are concatenated. The model assumes that a single transm
 the newly infected individual. The simulation produces a dated viral phylogeny that starts with the index case and ends 
 with all sampled inviduals in the same transmission chain. 
 
-The following figure shows the lognormal model of the within-host effective population size under default parameters:
+The following figure shows the lognormal model of the within-host effective population size under default 
+parameters `v.N0tau=1`, `v.r=2.851904`, `v.T50=-2`. These were chosen such that the initial population size is 1 and that 
+the final effective population size is broadly similar to estimates typically obtained with a BEAST Skyline model.
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_EffPopSize.png" width="66%">
 
 Source code of the VirusTreeSimulator was provided by Matthew Hall.
@@ -186,7 +188,8 @@ Non-transmission lineages are assigned higher evolutionary rates than transmissi
 Evolutionary rates of non-transmission lineages are sampled from a log normal model with mean `wher.mu` and 
 standard deviation `wher.sigma` on the log scale. Evolutionary rates of transmission lineages are sampled from a 
 log normal model with mean `bwerm.mu` and standard deviation `bwerm.sigma` on the log scale. The following figure shows the
-evolutionary rate model for transmission and non-transmission lineages under default parameters:
+evolutionary rate model for transmission and non-transmission lineages under default parameters `wher.mu=log(0.00447743)-0.5^2/2`, `wher.sigma=0.5`, 
+`bwerm.mu=log(0.002239075)-0.3^2/2`, `bwerm.sigma=0.3`. These were chosen such that XXX
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_ERmodel.png" width="66%">
 
 Optionally,
