@@ -114,10 +114,10 @@ and the env gene (from TVA signal peptide start, length 2523, V loops excluded) 
 
 The model comprises the following components, which are described in detail below:
 1. [Viral introductions and seed sequences](#Viral-introductions-and-seed-sequences)
-2. Dated viral phylogenies
-3. Evolutionary rate model
-4. Substitution model
-5. Sequence sampling model
+2. [Dated viral phylogenies](#Dated-viral-phylogenies)
+3. [Evolutionary rate model](#Evolutionary-rate-model)
+4. [Substitution model](#Substitution-model)
+5. [Sequence sampling model](#Sequence-sampling-model)
 
 ## Viral introductions and seed sequences
 
