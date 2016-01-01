@@ -13,7 +13,7 @@ Research groups were asked to estimate
 * reductions in HIV incidence during a typical community-based intervention in sub-Saharan Africa,
 * the proportion of HIV transmissions arising from individuals during their first three months of infection (early transmission) at the start of the intervention from sequence data.
 
-Secondary objective were to evaluate the merits of full genome sequence data, the 
+Secondary objectives were to evaluate the merits of full genome sequence data, the 
 impact of various aspects of sequence sampling, and the impact of the proportion of transmissions 
 originating from outside the study area.
 
@@ -108,9 +108,67 @@ RECENT_TR           | Y if transmission occurred at most 6 months after diagnosi
 
 # Evolutionary model component
 
-Available full genome subtype C sequences from sub Saharan Africa in the Los Alamos Sequence database were used to seed the simulation of HIV-1C viral variants in the study population. Separate viral introductions occurred at the introduction of HIV into the population in 1980, and thereafter at a constant rate over time. Viral introductions are simulated from a seed sequence. The date of the seed sequence was chosen so that the TMRCA of the simulated sequences falls is consistent with current phylogenetic estimates (Walker, Pybus, Rambaut, & Holmes, 2005).
+The model simulates viral phylogenies of sampled transmission chains in the regional population, as well as
+HIV sequences comprising the gag gene (from p17 start, length 1440 nt), the pol gene (from protease start, length 2844) 
+and the env gene (from TVA signal peptide start, length 2523, V loops excluded) of sampled individuals.
 
-Within-host lineages that are not part of transmission lineages have a higher evolutionary rate in the simulation (Alizon & Fraser, 2013; Vrancken et al., 2014).
+## Viral introductions and seed sequences
+
+The evolutionary model starts in 1980. By 1980, between 100-200 infected individuals exist in the epidemic simulation. 
+The evolutionary model considers these individuals as index cases. After 1980, viral introductions occurred in proportion 
+to the number of new infections per year (parameter `epi.import`). The epidemic model does not explicitly describe transmissions by
+individuals outside the regional population. Instead, the evolutionary model selects new index cases at random among existing 
+infected individuals. Sources of index cases are coded with a negative population ID. The corresponding transmission chains
+can be reconstructed from the output file XXX. Column XXX of data.table XXX in output file XXX lists the simulated proportion of viral 
+introductions per year.
+
+Each index case is assigned a seed sequence. The date associated with the sequence is either 1980.0 or, for viral introductions 
+after 1980, the time of infection of the index case. To assign seed sequences, the evolutionary model proceeds by default as follows. 
+One starting sequence is randomly sampled from a pool of pre-specified sequences from 1970 (see below). Root edges connect this
+starting sequence with each index case. With this approach, the phylogenies below each index case are all part of a well-defined tree.
+The date of the starting sequences is was chosen so that the estimated TMRCA of the simulated sequences is consistent with current 
+phylogenetic estimates of the origin of subtype C sequences in sub-Saharan Africa (Walker, Pybus, Rambaut, & Holmes, 2005). Optionally, 
+multiple starting sequences, each for one index case, can be randomly sampled from a pool of pre-specified sequences from 1970 
+(parameter `startseq.mode`). Optionally, the date of the starting sequences can be set further into the past (parameter `index.starttime.mode`).
+
+The starting sequence was selected from a pool of pre-specified, historical full genome subtype C sequences. This pool was generated
+through ancestral state reconstruction with BEAST 1.8 from 390 full genome subtype C sequences from the Los Alamos Sequence database. The alignment
+of these 390 sequences was manually curated and is available here LINK https://github.com/PangeaHIV/HPTN071sim/tree/master/raw_rootseq. 
+The pool of dated historical sequences is available as part of the R package, XXX.
+
+## Dated viral phylogenies
+
+Starting with every index case, viral phylogenies with branch lengths in calendar time are generated through recursive 
+application of a neutral within-host coalescent model. The infection time of the index case is considered as root of the 
+within-host phylogeny of the index case, and any onward transmission events or sampling events as tips. 
+Infection and onward transmission times come from the epidemic simulation, and sampling events are described below.  
+Under these tip and date constrains, the within-host phylogeny of the index case is simulated assuming an increasing
+effective population size (lognormal model, parameters `v.N0tau`, `v.r`, `v.T50`). For each new infection, the process is repeated and the 
+within-host phylogenies are concatenated. The model assumes that a single transmitted virion leads to clinical infection of
+the newly infected individual. The simulation produces a dated viral phylogeny that starts with the index case and ends 
+with all sampled inviduals in the same transmission chain. 
+
+Source code of the VirusTreeSimulator is available from XXX. NEED TO SAY THAT TREE neq transmission.
+
+## Evolutionary rate model
+
+To convert branch lengths from calendar times into substitutions per site, evolutionary rates are assigned to each branch. 
+Non-transmission lineages are assigned higher evolutionary rates than transmission lineages (Alizon & Fraser, 2013; Vrancken et al., 2014).
+Evolutionary rates of non-transmission lineages are sampled from a log normal model with mean `wher.mu` and standard deviation `wher.sigma`.
+Evolutionary rates of transmission lineages are sampled from a log normal model with mean `XXX` and standard deviation `XXX`.
+
+Matt’s virus tree simulator produces branch lengths in units of calendar time. These need to be translated into units of substitutions/site.
+
+Each transmission chain phylogeny has a long root branch dating to between 1945-1960 in order to select a starting sequence. The evolutionary rate for these root branches was set to the estimated overall mean evolutionary rate across all genes (2.2e-3 subst/site/year).
+
+Tip branches in each transmission chain phylogeny are modelled to evolve under a high within host rate. All other branches are part of transmission lineages and are modelled to evolve under a slower rate. Evolutionary rates are drawn independently for each individual from lognormal distributions with means 2.2e-3 subst/site/year (along transmission lineages) and 4.4e-3 subst/site/year (along tip branches). 32% of all branches are tip branches. This is specified with wher.mu=log(0.00447743)-0.3^2/2, wher.sigma=0.3, bwerm.mu=log(0.002239075)-0.13^2/2, bwerm.sigma=0.13 in the rPANGEAHIVsim.pipeline.args function.
+
+
+
+## Substitution model
+
+## Sequence sampling model
+
 
 A few ‘archival’ sequences are sampled for the period 1985 to 1999. Since 2000, sequences are more systematically sampled from infected individuals as part of HIV surveillance. Since 2015 until the end of the simulation, the population is more intensely sampled, with roughly the same number of sequences per year. Except of a few simulations, the sequence coverage of the HIV epidemic at the time point 2020.0 is below 10%. Sequence coverage may vary between some data sets. The number of sampled individuals is fixed to 1600 (or 3200 in a few data sets).
 
