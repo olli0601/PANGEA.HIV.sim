@@ -149,6 +149,9 @@ sim.regional.args<- function(	yr.start=1980, yr.end=2020, seed=42,
 		tmp			<- data.table(x=x, y5=Net(x, 1, 6.305779, -2), y4=Net(x, 1, 5.154461, -2), y3=Net(x, 1, 4.003191, -2), y2=Net(x, 1, 2.850242, -2), y1=Net(x, 1, 1.098685, -2))
 		tmp			<- melt(tmp, id.var='x')
 		ggplot(tmp, aes(x=x, y=value, group=variable, colour=variable)) + geom_line() + scale_y_log10(breaks=c(3e2,3e3,3e4,3e5)) + scale_x_continuous(breaks=seq(-20,10,1))
+		
+		ggplot(subset(tmp, variable=='y2'), aes(x=-x, y=value, group=variable)) + geom_line() + scale_y_continuous(breaks=c(1e2, 2e2, 3e2, 4e2), limits=c(0,4e2)) + scale_x_continuous(breaks=seq(-20,20,1)) + labs(x='\ntime since infection\n(years)',y='effective population size\n')
+		ggsave(file='~/git/PANGEA.HIV.sim/man/fig_EffPopSize.png', width=8, height=4)
 	}
 	#	plot increasing sampling fraction to choose pars
 	if(0)

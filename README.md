@@ -161,6 +161,9 @@ The pool of dated historical sequences is [available here](https://github.com/ol
 
 ## Dated viral phylogenies
 
+The topology of viral phylogenies does not necessarily correspond to the transmission tree, especially when viral infections persist 
+life-long (Pybus OG, Rambaut A, Nat Gen Rev 2009). To allow for such incongruencies, we used a particular within- and between host 
+coalescent model that is more fully described elsewhere (Didelot X, Gardy J, Colijn C, Mol Bio Evol 2014; Hall, MD PhD thesis 2015). 
 Starting with every index case, viral phylogenies with branch lengths in calendar time are generated through recursive 
 application of a neutral within-host coalescent model. The infection time of the index case is considered as root of the 
 within-host phylogeny of the index case, and any onward transmission events or sampling events as tips. 
@@ -171,7 +174,10 @@ within-host phylogenies are concatenated. The model assumes that a single transm
 the newly infected individual. The simulation produces a dated viral phylogeny that starts with the index case and ends 
 with all sampled inviduals in the same transmission chain. 
 
-Source code of the VirusTreeSimulator is available from XXX. NEED TO SAY THAT TREE neq transmission.
+The following figure shows the lognormal model of the within-host effective population size under default parameters:
+![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_EffPopSize.png)
+
+Source code of the VirusTreeSimulator was provided by Matthew Hall.
 
 ## Evolutionary rate model
 
