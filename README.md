@@ -224,16 +224,15 @@ By default, we used a mean evolutionary rate of `0.0022` that was estimated as a
 (Alizon S, Fraser C, J Retrov 2013; Vrancken B, Rambaut A, Suchard MA, et al., PLoS Comput Biol 2014). The standard deviations of the two log normal 
 rate sampling model were chosen so that sequence evolution was relatively clock-like. Specifically, the standard deviations were calibrated so that 
 a linear clock model explained about 30-40% of the variation in root-to-tip divergence. The default model parameters are 
-`wher.mu=log(0.00447743)-0.5^2/2`, `wher.sigma=0.5`, `bwerm.mu=log(0.002239075)-0.3^2/2`, `bwerm.sigma=0.3` on the log scale.
+`wher.mu=log(0.0044)-0.5^2/2`, `wher.sigma=0.5`, `bwerm.mu=log(0.0022)-0.3^2/2`, `bwerm.sigma=0.3` on the log scale. Note
+that the non-transmission lineages are the dead-end sub-clades within an individual that do not lead to onward transmission, but 
+along which a sequence was sampled. Since in the model only one sequence is obtained per individual, the non-transmission lineages are a
+certain part of the branch just below a tip. To calculate that part, the dated viral phylogeny in section 
+[Dated viral phylogenies](#dated-viral-phylogenies) is internally annotated with infection times along each branch.
 The following figure illustrates the resulting sampling model of evolutionary rates for transmission and non-transmission lineages under 
 the default parameters.
 
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_ERmodel.png" width="66%">
-
-
-Tip branches in each transmission chain phylogeny are modelled to evolve under a high within host rate. All other branches are part of transmission lineages and are modelled to evolve under a slower rate. Evolutionary rates are drawn independently for each individual from lognormal distributions with means 2.2e-3 subst/site/year (along transmission lineages) and 4.4e-3 subst/site/year (along tip branches). 32% of all branches are tip branches. This is specified with wher.mu=log(0.00447743)-0.3^2/2, wher.sigma=0.3, bwerm.mu=log(0.002239075)-0.13^2/2, bwerm.sigma=0.13 in the rPANGEAHIVsim.pipeline.args function.
-
-
 
 ## Substitution model
 
