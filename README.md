@@ -252,17 +252,16 @@ transmission lineages, stratified by gene and codon position, in a sample simula
 
 ## Substitution model
 
-Finally, using the assigned evolutionary rates, the branch lengths of the dated viral phylogeny were translated into the average 
-number of substitutions per site along each branch. 
+A GTR+Gamma substitution model was used to evolve the viral sequences along the viral phylogeny from the starting sequence. 
+Each codon and gene were considered separately.
+The average number of substitution per branch for each codon and gene were obtained by multiplying the branches in calendar time 
+by the respective evolutionary rates in section [Evolutionary rate model](#evolutionary-rate-model).
 
+The rate substitution parameters were obtained as a by-product of the BEAST run on 390 full genome subtype C sequences 
+for the pol gene (see section [Starting sequences](#starting-sequences)), and are shown in the figure below. 
+[SeqGen/1.3.3](https://github.com/rambaut/Seq-Gen) was used to perform the sequence simulation.
 
-Andrew’s SeqGen/1.3.3 is used to simulate sequences under a GTR+Tau4 model with no invariant sites. 
-The program was run independently for each transmission chain phylogeny, each gene and each codon position. For each run, SeqGen parameters are drawn from the posterior distribution of GTR model parameters that were estimated with BEAST (the same BEAST runs with which the ancestral sequences were generated). 
-
-For each run, gene and codon specific evolutionary rates were drawn from the BEAST relative rate parameters (mu’s).
-
-The underlying BEAST parameters were updated and fix several previous issues. Gag + Pol look good to me, and Env pool3 was excluded. The main issue with the previous BEAST run was that nucleotide frequencies were not fixed to the empirical ones. 
-
+<img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_GTR.png" width="66%">
 
 ## Sequence sampling model
 
