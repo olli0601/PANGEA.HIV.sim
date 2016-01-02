@@ -159,7 +159,8 @@ sub-Saharan Africa (Walker, Pybus, Rambaut, & Holmes, 2005).
 
 The following figure shows part of a simulated phylogeny under default parameters: a single starting sequence evolves into four sub-clades. 
 These four sub-clades correspond to four transmission chains after their introduction in the regional population. 
-The four sub-clades are connected with a root edge from the index case to the starting sequence.
+The four sub-clades are connected with a root edge from the index case to the starting sequence. Under default parameters, it is by design 
+easy to correctly identify sub-clades that correspond to distinct transmission chains. 
 
 ![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_viralintro.png)
 
@@ -177,15 +178,17 @@ The pool of dated historical sequences is [available here](https://github.com/ol
 The topology of viral phylogenies does not necessarily correspond to the transmission tree, especially when viral infections persist 
 life-long (Pybus OG, Rambaut A, Nat Gen Rev 2009). To allow for such incongruencies, we used a particular within- and between host 
 coalescent model that is more fully described elsewhere (Didelot X, Gardy J, Colijn C, Mol Bio Evol 2014; Hall, MD PhD thesis 2015). 
-Starting with every index case, viral phylogenies with branch lengths in calendar time are generated through recursive 
+
+Briefly, continuing with every index case, viral phylogenies with branch lengths in calendar time are generated through recursive 
 application of a neutral within-host coalescent model. The infection time of the index case is considered as root of the 
 within-host phylogeny of the index case, and any onward transmission events or sampling events as tips. 
-Infection and onward transmission times come from the epidemic simulation, and sampling events are described below. 
+Infection and onward transmission times are taken from the epidemic simulation, and sampling times are described further below. 
 Under these tip and date constrains, the within-host phylogeny of the index case is simulated assuming an increasing
 effective population size (lognormal model, parameters `v.N0tau`, `v.r`, `v.T50`). For each new infection, the process is repeated and the 
-within-host phylogenies are concatenated. The model assumes that a single transmitted virion leads to clinical infection of
-the newly infected individual. The simulation produces a dated viral phylogeny that starts with the index case and ends 
-with all sampled inviduals in the same transmission chain. 
+within-host phylogenies of newly infected individuals are concatenated to the corresponding transmission tips of their transmitter. 
+The model assumes that a single transmitted virion leads to clinical infection of
+the newly infected individual. For each index case, the simulation produces a dated viral phylogeny that is rooted at the index case and has as tips
+the sampling times of all individuals in the same transmission chain that are sampled.
 
 The following figure shows the lognormal model of the within-host effective population size under default 
 parameters `v.N0tau=1`, `v.r=2.851904`, `v.T50=-2`. These were chosen such that the initial population size is 1 and that 
@@ -193,7 +196,11 @@ the final effective population size is broadly similar to estimates typically ob
 
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_EffPopSize.png" width="66%">
 
-Source code of the VirusTreeSimulator was provided by Matthew Hall.
+Source code of the VirusTreeSimulator was provided by Matthew Hall. 
+The lognormal effective population size model is inheried from BEAST, `BEAST::LogisticGrowthN0`.
+Further details are [available here](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/VirusTreeSimulator_maths.pdf), 
+with time expressed as negative time since infection. 
+
 
 ## Evolutionary rate model
 
