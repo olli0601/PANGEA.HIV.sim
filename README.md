@@ -113,7 +113,8 @@ RECENT_TR           | Y if transmission occurred at most 6 months after diagnosi
 
 The model simulates viral phylogenies of sampled transmission chains in the regional population, as well as
 HIV sequences comprising the gag gene (from p17 start, length 1440 nt), the pol gene (from protease start, length 2844) 
-and the env gene (from TVA signal peptide start, length 2523, V loops excluded) of sampled individuals.
+and the env gene (from TVA signal peptide start, length 2523, V loops excluded) of sampled individuals. For simplicity,
+we refer to the concatenated gag, pol, env sequences as the full genome.
 
 The model comprises the following components, which are described in detail below:
 
@@ -265,10 +266,42 @@ for the pol gene (see section [Starting sequences](#starting-sequences)), and ar
 
 ## Sequence sampling model
 
+#### Sampling of historical sequences
 
-A few ‘archival’ sequences are sampled for the period 1985 to 1999. Since 2000, sequences are more systematically sampled from infected individuals as part of HIV surveillance. Since 2015 until the end of the simulation, the population is more intensely sampled, with roughly the same number of sequences per year. Except of a few simulations, the sequence coverage of the HIV epidemic at the time point 2020.0 is below 10%. Sequence coverage may vary between some data sets. The number of sampled individuals is fixed to 1600 (or 3200 in a few data sets).
+A number of historical sequences can be sampled at random from individuals that are infected during the period 1985 to 1999 
+(parameter `s.ARCHIVAL.n`). By default, we set `s.ARCHIVAL.n=50`.
 
-For some data sets, the simulated viral phylogenies are provided for each transmission chain with at least one sampled individual in file “*_DATEDTREE.newick”. Each transmission chain phylogeny is in newick format, one phylogeny per line. Tip names match to individual level identifiers in file “*_metadata.csv”. For the remaining data sets, simulated sequences are provided. Sequence names match to individual level identifiers in file “*_metadata.csv”.
+#### Sampling of sequences since 2000
+
+Since 2000, sequences were randomly sampled at time of diagnosis in proportion to the number of annual new diagnoses.
+The proportions of individuals sampled between 2000-2014 and 2015-2020 may differ from each other, and are controlled
+by two parameters. The first parameter is the total number of sequences sampled, `s.PREV.max.n`. The second parameter
+is the proportion of sampled sequences that are obtained after intervention start in 2015, `s.INTERVENTION.prop`. 
+
+
+
+Since 2015 until the end of the simulation, the population is more intensely sampled, with roughly the same number of sequences per year. 
+Except of a few simulations, the sequence coverage of the HIV epidemic at the time point 2020.0 is below 10%. 
+Sequence coverage may vary between some data sets. The number of sampled individuals is fixed to 1600 (or 3200 in a few data sets).
+
+
+s.INTERVENTION.start	
+Year in which the community intervention starts (default: 2015)
+
+s.INTERVENTION.mul	
+Deprecated
+
+	
+Total number of sequences sampled at random from infected individuals before 2000 (default: 50)
+
+s.MODEL	
+Sampling model to use (default: 'Fixed2Prop')
+
+s.PREV.max.n	
+Number of infected cases sampled (default: 1600; optional 3200)
+
+s.INTERVENTION.prop	
+Proportion of infected cases that are sampled from after intervention start (default: 0.5; optional 0.85)
 
 
 
