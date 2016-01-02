@@ -188,7 +188,9 @@ effective population size (lognormal model, parameters `v.N0tau`, `v.r`, `v.T50`
 within-host phylogenies of newly infected individuals are concatenated to the corresponding transmission tips of their transmitter. 
 The model assumes that a single transmitted virion leads to clinical infection of
 the newly infected individual. For each index case, the simulation produces a dated viral phylogeny that is rooted at the index case and has as tips
-the sampling times of all individuals in the same transmission chain that are sampled.
+the sampling times of all individuals in the same transmission chain that are sampled. 
+These phylogenies are all connected via the starting sequence as explained in section 
+[Viral introductions and seed sequences](#viral-introductions-and-seed-sequences), and printed to the file ending in `_DATEDTREE.newick`. 
 
 The following figure shows the lognormal model of the within-host effective population size under default 
 parameters `v.N0tau=1`, `v.r=2.851904`, `v.T50=-2`. These were chosen such that the initial population size is 1 and that 
@@ -204,19 +206,30 @@ with time expressed as negative time since infection.
 
 ## Evolutionary rate model
 
-To convert branch lengths from calendar times into substitutions per site, evolutionary rates are assigned to each branch. 
-Non-transmission lineages are assigned higher evolutionary rates than transmission lineages (Alizon & Fraser, 2013; Vrancken et al., 2014).
+Following the previous steps, the evolutionary model generates a dated viral phylogeny comprising sequences 
+of all sampled individuals in the regional population. To evolve sequences from the starting sequence along this phylogeny, 
+the branches need to be transformed from calendar times into substitutions per site.
+For this purpose, evolutionary rates are assigned to each branch. 
+Non-transmission lineages are assigned higher evolutionary rates than transmission lineages 
+(Alizon S, Fraser C, J Retrov 2013; Vrancken B, Rambaut A, Suchard MA, et al., PLoS Comput Biol 2014). 
+
 Evolutionary rates of non-transmission lineages are sampled from a log normal model with mean `wher.mu` and 
 standard deviation `wher.sigma` on the log scale. Evolutionary rates of transmission lineages are sampled from a 
-log normal model with mean `bwerm.mu` and standard deviation `bwerm.sigma` on the log scale. The following figure shows the
-evolutionary rate model for transmission and non-transmission lineages under default parameters `wher.mu=log(0.00447743)-0.5^2/2`, `wher.sigma=0.5`, 
-`bwerm.mu=log(0.002239075)-0.3^2/2`, `bwerm.sigma=0.3`. These were chosen such that XXX
+log normal model with mean `bwerm.mu` and standard deviation `bwerm.sigma` on the log scale. To reduce rate 
+variation, it is also -optionally- possible to set the evolutionary rate of the root edges below index cases to the mean
+evolutionary rate of transmission lineages with `root.edge.fixed=1`.
+
+By default, we used a mean evolutionary rate of `0.0022` that was estimated as a by-product of the BEAST run on 390 full genome subtype C sequences 
+(see section [Starting sequences](#starting-sequences)). The mean evolutionary rate of non-transmission lineages was set to twice this value 
+(Alizon S, Fraser C, J Retrov 2013; Vrancken B, Rambaut A, Suchard MA, et al., PLoS Comput Biol 2014). The standard deviations of the two log normal 
+rate sampling model were chosen so that sequence evolution was relatively clock-like. Specifically, the standard deviations were calibrated so that 
+a linear clock model explained about 30-40% of the variation in root-to-tip divergence. The default model parameters are 
+`wher.mu=log(0.00447743)-0.5^2/2`, `wher.sigma=0.5`, `bwerm.mu=log(0.002239075)-0.3^2/2`, `bwerm.sigma=0.3` on the log scale.
+The following figure illustrates the resulting sampling model of evolutionary rates for transmission and non-transmission lineages under 
+the default parameters.
 
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_ERmodel.png" width="66%">
 
-Optionally,
-
-Each transmission chain phylogeny has a long root branch dating to between 1945-1960 in order to select a starting sequence. The evolutionary rate for these root branches was set to the estimated overall mean evolutionary rate across all genes (2.2e-3 subst/site/year).
 
 Tip branches in each transmission chain phylogeny are modelled to evolve under a high within host rate. All other branches are part of transmission lineages and are modelled to evolve under a slower rate. Evolutionary rates are drawn independently for each individual from lognormal distributions with means 2.2e-3 subst/site/year (along transmission lineages) and 4.4e-3 subst/site/year (along tip branches). 32% of all branches are tip branches. This is specified with wher.mu=log(0.00447743)-0.3^2/2, wher.sigma=0.3, bwerm.mu=log(0.002239075)-0.13^2/2, bwerm.sigma=0.13 in the rPANGEAHIVsim.pipeline.args function.
 
