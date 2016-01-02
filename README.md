@@ -146,17 +146,20 @@ can be reconstructed from data.table `df.trms` (in file ending `_SIMULATED_INTER
 #### Seed sequences
 
 Each index case is assigned a seed sequence. The date associated with the sequence is either 1980.0 or, for viral introductions 
-after 1980, the time of infection of the index case. To assign seed sequences, the evolutionary model proceeds by default as follows. 
-One starting sequence is randomly sampled from a pool of pre-specified sequences from 1970 (see below). Root edges connect this
-starting sequence with each index case. With this approach, the phylogenies below each index case are all part of a well-defined tree.
-The date of the starting sequences is was chosen so that the estimated TMRCA of the simulated sequences is consistent with current 
-phylogenetic estimates of the origin of subtype C sequences in sub-Saharan Africa (Walker, Pybus, Rambaut, & Holmes, 2005). Optionally, 
-multiple starting sequences, each for one index case, can be randomly sampled from a pool of pre-specified sequences from 1970 
-(parameter `startseq.mode`). Optionally, the date of the starting sequences can be set further into the past (parameter `index.starttime.mode`).
+after 1980, the time of infection of the index case. To obtain a well-defined tree, the seed sequences are evolved from one 
+starting sequence (parameter `startseq.mode`). The starting sequence is randomly sampled from a pool of pre-specified sequences
+by date (parameter `index.starttime.mode`, see also next section). To begin constructing the simulated phylogeny, 
+the starting sequence is connected to each index case by a root edge. The length of the root edge is the time between 
+the date of the starting sequence and the time of viral introduction.
 
-The following figure shows part of a simulated phylogeny: a single starting sequence evolves into four sub-clades. These four sub-clades 
-correspond to four transmission chains after their introduction in the regional population. The four sub-clades are connected with a root edge
-from the index case to the starting sequence.
+By default, one starting sequence is sampled at random from pre-specified starting sequences from 1970 (`startseq.mode="one"`, 
+`index.starttime.mode="fix1970"`). The date of the starting sequence is chosen so that the estimated TMRCA of the simulated sequences 
+under a root-to-tip divergence plot is consistent with current phylogenetic estimates of the origin of subtype C sequences in 
+sub-Saharan Africa (Walker, Pybus, Rambaut, & Holmes, 2005).
+
+The following figure shows part of a simulated phylogeny under default parameters: a single starting sequence evolves into four sub-clades. 
+These four sub-clades correspond to four transmission chains after their introduction in the regional population. 
+The four sub-clades are connected with a root edge from the index case to the starting sequence.
 
 ![alt tag](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_viralintro.png)
 
