@@ -206,12 +206,14 @@ with time expressed as negative time since infection.
 
 ## Evolutionary rate model
 
+#### Overall evolutionary rates of transmission and non-transmission lineages
+
 Following the previous steps, the evolutionary model generates a dated viral phylogeny comprising sequences 
 of all sampled individuals in the regional population. To evolve sequences from the starting sequence along this phylogeny, 
 the branches need to be transformed from calendar times into substitutions per site.
 For this purpose, evolutionary rates are assigned to each branch. 
 Non-transmission lineages are assigned higher evolutionary rates than transmission lineages 
-(Alizon S, Fraser C, J Retrov 2013; Vrancken B, Rambaut A, Suchard MA, et al., PLoS Comput Biol 2014). 
+(Vrancken B, Rambaut A, Suchard MA, et al., PLoS Comput Biol 2014). 
 
 Evolutionary rates of non-transmission lineages are sampled from a log normal model with mean `wher.mu` and 
 standard deviation `wher.sigma` on the log scale. Evolutionary rates of transmission lineages are sampled from a 
@@ -220,7 +222,8 @@ variation, it is also -optionally- possible to set the evolutionary rate of the 
 evolutionary rate of transmission lineages with `root.edge.fixed=1`.
 
 By default, we used a mean evolutionary rate of `0.0022` that was estimated as a by-product of the BEAST run on 390 full genome subtype C sequences 
-(see section [Starting sequences](#starting-sequences)). The mean evolutionary rate of non-transmission lineages was set to twice this value 
+for the pol gene (see section [Starting sequences](#starting-sequences)). 
+The mean evolutionary rate of non-transmission lineages was set to twice this value 
 (Alizon S, Fraser C, J Retrov 2013; Vrancken B, Rambaut A, Suchard MA, et al., PLoS Comput Biol 2014). The standard deviations of the two log normal 
 rate sampling model were chosen so that sequence evolution was relatively clock-like. Specifically, the standard deviations were calibrated so that 
 a linear clock model explained about 30-40% of the variation in root-to-tip divergence. The default model parameters are 
@@ -234,7 +237,32 @@ the default parameters.
 
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_ERmodel.png" width="66%">
 
+
+#### Relative evolutionary rates by gene and codon
+
+The above default parameterisation corresponds to the overall rate of evolution of the pol gene.
+Relative rate multipliers were used to account for rate differences along codon position and the HIV gag, 
+pol and env genes (Alizon S, Fraser C, J Retrov 2013).
+
+The default rate multipliers were obtained as a by-product of the BEAST run on 390 full genome subtype C sequences 
+(see section [Starting sequences](#starting-sequences)). The following boxplots show the resulting evolutionary rates along
+transmission lineages, stratified by gene and codon position, in a sample simulation.
+
+<img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_geneEvolutionaryRates.png" width="66%">
+
 ## Substitution model
+
+Finally, using the assigned evolutionary rates, the branch lengths of the dated viral phylogeny were translated into the average 
+number of substitutions per site along each branch. 
+
+
+Andrew’s SeqGen/1.3.3 is used to simulate sequences under a GTR+Tau4 model with no invariant sites. 
+The program was run independently for each transmission chain phylogeny, each gene and each codon position. For each run, SeqGen parameters are drawn from the posterior distribution of GTR model parameters that were estimated with BEAST (the same BEAST runs with which the ancestral sequences were generated). 
+
+For each run, gene and codon specific evolutionary rates were drawn from the BEAST relative rate parameters (mu’s).
+
+The underlying BEAST parameters were updated and fix several previous issues. Gag + Pol look good to me, and Env pool3 was excluded. The main issue with the previous BEAST run was that nucleotide frequencies were not fixed to the empirical ones. 
+
 
 ## Sequence sampling model
 
