@@ -6,7 +6,7 @@ PANGEA.RootSeq.create.sampler.v2<- function(root.ctime.grace= 0.5, sample.grace=
 {	
 	#tree.id.labelsep		<- '|'
 	#tree.id.labelidx.ctime	<- 4
-	file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140902_n390_AncSeq.R')
+	file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140902_n390_AncSeq.R')
 	cat(paste('\nLoading starting sequences from file', file))
 	load(file)		#expect "anc.seq.gag"  "anc.seq.pol"  "anc.seq.env"  "anc.seq.info"
 	setkey(anc.seq.info, CALENDAR_TIME)
@@ -59,7 +59,7 @@ PANGEA.RootSeq.create.sampler.v1<- function(root.ctime.grace= 0.5, sample.grace=
 {	
 	#tree.id.labelsep		<- '|'
 	#tree.id.labelidx.ctime	<- 4
-	file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140811_n390_AncSeq.R')
+	file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140811_n390_AncSeq.R')
 	cat(paste('\nLoading starting sequences from file', file))
 	load(file)		#expect "anc.seq.gag"  "anc.seq.pol"  "anc.seq.env"  "anc.seq.info"
 	setkey(anc.seq.info, CALENDAR_TIME)
@@ -594,7 +594,7 @@ PANGEA.Seqsampler.SimulateGuideToSamplingTimes<- function(df.ind, seqtime.mode)
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.GTR.params.v2<- function()
 {		
-	file		<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140902_n390_BEASTlog.R')	
+	file		<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140902_n390_BEASTlog.R')	
 	cat(paste('\nreading GTR parameters from file',file))
 	load(file)	# expect log.df
 	#	exclude odd BEAST runs
@@ -618,7 +618,7 @@ PANGEA.GTR.params.v2<- function()
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.GTR.params.v1<- function()
 {	
-	file		<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140811_n390_BEASTlog.R')		
+	file		<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140811_n390_BEASTlog.R')		
 	cat(paste('\nreading GTR parameters from file',file))
 	load(file)	# expect log.df
 	log.df[, state:=NULL]
@@ -634,7 +634,7 @@ PANGEA.GTR.params.v1<- function()
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.GTR.params.v3<- function()
 {		
-	file		<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_BEASTlog.R')	
+	file		<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_BEASTlog.R')	
 	cat(paste('\nreading GTR parameters from file',file))
 	load(file)	# expect log.df
 	#	exclude odd BEAST runs
@@ -710,7 +710,7 @@ PANGEA.ImportSimulator.SimulateStartingTimeOfIndexCase<- function(df.ind, df.trm
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.RootSeq.create.sampler.v3<- function(root.ctime.grace= 0.5, sample.grace= 3)
 {	
-	file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_AncSeq.R')
+	file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_AncSeq.R')
 	cat(paste('\nLoading starting sequences from file', file))
 	load(file)		#expect "anc.seq.gag"  "anc.seq.pol"  "anc.seq.env"  "anc.seq.info"
 	setkey(anc.seq.info, CALENDAR_TIME)
@@ -843,7 +843,7 @@ prog.DSPS.input.parser.v2<- function()
 	verbose			<- 1
 	with.plot		<- 1	
 	pipeline.args	<- NULL
-	indir			<- system.file(package="rPANGEAHIVsim", "misc")	
+	indir			<- system.file(package="PANGEA.HIV.sim", "misc")	
 	outdir			<- '/Users/Oliver/git/HPTN071sim/tmp140911'
 	infile.trm		<- '140911_DSPS_RUN001_TRM.csv'
 	infile.args		<- NA
@@ -1353,7 +1353,7 @@ prog.HPTN071.input.parser.v2<- function()
 	verbose			<- 1
 	with.plot		<- 1	
 	pipeline.args	<- NULL
-	indir			<- system.file(package="rPANGEAHIVsim", "misc")
+	indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 	indir			<- ifelse(indir=='','/Users/Oliver/git/HPTN071sim/raw_trchain',indir)
 	outdir			<- '/Users/Oliver/git/HPTN071sim/tmp140908'
 	infile.ind		<- '140716_RUN001_IND.csv'
@@ -1525,7 +1525,7 @@ prog.HPTN071.input.parser.v3<- function()
 	verbose			<- 1
 	with.plot		<- 1	
 	pipeline.args	<- NULL
-	indir			<- system.file(package="rPANGEAHIVsim", "misc")
+	indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 	indir			<- ifelse(indir=='','/Users/Oliver/git/HPTN071sim/raw_trchain',indir)
 	outdir			<- '/Users/Oliver/git/HPTN071sim/tmp140908'
 	infile.ind		<- '140716_RUN001_IND.csv'
@@ -2599,7 +2599,7 @@ prog.PANGEA.SeqGen.run<- function()
 		#	create and plot NJ tree on conc seq
 		#			
 		#	load outgroup sequences
-		file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+		file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 		cat(paste('\nLoading outgroup seq from file', file))
 		load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"
 		#	concatenate sequences

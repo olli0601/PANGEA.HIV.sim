@@ -5,7 +5,7 @@ prog.hello<- function()
 {
 	print('hello')
 	
-	file	<- '/Users/Oliver/Library/R/2.15/library/rPANGEAHIVsim/libs/x86_64/rPANGEAHIVsim.so'
+	file	<- '/Users/Oliver/Library/R/2.15/library/PANGEA.HIV.sim/libs/x86_64/PANGEA.HIV.sim.so'
 	dyn.load(file)
 	is.loaded('seqgen')
 	argv	<- "-n1 -k1 -on -z42 -mGTR -a1 -g4 -i0 -s1 -f0.25,0.25,0.25,0.25 -r1,1,1,1,1,1 </Users/Oliver/git/HPTN071sim/tmp140914-3/SeqGen/140716_RUN001-3_911_POL_CP3.phy> /Users/Oliver/git/HPTN071sim/tmp140914-3/SeqGen/140716_RUN001-3_911_POL_CP3.seqgen"
@@ -926,7 +926,7 @@ project.PANGEA.TEST.SSApg.NJR2<- function()
 		cat(paste('\nLoading file', file))
 		load(file)		#expect "df.epi"    "df.trms"   "df.inds"   "df.sample" "df.seq"
 		#	load outgroup sequences
-		file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+		file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 		cat(paste('\nLoading outgroup seq from file', file))
 		load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"
 		
@@ -1012,7 +1012,7 @@ project.PANGEA.TEST.scenarios<- function()
 {	
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")		
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")		
 		infile.ind		<- '170914_HPTN071_scA_rep1'
 		infile.trm		<- '170914_HPTN071_scA_rep1'	
 		label			<- ''
@@ -1206,7 +1206,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	#
 	if(0)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -1257,7 +1257,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	#
 	if(0)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -1303,7 +1303,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	#
 	if(1)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -1343,7 +1343,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	#
 	if(1)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -1387,7 +1387,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	#
 	if(0)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -1428,7 +1428,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 	#
 	if(0)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I',
 				s.PREV.max=0.08, s.INTERVENTION.start=2015, s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -1538,7 +1538,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 		#
 		if(1)
 		{
-			indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+			indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 			pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2DiagB4I', report.prop.recent=1.0,
 					s.PREV.max=NA, s.INTERVENTION.prop=NA, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 					epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -1656,7 +1656,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 		#
 		if(1)
 		{
-			indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+			indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 			pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 					s.PREV.max.n=1600, s.INTERVENTION.prop=0.5, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 					epi.model='HPTN071', epi.dt=1/48, epi.import=0.05, root.edge.fixed=0,
@@ -1716,7 +1716,7 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 		#
 		if(1)
 		{			
-			indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+			indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 			pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 					s.PREV.max.n=1600, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 					epi.model='HPTN071', epi.dt=1/48, epi.import=0.05, root.edge.fixed=1,
@@ -1768,7 +1768,7 @@ project.PANGEA.treecomparison<- function()
 {		
 	if(1)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 				s.PREV.max.n=1600, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05, root.edge.fixed=1,
@@ -2626,7 +2626,7 @@ project.PANGEA.TEST.pipeline.Feb2015.final<- function()
 {	
 	if(0)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=NA, seed=NA, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 				s.PREV.max.n=NA, s.INTERVENTION.prop=NA, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 				epi.model='HPTN071', epi.dt=1/48, epi.import=NA, root.edge.fixed=0,
@@ -2741,7 +2741,7 @@ project.PANGEA.TEST.pipeline.Apr2015.Manon<- function()
 {	
 	if(0)
 	{
-		indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Prop2SuggestedSampling', report.prop.recent=1.0,
 				s.PREV.max=NA, s.INTERVENTION.start=2015, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.2, root.edge.fixed=0,
@@ -3698,7 +3698,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	#	with CD4
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -3728,7 +3728,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	#	with CD4, lower WH rate
 	if(1)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.20,
@@ -3761,7 +3761,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	#	with CD4, lower WH rate
 	if(1)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -3822,7 +3822,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	#	with CD4, no introductions after baseline for Leventhal et al
 	if(1)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0,
@@ -3883,7 +3883,7 @@ project.PANGEA.TEST.pipeline.November2014<- function()
 	#	with CD4, same WH rate for Suchard et al
 	if(1)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 				s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0, 
 				epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -4008,7 +4008,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 {	
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
@@ -4037,7 +4037,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	}
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
@@ -4065,7 +4065,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	}
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
@@ -4092,7 +4092,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	}							
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
@@ -4121,7 +4121,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	changed: transmission edge model; fixed: transmission edges are within transmitter
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
@@ -4148,7 +4148,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 												system(file)
 											}, by='label']
 		#	rerun: bug?? NOPE!
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		indir			<- ifelse(indir=='','/Users/Oliver/git/HPTN071sim/raw_trchain',indir)
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
@@ -4179,7 +4179,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	changed: only edges leading to tip are under within host evol (dead ends); added sdlog to transmission ER model; changed params to log scale
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '140716_RUN001'
 		infile.trm		<- '140716_RUN001'	
 		
@@ -4234,7 +4234,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	changed: time to seq limited to max 6 years instead of 35 ;-); sample fraction 10%
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '170914_HPTN071_scA_rep1'
 		infile.trm		<- '170914_HPTN071_scA_rep1'	
 		#	scenario 2* faster WH limited to 0.01 
@@ -4263,7 +4263,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	}
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '170914_HPTN071_scA_rep1'
 		infile.trm		<- '170914_HPTN071_scA_rep1'	
 		#	scenario 2* faster WH limited to 0.01 
@@ -4293,7 +4293,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	sense check on CoV
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			 
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4324,7 +4324,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	changed: ignore variation in meanRate by gene, added debug options
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			 
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4415,7 +4415,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	debug 11, no import 
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4449,7 +4449,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	debug 11, no import, index.starttime.mode=fix
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4483,7 +4483,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	debug 11, 10% import, index.starttime.mode=fix
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4517,7 +4517,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	debug 11, no import, index.starttime.mode=fix, no rate variation
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4551,7 +4551,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	debug 11, no import, index.starttime.mode=shift, no rate variation
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4585,7 +4585,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	debug 11, no import, same starting seq, index.starttime.mode=shift, no rate variation, 
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4616,7 +4616,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 					system(file)
 				}, by='label']
 		
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4651,7 +4651,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	#startseq=1, starttime~1960, k=4 (did not make a big difference), standard run, import 2.5% 5% GTR 00/11
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'			
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4726,7 +4726,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	bugfix in SeqGen NEWICK file
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'					
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4821,7 +4821,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	try and finalize simulations
 	if(0)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		infile.ind		<- '180914_HPTN071_scA_rep1'
 		infile.trm		<- '180914_HPTN071_scA_rep1'	
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
@@ -4962,7 +4962,7 @@ project.PANGEA.TEST.pipeline.October2014<- function()
 	#	final three on all scenarios
 	if(1)
 	{
-		indir			<- system.file(package="rPANGEAHIVsim", "misc")
+		indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 		pipeline.args	<- sim.regional.args( yr.start=1980, yr.end=2020, seed=42,
 														s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=NA, 
 														epi.model='HPTN071', epi.dt=1/48, epi.import=0.05,
@@ -5340,7 +5340,7 @@ project.PANGEA.TEST.CoClusteringAcute<- function()
 	#	NJ tree
 	#
 	#	load outgroup sequences
-	file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+	file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 	cat(paste('\nLoading outgroup seq from file', file))
 	load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"
 	
@@ -5396,7 +5396,7 @@ project.PANGEA.TEST.CoClusteringAcute<- function()
 project.PANGEA.TEST.Reproducible<- function()
 {	
 	#require(devtools)
-	#devtools::install("/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim")
+	#devtools::install("/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim")
 	#check time to coalescence in true dated tree
 	label.sep		<- '|'
 	label.idx.date	<- 4
@@ -5568,7 +5568,7 @@ project.PANGEA.TEST.SSApg.CLUSTERBEAST.extendedskyline<- function()
 	require(hivclust)
 	require(XML)
 	#	load outgroup sequences
-	file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+	file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 	cat(paste('\nLoading outgroup seq from file', file))
 	load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"	
 	
@@ -5582,14 +5582,14 @@ project.PANGEA.TEST.SSApg.CLUSTERBEAST.extendedskyline<- function()
 	infiles		<- list.files(indir, '.*INTERNAL.R$', full.names=FALSE)
 	#stopifnot(length(infiles)==1)
 	#	read BEAST template files	
-	infile.beast.pol	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTpol.xml')
+	infile.beast.pol	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTpol.xml')
 	bxml.template.polut	<- xmlTreeParse(infile.beast.pol, useInternalNodes=TRUE, addFinalizer = TRUE)
-	infile.beast.pol	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTpol_fixedtree.xml')
-	#infile.beast.pol	<- '~/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc/BEAST_template_vTESTpol_fixedtree.xml'
+	infile.beast.pol	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTpol_fixedtree.xml')
+	#infile.beast.pol	<- '~/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc/BEAST_template_vTESTpol_fixedtree.xml'
 	bxml.template.polft	<- xmlTreeParse(infile.beast.pol, useInternalNodes=TRUE, addFinalizer = TRUE)
-	infile.beast.gag	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTgag.xml')
+	infile.beast.gag	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTgag.xml')
 	bxml.template.gag	<- xmlTreeParse(infile.beast.gag, useInternalNodes=TRUE, addFinalizer = TRUE)
-	infile.beast.env	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTenv.xml')		
+	infile.beast.env	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTenv.xml')		
 	bxml.template.env	<- xmlTreeParse(infile.beast.env, useInternalNodes=TRUE, addFinalizer = TRUE)	
 	#
 	#	run  
@@ -5818,7 +5818,7 @@ project.PANGEA.TEST.SSApg.BEAST<- function()
 	require(hivclust)
 	require(XML)
 	#	load outgroup sequences
-	file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+	file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 	cat(paste('\nLoading outgroup seq from file', file))
 	load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"	
 	
@@ -5833,13 +5833,13 @@ project.PANGEA.TEST.SSApg.BEAST<- function()
 	infiles		<- list.files(indir, '.*INTERNAL.R$', full.names=FALSE)
 	#stopifnot(length(infiles)==1)
 	#	read BEAST template files	
-	infile.beast.pol	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTpol.xml')
+	infile.beast.pol	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTpol.xml')
 	bxml.template.polut	<- xmlTreeParse(infile.beast.pol, useInternalNodes=TRUE, addFinalizer = TRUE)
-	infile.beast.pol	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTpol_fixedtree.xml')
+	infile.beast.pol	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTpol_fixedtree.xml')
 	bxml.template.polft	<- xmlTreeParse(infile.beast.pol, useInternalNodes=TRUE, addFinalizer = TRUE)
-	infile.beast.gag	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTgag.xml')
+	infile.beast.gag	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTgag.xml')
 	bxml.template.gag	<- xmlTreeParse(infile.beast.gag, useInternalNodes=TRUE, addFinalizer = TRUE)
-	infile.beast.env	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTenv.xml')		
+	infile.beast.env	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTenv.xml')		
 	bxml.template.env	<- xmlTreeParse(infile.beast.env, useInternalNodes=TRUE, addFinalizer = TRUE)	
 	#
 	#	run  
@@ -6142,7 +6142,7 @@ project.PANGEA.TEST.SSApg.ExaMLR2<- function()
 		cat(paste('\nLoading file', file))
 		load(file)		#expect "df.epi"    "df.trms"   "df.inds"   "df.sample" "df.seq"
 		#	load outgroup sequences
-		file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+		file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 		cat(paste('\nLoading outgroup seq from file', file))
 		load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"
 		
@@ -7075,7 +7075,7 @@ project.PANGEA.RootSeqSim.DATA.checkRecombinants<- function()
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.SampleSeq.simulate<- function()
 {
-	indir			<- system.file(package="rPANGEAHIVsim", "misc")	
+	indir			<- system.file(package="PANGEA.HIV.sim", "misc")	
 	tmpdir.HPTN071	<- '/Users/Oliver/git/HPTN071sim/tmp140908'
 	infile.ind		<- '140716_RUN001_IND.csv'
 	infile.trm		<- '140716_RUN001_TRM.csv'	
@@ -7096,7 +7096,7 @@ pipeline.HPTN071<- function()
 {
 	stop()
 	#	example input files
-	indir			<- system.file(package="rPANGEAHIVsim", "misc")
+	indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 	indir			<- ifelse(indir=='','/Users/Oliver/git/HPTN071sim/raw_trchain',indir)
 	infile.ind		<- '140716_RUN001_IND.csv'
 	infile.trm		<- '140716_RUN001_TRM.csv'	

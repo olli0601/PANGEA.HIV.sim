@@ -53,7 +53,7 @@ if(verbose)
 }
 #	start script
 require(data.table)
-require(rPANGEAHIVsim)
+require(PANGEA.HIV.sim)
 if(!is.na(infile.args))
 {
 	load(infile.args)	#expect 'pipeline.args'

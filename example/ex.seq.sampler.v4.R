@@ -8,7 +8,7 @@
 ##	simulated population
 ##--------------------------------------------------------------------------------------------------------
 \dontrun{
-indir			<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/inst/misc'
+indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 #	re-name the following:
 tmpdir			<- '/Users/Oliver/git/HPTN071sim/tmp150201-scA'
 dir.create(tmpdir, showWarnings=FALSE)

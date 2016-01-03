@@ -234,7 +234,7 @@ prog.treecomparison.metrics<- function()
 #' \cr 
 #' Please see for model details \url{https://github.com/olli0601/PANGEA.HIV.sim}
 #' @import data.table 
-#' @param outdir			Output directory. Must have write access.
+#' @param outdir			Output directory. Must have write access. Directory name must not contain whitespace, brackets, etc
 #' @param pipeline.args		Input arguments for the simulation, in form of a \code{data.table}, see \code{\link{sim.regional.args}}.
 #' @return File name of qsub or UNIX batch file.  
 #' @seealso \code{\link{sim.regional.args}}

@@ -68,12 +68,12 @@ library(PANGEA.HIV.sim)
 
 This will show a first example on how to use the simulation code, followed by code to simulate the PANGEA-HIV 
 sequences data sets to address the primary objectives of the methods comparison exercise, and code to simulate 
-the PANGEA-HIV tree data sets to address the secondary objectives of the methods comparison exercise. To re-cap 
-the first example:
+the PANGEA-HIV tree data sets to address the secondary objectives of the methods comparison exercise. 
+To re-cap the first example:
 
 ```r
 library(PANGEA.HIV.sim)
-outdir          <- getwd()                                          #set to a new empty directory
+outdir          <- getwd()                                          #set to a new empty directory; dir name must not contain whitespace, brackets, etc
 pipeline.args	<- sim.regional.args( 	seed=42,                    #random number seed for reproducibility
                                         yr.end=2020,				#end of simulation
                                         s.PREV.max.n=1600,          #number of sequences

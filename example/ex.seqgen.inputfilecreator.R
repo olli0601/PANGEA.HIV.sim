@@ -13,7 +13,7 @@
 ##	Call SeqGen input file creator
 ##--------------------------------------------------------------------------------------------------------
 \dontrun{
-indir			<- system.file(package="rPANGEAHIVsim", "misc")
+indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 indir			<- ifelse(indir=='','/Users/Oliver/git/HPTN071sim/raw_trchain',indir)
 #	re-name the following:
 tmpdir			<- '/Users/Oliver/git/HPTN071sim/tmp140910'

@@ -441,7 +441,7 @@ hivc.beast2out.read.nexus.and.stats<- function(file, tree.id=NA, method.node.sta
 #' @return data.table
 PANGEA.GTR.params<- function()
 {		
-	file		<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_BEASTlog.R')	
+	file		<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_BEASTlog.R')	
 	cat(paste('\nreading GTR parameters from file',file))
 	load(file)	# expect log.df
 	#	exclude odd BEAST runs
@@ -1243,7 +1243,7 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 #' @return list of the sampler \code{rANCSEQ} and its arguments \code{rANCSEQ.args}
 PANGEA.RootSeq.create.sampler<- function(root.ctime.grace= 0.5, sample.grace= 3)
 {	
-	file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_AncSeq.R')
+	file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_AncSeq.R')
 	cat(paste('\nLoading starting sequences from file', file))
 	load(file)		#expect "anc.seq.gag"  "anc.seq.pol"  "anc.seq.env"  "anc.seq.info"
 	setkey(anc.seq.info, CALENDAR_TIME)
@@ -1326,7 +1326,7 @@ PANGEA.TransmissionEdgeEvolutionaryRate.create.sampler<- function(er.meanlog, er
 	}
 	if(0)
 	{
-		file		<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_BEASTlog.R')	
+		file		<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfgBwhRc-_140907_n390_BEASTlog.R')	
 		cat(paste('\nreading GTR parameters from file',file))
 		load(file)	# expect log.df
 		#	exclude odd BEAST runs
@@ -1878,16 +1878,6 @@ PANGEA.RootSeqSim.get.ancestral.seq.pg<- function(tree, node.stat, tree.id.sep='
 ##	olli originally written 18-09-2014
 ##	modified 17-01-2015
 ##--------------------------------------------------------------------------------------------------------
-#' @title Program to generate \code{SeqGen} input files
-#' @description The \code{prog.PANGEA.SeqGen.createInputFile} reads files from the virus tree simulator in directory \code{indir.vts} and writes input files for \code{SeqGen}
-#' to directory \code{outdir}. The program reads simulated transmission chain phylogenies with branches in units of calendar time
-#' for sampled and unsampled individuals in a transmission chain. Within host evolutionary rates are drawn from a distribution, and
-#' within host branch lengths are converted into the expected number of substitutions along the branch. Transmission branches are
-#' multiplied with a multiplier to allow for slower evolution between hosts. The multiplier is drawn from a distribution. Starting sequences
-#' are drawn from a pool of precomputed sequences. GTR parameters are drawn from a distribution. This is all that s needed to specify 
-#' the SeqGen input files for each transmission chain.
-#' @return NULL. Input to call SeqGen is stored in an R file.
-#' @example example/ex.seqgen.inputfilecreator.R
 #' @export
 PANGEA.SeqGen.createInputFile<- function(indir.epi, infile.epi, indir.vts, infile.prefix, outdir.sg, pipeline.args, verbose=1, with.plot=1, label.sep='|')
 {
@@ -2191,13 +2181,6 @@ PANGEA.SeqGen.createInputFile<- function(indir.epi, infile.epi, indir.vts, infil
 #	Program to simulate sequences with Seq-Gen-1.3.3 	
 #	olli originally written 27-01-2015
 ######################################################################################
-#' @title Program to simulate gene sequences
-#' @description \code{prog.PANGEA.SeqGen.run} reads file \code{infile.sg} in directory \code{indir.sg} that was
-#' created with the \code{SeqGen} input file creator. The simulated partial sequences are collected, coerced back
-#' into Gag, Pol, Env genes, and written in fasta format to directory \code{outdir}. Patient Metavariables are 
-#' stored in the same directory, and zip files are created.
-#' @return NULL. Saves zip files with simulations.
-#' @example example/ex.seqgen.run.R
 #' @export
 PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, outdir, pipeline.args)
 {	
@@ -2372,7 +2355,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 		#	create and plot NJ tree on conc seq
 		#			
 		#	load outgroup sequences
-		file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+		file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 		cat(paste('\nLoading outgroup seq from file', file))
 		load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"
 		if(nrow(df.seq)<2000)
@@ -2449,6 +2432,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 ##--------------------------------------------------------------------------------------------------------
 ##	olli originally written 26-01-2015
 ##--------------------------------------------------------------------------------------------------------
+#' @export 
 PANGEA.HPTN071.input.parser.v4<- function(indir, infile.ind, infile.trm, outdir, outfile.ind, outfile.trm, pipeline.args, verbose=1, with.plot=1)	
 {			
 	stopifnot( all( c('yr.start', 'yr.end', 's.seed', 's.PREV.min', 's.PREV.max', 'epi.dt', 'epi.import')%in%pipeline.args[, stat] ) )

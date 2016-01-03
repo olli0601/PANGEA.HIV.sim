@@ -2,7 +2,7 @@
 ##	example pipeline to simulate sequences for a given DSPS epi simulation  
 ##--------------------------------------------------------------------------------------------------------
 \dontrun{
-indir			<- system.file(package="rPANGEAHIVsim", "misc")
+indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 #	re-name the following:
 tmpdir			<- '/Users/Oliver/git/HPTN071sim/tmp140912'
 dir.create(tmpdir, showWarnings=FALSE)

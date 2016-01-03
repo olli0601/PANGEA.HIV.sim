@@ -1,7 +1,7 @@
-PR.PACKAGE					<- "rPANGEAHIVsim"
+PR.PACKAGE					<- "PANGEA.HIV.sim"
 #PR.STARTME					<- system.file(package=PR.PACKAGE, "misc", "rPANGEAHIV.startme.R")
-PR.STARTME					<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/misc/rPANGEAHIV.startme.R'
-#PR.STARTME					<- '/work/or105/libs/HPTN071sim/source/rPANGEAHIVsim/misc/rPANGEAHIV.startme.R'
+PR.STARTME					<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/misc/rPANGEAHIV.startme.R'
+#PR.STARTME					<- '/work/or105/libs/HPTN071sim/source/PANGEA.HIV.sim/misc/rPANGEAHIV.startme.R'
 PR.HPTN071.INPUT.PARSER4	<- paste('Rscript',system.file(package=PR.PACKAGE, "HPTN071.input.parser.v4.Rscript"),sep=' ')
 PR.SEQGEN.FILECREATOR		<- paste('Rscript',system.file(package=PR.PACKAGE, "PANGEA.SeqGen.createInputFile.Rscript"),sep=' ')
 PR.SEQGEN.SIMULATOR			<- paste('Rscript',system.file(package=PR.PACKAGE, "PANGEA.SeqGen.run.v4.Rscript"),sep=' ')

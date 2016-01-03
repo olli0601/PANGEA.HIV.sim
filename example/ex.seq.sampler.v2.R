@@ -8,7 +8,7 @@
 ##	simulated population
 ##--------------------------------------------------------------------------------------------------------
 \dontrun{
-indir			<- system.file(package="rPANGEAHIVsim", "misc")
+indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 #	re-name the following:
 tmpdir			<- '/Users/Oliver/git/HPTN071sim/HscABase140920'
 dir.create(tmpdir, showWarnings=FALSE)

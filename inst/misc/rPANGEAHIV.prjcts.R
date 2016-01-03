@@ -904,7 +904,7 @@ project.PANGEA.TEST.SSApg.NJR2<- function()
 	cat(paste('\nLoading file', file))
 	load(file)		#expect "df.epi"    "df.trms"   "df.inds"   "df.sample" "df.seq"
 	#	load outgroup sequences
-	file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+	file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 	cat(paste('\nLoading outgroup seq from file', file))
 	load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"
 	
@@ -987,7 +987,7 @@ project.PANGEA.TEST.SSApg.NJR2<- function()
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.TEST.pipeline<- function()
 {	
-	indir			<- system.file(package="rPANGEAHIVsim", "misc")
+	indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 	indir			<- ifelse(indir=='','/Users/Oliver/git/HPTN071sim/raw_trchain',indir)
 	infile.ind		<- '140716_RUN001'
 	infile.trm		<- '140716_RUN001'	
@@ -1034,7 +1034,7 @@ project.PANGEA.TEST.SSApg.BEAST<- function()
 	infiles		<- list.files(indir, '.*INTERNAL.R$', full.names=FALSE)
 	#stopifnot(length(infiles)==1)
 	#	read BEAST template files	
-	infile.beast.pol	<- system.file(package="rPANGEAHIVsim", "misc",'BEAST_template_vTESTpol.xml')
+	infile.beast.pol	<- system.file(package="PANGEA.HIV.sim", "misc",'BEAST_template_vTESTpol.xml')
 	bxml.template.pol	<- xmlTreeParse(infile.beast.pol, useInternalNodes=TRUE, addFinalizer = TRUE)
 	#infile.beast.gag	<- '/Users/Oliver/git/HPTN071sim/data_rootseq/BEAST_template_v10gag.xml'
 	#infile.beast.env	<- '/Users/Oliver/git/HPTN071sim/data_rootseq/BEAST_template_v10env.xml'
@@ -1051,7 +1051,7 @@ project.PANGEA.TEST.SSApg.BEAST<- function()
 		cat(paste('\nLoading file', file))
 		load(file)		#expect "df.epi"    "df.trms"   "df.inds"   "df.sample" "df.seq"
 		#	load outgroup sequences
-		file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+		file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 		cat(paste('\nLoading outgroup seq from file', file))
 		load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"
 		#	concatenate sequences
@@ -1151,7 +1151,7 @@ project.PANGEA.TEST.SSApg.ExaMLR2<- function()
 		cat(paste('\nLoading file', file))
 		load(file)		#expect "df.epi"    "df.trms"   "df.inds"   "df.sample" "df.seq"
 		#	load outgroup sequences
-		file			<- system.file(package="rPANGEAHIVsim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
+		file			<- system.file(package="PANGEA.HIV.sim", "misc",'PANGEA_SSAfg_HXB2outgroup.R')
 		cat(paste('\nLoading outgroup seq from file', file))
 		load(file)		#expect "outgroup.seq.gag" "outgroup.seq.pol" "outgroup.seq.env"
 		
@@ -2015,7 +2015,7 @@ project.PANGEA.RootSeqSim.DATA.checkRecombinants<- function()
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.SampleSeq.simulate<- function()
 {
-	indir			<- system.file(package="rPANGEAHIVsim", "misc")	
+	indir			<- system.file(package="PANGEA.HIV.sim", "misc")	
 	tmpdir.HPTN071	<- '/Users/Oliver/git/HPTN071sim/tmp140908'
 	infile.ind		<- '140716_RUN001_IND.csv'
 	infile.trm		<- '140716_RUN001_TRM.csv'	
@@ -2036,7 +2036,7 @@ pipeline.HPTN071<- function()
 {
 	stop()
 	#	example input files
-	indir			<- system.file(package="rPANGEAHIVsim", "misc")
+	indir			<- system.file(package="PANGEA.HIV.sim", "misc")
 	indir			<- ifelse(indir=='','/Users/Oliver/git/HPTN071sim/raw_trchain',indir)
 	infile.ind		<- '140716_RUN001_IND.csv'
 	infile.trm		<- '140716_RUN001_TRM.csv'	
