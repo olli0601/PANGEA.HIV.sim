@@ -68,11 +68,25 @@ library(PANGEA.HIV.sim)
 
 This will show a first example on how to use the simulation code, followed by code to simulate the PANGEA-HIV 
 sequences data sets to address the primary objectives of the methods comparison exercise, and code to simulate 
-the PANGEA-HIV tree data sets to address the secondary objectives of the methods comparison exercise.
+the PANGEA-HIV tree data sets to address the secondary objectives of the methods comparison exercise. To re-cap 
+the first example:
+
+```r
+library(PANGEA.HIV.sim)
+outdir          <- getwd()                                          #set to a new empty directory
+pipeline.args	<- sim.regional.args( 	seed=42,                    #random number seed for reproducibility
+                                        yr.end=2020,				#end of simulation
+                                        s.PREV.max.n=1600,          #number of sequences
+                                        s.INTERVENTION.prop=0.5,    #proportion of sampled sequences after intervention start in 2015
+                                        epi.acute='high',           #frequency of early infections (high or low)
+                                        epi.intervention='fast',    #intervention scale-up (none, slow or high)
+                                        epi.import=0.05 )			#proportion of transmissions from outside the regional population
+cat(sim.regional(outdir, pipeline.args=pipeline.args))
+```
 
 #### Output of the simulation
 
-One simulation produces the following files:
+###### Output files
 
 *File name*             | *Description*
 ------------------------|--------------------
@@ -255,7 +269,7 @@ the default parameters. These parameters were not changed during the PANGEA simu
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_ERmodel.png" width="66%">
 
 
-#### Relative evolutionary rates by gene and codon
+#### Relative evolutionary rates by gene and codon position
 
 The above default parameterisation corresponds to the overall rate of evolution of the pol gene.
 Relative rate multipliers were used to account for rate differences along codon position and the HIV gag, 

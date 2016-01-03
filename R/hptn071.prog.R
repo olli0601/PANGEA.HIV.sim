@@ -70,7 +70,7 @@ prog.PANGEA.AddGaps.run.v1<- function()
 #' @description Set all input arguments to the simulation. Please see for model details \url{https://github.com/olli0601/PANGEA.HIV.sim}
 #' @seealso \code{\link{sim.regional}}
 #' @import data.table
-#' @param yr.start				Start year of the epi simulation (default: 1980)
+#' @param yr.start				Start year of the epi simulation (default: 1985)
 #' @param yr.end				First year after the epi simulation (default: 2020; optional 2018)
 #' @param seed					Random number seed (default: 42; optional integer)
 #' @param s.MODEL				Sampling model to use (default: 'Fixed2Prop')
@@ -106,17 +106,17 @@ prog.PANGEA.AddGaps.run.v1<- function()
 #' @param dbg.rER				Use mean evolutionary rate instead of samples from empirical prior (default: 0, optional 1)
 #' @return data.table with columns 'stat' (name of input argument) and 'v' (value of input argument).
 #' @export
-sim.regional.args<- function(	yr.start=1980, yr.end=2020, seed=42,										
-										s.INC.recent=0.1, s.INC.recent.len=5, s.PREV.min=0.01, s.PREV.max=0.25, s.PREV.base=exp(1), s.INTERVENTION.start=2015, 
-										s.INTERVENTION.mul= 2, s.ARCHIVAL.n=50, s.MODEL='Prop2DiagB4I', s.PREV.max.n=NA, s.INTERVENTION.prop=NA,
-										epi.model='HPTN071', epi.acute='high', epi.intervention='fast', epi.dt=1/48, epi.import=0.1, root.edge.fixed=0,
-										v.N0tau=3.58e4, v.r=2, v.T50=-1,
-										wher.mu=0.005, wher.sigma=0.8,
-										bwerm.mu=1.5, bwerm.sigma=0.12, er.gamma=4, 
+sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,										
+										s.INC.recent=NA, s.INC.recent.len=NA, s.PREV.min=NA, s.PREV.max=NA, s.PREV.base=NA, s.INTERVENTION.start=2015, 
+										s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50, s.MODEL='Fixed2Prop', s.PREV.max.n=1600, s.INTERVENTION.prop=0.5,
+										epi.model='HPTN071', epi.acute='high', epi.intervention='fast', epi.dt=1/48, epi.import=0.05, root.edge.fixed=0,
+										v.N0tau=1, v.r=2.851904, v.T50=-2,
+										wher.mu=log(0.00447743)-0.5^2/2, wher.sigma=0.5,
+										bwerm.mu=log(0.002239075)-0.3^2/2, bwerm.sigma=0.3, er.gamma=4, 
 										sp.prop.of.sexactive= 0.05, 
-										report.prop.recent=0.2,
+										report.prop.recent=1.0,
 										dbg.GTRparam=0, dbg.rER=0, 
-										index.starttime.mode='normal', startseq.mode='many', seqtime.mode='Gamma9')									
+										index.starttime.mode='fix1970', startseq.mode='one', seqtime.mode='AtDiag')									
 {
 	#explore within host Neff*tau model to choose pars
 	if(0)

@@ -4,36 +4,15 @@ outdir			<- '/Users/Oliver/duke/2015_various'
 ##--------------------------------------------------------------------------------------------------------
 ##	first example  
 ##--------------------------------------------------------------------------------------------------------
-#	input arguments for the simulation
-pipeline.args	<- sim.regional.args( 	yr.start=1985, 
-					yr.end=2020, 
-					seed=42, 
-					s.MODEL='Fixed2Prop', 
-					report.prop.recent=1.0,
-					s.PREV.max.n=1600, 
-					s.INTERVENTION.prop=0.5, 
-					s.INTERVENTION.start=2015, 
-					s.INTERVENTION.mul=NA, 
-					s.ARCHIVAL.n=50,
-					epi.model='HPTN071', 
-					epi.acute='high', 
-					epi.intervention='fast', 
-					epi.dt=1/48, 
-					epi.import=0.05, 
-					root.edge.fixed=0,
-					v.N0tau=1, 
-					v.r=2.851904, 
-					v.T50=-2,
-					wher.mu=log(0.00447743)-0.5^2/2, 
-					wher.sigma=0.5, 
-					bwerm.mu=log(0.002239075)-0.3^2/2, 
-					bwerm.sigma=0.3, 
-					er.gamma=4,
-					dbg.GTRparam=0, 
-					dbg.rER=0, 
-					index.starttime.mode='fix1970', 
-					startseq.mode='one', 
-					seqtime.mode='AtDiag')									
+#	input arguments for the simulation that are varied across the PANGEA data sets
+pipeline.args	<- sim.regional.args( 	seed=42,                    #random number seed for reproducibility
+					yr.end=2020,				#end of simulation
+					s.PREV.max.n=1600,          #number of sequences
+					s.INTERVENTION.prop=0.5,    #proportion of sampled sequences after intervention start in 2015
+					epi.acute='high',           #frequency of early infections (high or low)
+					epi.intervention='fast',    #intervention scale-up (none, slow or high)
+					epi.import=0.05 )			#proportion of transmissions from outside the regional population
+cat(sim.regional(outdir, pipeline.args=pipeline.args))									
 #	produce UNIX script to generate the simulation
 cat(sim.regional(outdir, pipeline.args=pipeline.args))
 #	now run this script from the command line
