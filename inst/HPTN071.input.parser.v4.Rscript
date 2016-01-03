@@ -4,6 +4,7 @@ if(!any(args=='--args'))
 if(any(args=='--args'))
 	args<- args[-(1:match("--args", args)) ]
 #	default args
+debug			<- 0
 verbose			<- 1
 with.plot		<- 1	
 pipeline.args	<- NULL
@@ -61,7 +62,6 @@ if(debug)
 	infile.args		<- "/Users/Oliver/duke/2015_various/150129_HPTN071_scHF_PipeArgs.R"
 	outfile.ind		<- "150129_HPTN071_scHF_IND.csv"
 	outfile.trm		<- "150129_HPTN071_scHF_TRM.csv"
-	
 }
 #	start script
 require(data.table)

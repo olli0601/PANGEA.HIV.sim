@@ -309,10 +309,9 @@ Since 2000, sequences were randomly sampled at time of diagnosis in proportion t
 The proportions of individuals sampled between 2000-2014 and 2015-2020 may differ from each other, and are controlled
 by two parameters. The first parameter is the total number of sequences sampled, `s.PREV.max.n`. The second parameter
 is the proportion of sampled sequences that are obtained after intervention start in 2015, `s.INTERVENTION.prop`. 
-Column `s.nTOTAL` of data.table `df.sample` 
-(in file ending `_SIMULATED_INTERNAL.R`) lists the number of sampled sequences per year, and column `SCOV` in the same data.table
-lists the sequence coverage among infected and alive individuals by year.
 The sampling duration after start of the intervention can be set with `yr.end`.
+Column `s.nTOTAL` of data.table `df.sample` (in file ending `_SIMULATED_INTERNAL.R`) lists the number of sampled sequences per year, 
+and column `SCOV` in the same data.table lists the sequence coverage among infected and alive individuals by year.
 Note this model assumes that all individuals are equally likely sampled.
 
 By default, we set `s.PREV.max.n=1600`, `s.INTERVENTION.prop=0.5` and `yr.end=2020`, which yields a sampling coverage of 8-10% by 
