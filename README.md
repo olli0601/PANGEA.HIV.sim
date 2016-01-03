@@ -81,7 +81,7 @@ pipeline.args	<- sim.regional.args( 	seed=42,                    #random number 
                                         epi.acute='high',           #frequency of early infections (high or low)
                                         epi.intervention='fast',    #intervention scale-up (none, slow or high)
                                         epi.import=0.05 )			#proportion of transmissions from outside the regional population
-cat(sim.regional(outdir, pipeline.args=pipeline.args))
+cat(sim.regional(outdir, pipeline.args=pipeline.args))              #run this script from the command line
 ```
 
 #### Output of the simulation
@@ -214,7 +214,7 @@ application of a neutral within-host coalescent model. The infection time of the
 within-host phylogeny of the index case, and any onward transmission events or sampling events as tips. 
 Infection and onward transmission times are taken from the epidemic simulation, and sampling times are described further below. 
 Under these tip and date constrains, the within-host phylogeny of the index case is simulated assuming an increasing
-effective population size (lognormal model, parameters `v.N0tau`, `v.r`, `v.T50`). For each new infection, the process is repeated and the 
+effective population size (logistic model, parameters `v.N0tau`, `v.r`, `v.T50`). For each new infection, the process is repeated and the 
 within-host phylogenies of newly infected individuals are concatenated to the corresponding transmission tips of their transmitter. 
 The model assumes that a single transmitted virion leads to clinical infection of
 the newly infected individual. For each index case, the simulation produces a dated viral phylogeny that is rooted at the index case and has as tips
@@ -222,7 +222,7 @@ the sampling times of all individuals in the same transmission chain that are sa
 These phylogenies are all connected via the starting sequence as explained in section 
 [Viral introductions and seed sequences](#viral-introductions-and-seed-sequences), and printed to the file ending in `_DATEDTREE.newick`. 
 
-The following figure shows the lognormal model of the within-host effective population size under default 
+The following figure shows the logistic model of the within-host effective population size under default 
 parameters `v.N0tau=1`, `v.r=2.851904`, `v.T50=-2`. These were chosen such that the initial population size is 1 and that 
 the final effective population size is broadly similar to estimates typically obtained with a BEAST Skyline model.
 These parameters were not changed during the PANGEA simulations.
@@ -230,7 +230,7 @@ These parameters were not changed during the PANGEA simulations.
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_EffPopSize.png" width="66%">
 
 Source code of the VirusTreeSimulator was provided by Matthew Hall. 
-The lognormal effective population size model is inheried from BEAST, `BEAST::LogisticGrowthN0`.
+The logistic effective population size model is inheried from BEAST, `BEAST::LogisticGrowthN0`.
 Further details are [available here](https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/VirusTreeSimulator_maths.pdf), 
 with time expressed as negative time since infection. 
 
@@ -309,31 +309,18 @@ Since 2000, sequences were randomly sampled at time of diagnosis in proportion t
 The proportions of individuals sampled between 2000-2014 and 2015-2020 may differ from each other, and are controlled
 by two parameters. The first parameter is the total number of sequences sampled, `s.PREV.max.n`. The second parameter
 is the proportion of sampled sequences that are obtained after intervention start in 2015, `s.INTERVENTION.prop`. 
+Column `s.nTOTAL` of data.table `df.sample` 
+(in file ending `_SIMULATED_INTERNAL.R`) lists the number of sampled sequences per year, and column `SCOV` in the same data.table
+lists the sequence coverage among infected and alive individuals by year.
+The sampling duration after start of the intervention can be set with `yr.end`.
+Note this model assumes that all individuals are equally likely sampled.
+
+By default, we set `s.PREV.max.n=1600`, `s.INTERVENTION.prop=0.5` and `yr.end=2020`, which yields a sampling coverage of 8-10% by 
+the end of the simulation. With these parameters, sequence coverage increases fast after the start of the intervention.
+Optionally, we also used `s.PREV.max.n=1280` (in conjunction with a sampling duration of 3 years), 
+`s.PREV.max.n=3200` and `s.INTERVENTION.prop=0.85`. 
 
 
-
-Since 2015 until the end of the simulation, the population is more intensely sampled, with roughly the same number of sequences per year. 
-Except of a few simulations, the sequence coverage of the HIV epidemic at the time point 2020.0 is below 10%. 
-Sequence coverage may vary between some data sets. The number of sampled individuals is fixed to 1600 (or 3200 in a few data sets).
-
-
-s.INTERVENTION.start	
-Year in which the community intervention starts (default: 2015)
-
-s.INTERVENTION.mul	
-Deprecated
-
-	
-Total number of sequences sampled at random from infected individuals before 2000 (default: 50)
-
-s.MODEL	
-Sampling model to use (default: 'Fixed2Prop')
-
-s.PREV.max.n	
-Number of infected cases sampled (default: 1600; optional 3200)
-
-s.INTERVENTION.prop	
-Proportion of infected cases that are sampled from after intervention start (default: 0.5; optional 0.85)
 
 
 

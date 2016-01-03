@@ -73,32 +73,32 @@ prog.PANGEA.AddGaps.run.v1<- function()
 #' @param yr.start				Start year of the epi simulation (default: 1985)
 #' @param yr.end				First year after the epi simulation (default: 2020; optional 2018)
 #' @param seed					Random number seed (default: 42; optional integer)
-#' @param s.MODEL				Sampling model to use (default: 'Fixed2Prop')
+#' @param s.MODEL				Sampling model to use (default: 'Fixed2Prop'). See \url{https://github.com/olli0601/PANGEA.HIV.sim#sequence-sampling-model}.
 #' @param s.INC.recent			Deprecated
 #' @param s.INC.recent.len		Deprecated 
 #' @param s.PREV.min			Deprecated
 #' @param s.PREV.max			Deprecated
-#' @param s.PREV.max.n			Number of infected cases sampled (default: 1600; optional 3200)
-#' @param s.INTERVENTION.prop	Proportion of infected cases that are sampled from after intervention start (default: 0.5; optional 0.85)
-#' @param s.INTERVENTION.start	Year in which the community intervention starts (default: 2015)
+#' @param s.PREV.max.n			Number of infected cases sampled (default: 1600; optional 3200). See \url{https://github.com/olli0601/PANGEA.HIV.sim#sequence-sampling-model}.
+#' @param s.INTERVENTION.prop	Proportion of infected cases that are sampled from after intervention start (default: 0.5; optional 0.85). See \url{https://github.com/olli0601/PANGEA.HIV.sim#sequence-sampling-model}.
+#' @param s.INTERVENTION.start	Year in which the community intervention starts (default: 2015). See \url{https://github.com/olli0601/PANGEA.HIV.sim#sequence-sampling-model}.
 #' @param s.INTERVENTION.mul	Deprecated
-#' @param s.ARCHIVAL.n			Total number of sequences sampled at random from infected individuals before 2000 (default: 50)
-#' @param seqtime.mode			Time at which sequences are sampled (default: 'AtDiag')
+#' @param s.ARCHIVAL.n			Total number of sequences sampled at random from infected individuals before 2000 (default: 50). See \url{https://github.com/olli0601/PANGEA.HIV.sim#sequence-sampling-model}.
+#' @param seqtime.mode			Time at which sequences are sampled (default: 'AtDiag'). See \url{https://github.com/olli0601/PANGEA.HIV.sim#sequence-sampling-model}.
 #' @param epi.model				The epi model used to create the epi simulation (default: 'HPTN071')
 #' @param epi.acute				The proportion of transmissions in 2015 from individuals in their first three months of infection (default: 'high'/40\%, optional: 'low'/10\%)
 #' @param epi.intervention		The scale of the intervention package (default:'fast', optional: 'slow', 'none')				 
 #' @param epi.dt				Time increment of the epi simulation (default: 1/48, this is fixed to the underlying epidemic simulation)
-#' @param epi.import			Proportion of viral introductions amongst new cases per year (default: 0.05, optional: 0.2)
-#' @param root.edge.fixed		Fix evolutionary rate of root edges of new lineages in the population to mean evolutionary rate (default: 1, optional: 0) 
-#' @param v.N0tau				Within host effective population size at time of infection, parameter BEAST::LogisticGrowthN0::N0 (default 1) 
-#' @param v.r					Parameter of BEAST::LogisticGrowthN0::r (default 2.851904)
-#' @param v.T50					Parameter of BEAST::LogisticGrowthN0::T50 (default -2)
-#' @param wher.mu				Mean of within host evolutionary rate (default: log(0.00447743)-0.5^2/2)
-#' @param wher.sigma			Standard deviation of within host evolutionary (default: 0.5)
-#' @param bwerm.mu				Mean of between host evolutionary rate (default: log(0.002239075)-0.3^2/2)
-#' @param bwerm.sigma			Standard deviation of between host evolutionary rate (default: 0.3)
-#' @param startseq.mode			Number of different starting sequences (default: 'one', optional 'many')
-#' @param index.starttime.mode	Sampling distribution of sampling times of starting sequences (default: 'fix1970', optional 'fix19XX' where XX between 45-79, 'normal' meaning Normal(1955,7))
+#' @param epi.import			Proportion of viral introductions amongst new cases per year (default: 0.05, optional: 0.2). See \url{https://github.com/olli0601/PANGEA.HIV.sim#viral-introductions}.
+#' @param root.edge.fixed		Fix evolutionary rate of root edges of new lineages in the population to mean evolutionary rate (default: 1, optional: 0). See \url{https://github.com/olli0601/PANGEA.HIV.sim#overall-evolutionary-rates-of-transmission-and-non-transmission-lineages}. 
+#' @param v.N0tau				Within host effective population size at time of infection (default 1). See \url{https://github.com/olli0601/PANGEA.HIV.sim#dated-viral-phylogenies}. 
+#' @param v.r					Parameter logistic growth model (default 2.851904). See \url{https://github.com/olli0601/PANGEA.HIV.sim#dated-viral-phylogenies}.
+#' @param v.T50					Parameter logistic growth model (default -2). See \url{https://github.com/olli0601/PANGEA.HIV.sim#dated-viral-phylogenies}.
+#' @param wher.mu				Mean of within host evolutionary rate (default: log(0.00447743)-0.5^2/2). See \url{https://github.com/olli0601/PANGEA.HIV.sim#overall-evolutionary-rates-of-transmission-and-non-transmission-lineages}.
+#' @param wher.sigma			Standard deviation of within host evolutionary (default: 0.5). See \url{https://github.com/olli0601/PANGEA.HIV.sim#overall-evolutionary-rates-of-transmission-and-non-transmission-lineages}.
+#' @param bwerm.mu				Mean of between host evolutionary rate (default: log(0.002239075)-0.3^2/2). See \url{https://github.com/olli0601/PANGEA.HIV.sim#overall-evolutionary-rates-of-transmission-and-non-transmission-lineages}.
+#' @param bwerm.sigma			Standard deviation of between host evolutionary rate (default: 0.3). See \url{https://github.com/olli0601/PANGEA.HIV.sim#overall-evolutionary-rates-of-transmission-and-non-transmission-lineages}.
+#' @param startseq.mode			Number of different starting sequences (default: 'one', optional 'many'). See \url{https://github.com/olli0601/PANGEA.HIV.sim#seed-sequences}.
+#' @param index.starttime.mode	Sampling distribution of sampling times of starting sequences (default: 'fix1970', optional 'fix19XX' where XX between 45-79, 'normal' meaning Normal(1955,7)). See \url{https://github.com/olli0601/PANGEA.HIV.sim#seed-sequences}.
 #' @param er.gamma				Site heterogeneity parameter (default: 4, optional 0)
 #' @param sp.prop.of.sexactive	Proportion of population sampled in seroprevalence survey (default: 0.05)
 #' @param report.prop.recent	Proportion of individuals in seroprevalence survey for whom recency of infection should be reported (default: 1)
