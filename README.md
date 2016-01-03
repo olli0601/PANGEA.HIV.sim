@@ -82,7 +82,7 @@ _SURVEY.csv             | Cross-sectional surveys conducted on a random subset o
 _DATEDTREE.newick       | Trees in newick format. Each tree corresponds to the simulated viral phylogeny among sampled individuals of one simulated transmission chain. One tree per line.
 _SIMULATED_INTERNAL.R  | Further internal R objects from which the output files are built. Part of the _Internal.zip file.
 
-### Available variables in the simulated cross-sectional surveys
+###### Available variables in the simulated cross-sectional surveys
 
 *Group variable*    | *Description*
 --------------------|--------------------
@@ -97,7 +97,7 @@ ALIVE_AND_DIAG_N    | Number of diagnosed individuals
 ALIVE_AND_ART_N     | Number of individuals that started ART 
 ALIVE_AND_SEQ_N     | Number of individuals with a sequence
 
-### Available variables on simulated individuals
+###### Available variables on simulated individuals
 
 *Individual level variable* | *Description*
 -------------------- | ------------------------------------------
@@ -119,6 +119,8 @@ The 33 simulated data sets from the village and regional models are [available h
 ****
 
 # Epidemiological model component
+
+TODO TODO TODO
 
 ****
 
