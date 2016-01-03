@@ -4,7 +4,8 @@ HIV Phylogenetic Simulation Model for the PANGEA-HIV methods comparison exercise
 ### Overview
 The Phylogenetics And Networks for Generalised HIV Epidemics in Africa (PANGEA-HIV) consortium 
 aims to provide viral sequence data from across sub-Saharan Africa, and to evaluate their viral 
-phylogenetic relationship as a marker of recent HIV transmission events [9]. 
+phylogenetic relationship as a marker of recent HIV transmission events 
+(Pillay D, Herbeck J, Cohen MS, et al. Lancet Infect Dis 2015). 
 
 Research groups were invited to participate in a blinded methods comparison exercise on simulated 
 HIV sequence data sets to test the performance of current phylogenetic methods before their application 
@@ -21,7 +22,7 @@ Generalised HIV-1 epidemics were simulated for a relatively small village popula
 individuals and a larger regional population of ~80,000 individuals from two structurally different, agent-based 
 epidemiological models. The regional simulation captures individual-level HIV transmission dynamics in a larger 
 regional population that is broadly similar to a site (cluster) of the HPTN071/PopART HIV prevention trial in South 
-Africa [Hayes]. 
+Africa (Hayes R, Ayles H, Beyers N, et al., Trials 2014).
 
 This code repository contains the simulation code to generate sequence data and phylogenetic trees 
 that correspond to epidemic scenarios under the regional model. 
@@ -114,7 +115,7 @@ RECENT_TR           | Y if transmission occurred at most 6 months after diagnosi
 The model simulates viral phylogenies of sampled transmission chains in the regional population, as well as
 HIV sequences comprising the gag gene (from p17 start, length 1440 nt), the pol gene (from protease start, length 2844) 
 and the env gene (from TVA signal peptide start, length 2523, V loops excluded) of sampled individuals. For simplicity,
-we refer to the concatenated gag, pol, env sequences as the full genome.
+we refer to the concatenated gag, pol, env sequences as full genome sequences.
 
 The model comprises the following components, which are described in detail below:
 
@@ -156,7 +157,7 @@ the date of the starting sequence and the time of viral introduction.
 By default, one starting sequence is sampled at random from pre-specified starting sequences from 1970 (`startseq.mode="one"`, 
 `index.starttime.mode="fix1970"`). The date of the starting sequence is chosen so that the estimated TMRCA of the simulated sequences 
 under a root-to-tip divergence plot is consistent with current phylogenetic estimates of the origin of subtype C sequences in 
-sub-Saharan Africa (Walker, Pybus, Rambaut, & Holmes, 2005).
+sub-Saharan Africa (Walker PR, Pybus OG, Rambaut A, Holmes EC, Infect Gen Evol 2005). These parameters were not changed during the PANGEA simulations.
 
 The following figure shows part of a simulated phylogeny under default parameters: a single starting sequence evolves into four sub-clades. 
 These four sub-clades correspond to four transmission chains after their introduction in the regional population. 
@@ -196,6 +197,7 @@ These phylogenies are all connected via the starting sequence as explained in se
 The following figure shows the lognormal model of the within-host effective population size under default 
 parameters `v.N0tau=1`, `v.r=2.851904`, `v.T50=-2`. These were chosen such that the initial population size is 1 and that 
 the final effective population size is broadly similar to estimates typically obtained with a BEAST Skyline model.
+These parameters were not changed during the PANGEA simulations.
 
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_EffPopSize.png" width="66%">
 
@@ -234,7 +236,7 @@ along which a sequence was sampled. Since in the model only one sequence is obta
 certain part of the branch just below a tip. To calculate that part, the dated viral phylogeny in section 
 [Dated viral phylogenies](#dated-viral-phylogenies) is internally annotated with infection times along each branch.
 The following figure illustrates the resulting sampling model of evolutionary rates for transmission and non-transmission lineages under 
-the default parameters.
+the default parameters. These parameters were not changed during the PANGEA simulations.
 
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_ERmodel.png" width="66%">
 
@@ -248,6 +250,7 @@ pol and env genes (Alizon S, Fraser C, J Retrov 2013).
 The default rate multipliers were obtained as a by-product of the BEAST run on 390 full genome subtype C sequences 
 (see section [Starting sequences](#starting-sequences)). The following boxplots show the resulting evolutionary rates along
 transmission lineages, stratified by gene and codon position, in a sample simulation.
+These parameters were not changed during the PANGEA simulations.
 
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_geneEvolutionaryRates.png" width="66%">
 
@@ -261,6 +264,7 @@ by the respective evolutionary rates in section [Evolutionary rate model](#evolu
 The rate substitution parameters were obtained as a by-product of the BEAST run on 390 full genome subtype C sequences 
 for the pol gene (see section [Starting sequences](#starting-sequences)), and are shown in the figure below. 
 [SeqGen/1.3.3](https://github.com/rambaut/Seq-Gen) was used to perform the sequence simulation.
+These parameters were not changed during the PANGEA simulations.
 
 <img src="https://github.com/olli0601/PANGEA.HIV.sim/blob/master/man/fig_GTR.png" width="66%">
 
@@ -269,7 +273,7 @@ for the pol gene (see section [Starting sequences](#starting-sequences)), and ar
 #### Sampling of historical sequences
 
 A number of historical sequences can be sampled at random from individuals that are infected during the period 1985 to 1999 
-(parameter `s.ARCHIVAL.n`). By default, we set `s.ARCHIVAL.n=50`.
+(parameter `s.ARCHIVAL.n`). By default, we set `s.ARCHIVAL.n=50`. This parameter was not changed during the PANGEA simulations.
 
 #### Sampling of sequences since 2000
 
