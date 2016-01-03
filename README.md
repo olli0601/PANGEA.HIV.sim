@@ -33,10 +33,12 @@ for a variety of generalised HIV epidemics and intervention scenarios.
 * Mike Pickles <m.pickles@imperial.ac.uk>
 * Anne Cori <a.cori@imperial.ac.uk>
 * Christophe Fraser <c.fraser@imperial.ac.uk>
-
+ 
 ****
 
-# Installation
+# Using the package
+
+#### Installation
 
 The simulation code ships as an `R` package and requires third party code before installation:
 
@@ -49,9 +51,7 @@ library(devtools)
 install_github("olli0601/PANGEA.HIV.sim")
 ```
 
-****
-
-# Using the package
+#### Functionality
 
 `PANGEA.HIV.sim` contains just two functions, `sim.regional.args` and `sim.regional`. We now describe these briefly, and the various options in more detail below.
 * `sim.regional.args`: Set all input arguments to the simulation. Returns a `data.table` with columns `stat` (name of input argument) and `v` (value of input argument).
@@ -70,15 +70,7 @@ This will show a first example on how to use the simulation code, followed by co
 sequences data sets to address the primary objectives of the methods comparison exercise, and code to simulate 
 the PANGEA-HIV tree data sets to address the secondary objectives of the methods comparison exercise.
 
-****
-
-# Simulations used in the PANGEA methods comparison exercise
-
-The 33 simulated data sets from the village and regional models are [available here in folder 201502](http://bit.ly/PANGEAHIVsim).
-
-****
-
-# Output of the simulation
+#### Output of the simulation
 
 One simulation produces the following files:
 
@@ -120,7 +112,13 @@ ART1_CD4            | CD4 count at ART start (NA if ART not started)
 TIME_SEQ            | Date sequence taken
 RECENT_TR           | Y if transmission occurred at most 6 months after diagnosis N otherwise
 
+#### Simulations used in the PANGEA methods comparison exercise
+
+The 33 simulated data sets from the village and regional models are [available here in folder 201502](http://bit.ly/PANGEAHIVsim).
+
 ****
+
+# Epidemiological model component
 
 ****
 
