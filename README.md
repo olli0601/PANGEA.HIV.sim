@@ -21,7 +21,7 @@ originating from outside the study area.
 Generalised HIV-1 epidemics were simulated for a relatively small village population of ~8,000 
 individuals and a larger regional population of ~80,000 individuals from two structurally different, agent-based 
 epidemiological models. The regional simulation captures individual-level HIV transmission dynamics in a 
-regional population that is broadly similar to a site (cluster) of the HPTN071/PopART HIV prevention trial in South 
+regional population that is broadly similar to a site (cluster) of the HPTN071 (PopART) HIV prevention trial in South 
 Africa (Hayes R, Ayles H, Beyers N, et al., Trials 2014).
 
 This repository implements the regional model to generate sequence data and phylogenetic trees 
@@ -166,7 +166,7 @@ The evolutionary model considers these individuals as index cases.
 After 1980, viral introductions occur in proportion to the number of new infections per year (parameter `epi.import`). 
 New index cases representing viral introductions into the regional population are selected at random among existing infected individuals. 
 
-By default, we set `epi.import=0.05` in line with baseline assumptions of the HPTN071/PopART model 
+By default, we set `epi.import=0.05` in line with baseline assumptions of the pre-PopART model 
 (Cori A, Ayles H, Beyers N, Schaap A, Floyd S, et al. PLoS One 2014). Optionally, we also used `epi.import=0.2` reflecting
 estimates of substantial viral introductions from outside the Rakai community cohort in Uganda (Grabowski MK, Lessler J, Redd AD, et. al. PLoS Med 2014).
 Sources of index cases are coded with a negative population ID `IDPOP`. The corresponding transmission chains
