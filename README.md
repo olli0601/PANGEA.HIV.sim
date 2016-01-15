@@ -134,7 +134,79 @@ The 33 simulated data sets from the village and regional models are [available h
 
 # Epidemiological model component
 
-TODO TODO TODO
+## Regional model
+
+The regional simulations were produced using the individual-based HPTN071 (PopART) model version 1.1. This is a stochastic individual-based model of a heterosexual population of approximately 80,000 individuals aged 13 years and older. At a given time in the simulation a combination HIV prevention intervention is initiated. This intervention is a combination HIV prevention intervention, qualitatively similar to the HPTN071/PopART trial, although coverage levels used were not informed by trial data. The model is calibrated to have a similar HIV prevalence to that observed in the South African sites of the trial. The outputs from the model include the full HIV transmission chain within the simulated community, which is then passed to the evolutionary model component **(ADD LINK)** to generate phylogenies and viral sequence data sets.
+
+The model comprises the following components, which are described in detail below:
+
+ * Demographics
+ * Sexual partnerships and HIV infection
+ * Disease progression
+ * HIV testing
+ * Male circumcision
+ * Antiretroviral therapy
+
+### Demographics
+
+Individuals enter the modelled population continuously at age 13, leaving the population when they die, either from HIV- or non HIV-related reasons. The overall population is slowly growing in size. 
+
+On entering the model, each individual is assigned a set of characteristics including gender, a sexual risk group (there are three risk groups, corresponding to different allowed maximum numbers of concurrent partnerships), and (for men only) if they are already circumcised (13% assumed to be circumcised before the age of 13). All individuals are assumed HIV-negative when entering the simulation. 
+
+### Sexual partnerships and HIV infection
+Once they have entered the model, they may form and break up sexual partnerships. Individuals form partnerships assortatively by risk group, with 10% of one’s partnerships made within a risk group, and the remainder made at random in any group. Partnership formation is also strongly assortative by age; the age mixing matrix was determined from HPTN071/PopART cohort baseline survey data.
+HIV-negative individuals are exposed to risk of infection when they are in a serodiscordant partnership. Infection can occur at any time during a serodiscordant partnership, with the risk of infection depending upon the HIV stage of the infected partner, and whether they are on ART or not at that time. For male HIV negative individuals risk of infection also depends on their circumcision status.  
+
+### Disease progression
+
+A set point viral load (SPVL) category (< 4, 4-4.5, 4.5-5, ≥ 5 log<sub>10</sub> copies/μL) is randomly attributed to each newly infected individual. A newly infected individual firstly undergoes a brief period of early infection (lasting on average 3 months), with higher infectivity. They then enter one of 4 CD4 categories (CD4 >500, 350-500, 200-350, ≤200 cells/mm<sup>3</sup>) according to the distribution from [Cori et al. AIDS 2015][Cori2015] and depending on their SPVL category. Once in that CD4 category they then progress sequentially to lower CD4 categories, at a rate determined by the SPVL category as well as the current CD4 category, before dying from AIDS-related illness as in [Cori et al. AIDS 2015][Cori2015], unless they test for HIV and subsequently initiate ART. 
+
+### HIV testing
+
+HIV testing is divided into two separate rates. Firstly there is a background (standard of care) rate that increases over time, mimicking the historical scale-up of testing in sub-Saharan Africa. Secondly, starting in 2015, there is an intensive annual testing process, representing the HIV-testing component of the combination HIV prevention intervention, where a percentage of the population each year was tested for HIV. 
+
+### Male circumcision
+
+Men testing HIV-negative, who were not previously circumcised, can be circumcised either as part of the background (non-intervention) or intervention process. Once circumcised, susceptibility to HIV is reduced.
+
+### Antiretroviral therapy
+
+Individuals only start ART after a positive HIV test result, although they may be lost to follow-up before this occurs. Once on ART there is a period of early ART (lasting on average 6 months) where the individual remains virally unsuppressed, following which they may either become virally suppressed, or remain on ART but not fully suppressed. Infectivity is reduced when an individual is on ART, but it is more substantially reduced if they are virally suppressed.
+Individuals on ART may drop out from treatment. Once outside treatment, individuals may restart treatment once their CD4 goes below 200 cells/mm<sup>3</sup>. 
+
+### Model simulations
+
+The simulation was initially run for 20 years without HIV, to allow partnerships to reach a steady state. In 1980, 0.5% of low-risk and 1% of medium and high-risk individuals are seeded HIV-positive, with HIV transmission occurring from that point onwards. ART is taken to be available from 2004 onwards. The combination prevention intervention runs from 2015 for three years. 20 simulations were run using this model.
+
+### Model calibration
+
+The 20 simulations run using this model differed by uptake and coverage of the combination HIV prevention intervention, or by increased infectivity from early infection. Each run was calibrated to give an incidence close to 2%/year and an HIV prevalence of approximately 15-20% at the start of the intervention. For a given specified set of parameters, calibration was achieved by varying the baseline transmission probability (the probability that an individual with CD4>500 cells/mm<sup>3</sup>, and not on ART, transmits to their partner until the HIV prevalence in 2015 was within the specified range, and HIV prevalence was not declining sharply prior to the intervention.
+
+| Parameter  | Value/distribution used | Reference  |
+| ------------- |-------------| -----|
+| Timestep	     | 1/48 year	    | Assumption |
+| Probability of transmission per timestep for individual with CD4>500cells/mm<sup>3</sup> not on ART (baseline transmission probability)     | Varied to calibrate model incidence/prevalence | Calibrated |
+| Relative increase in transmission probability during early transmission phase      | 6.0 (when ~10% of transmissions early); 26.0 (when ~40% of transmissions early)      |   Informed by [Hollingsworth et al. JID 2008][Hollingsworth2008], [Boily et al. LID 2009][Boily2009] and calibrated to get 10% and 40% of transmissions early |
+| Relative increase in transmission probability (compared to baseline transmission probability) when CD4 350-500 / 200-350 / ≤200 cells/mm<sup>3</sup> | 1.0 / 1.9 / 3.0      |  Assumption   |
+| Effectiveness of ART when virally suppressed	| 0.9	| [Cori et al. PLoS One 2014][Cori2014] |
+| Effectiveness of ART when no virally suppressed, or during early ART	| 0.45	| Assumed to be half that when virally suppressed |
+| Relative reduction in susceptibility when circumcised	| 0.6	| [Auvert et al. PLoS Med 2005][Auvert2005], [Bailey et al. Lancet 2007][Bailey2007], [Gray et al. Lancet 2007][Gray2007] |
+| Duration of early transmission phase (months)	| Uniform(1,5)	| Informed by [Hollingsworth et al. JID 2008][Hollingsworth2008] |
+| Duration of CD4 stages  >500, 350-500, 200-350 and ≤200 cells/mm<sup>3</sup>	| Sampled uniformly from ranges from early draft of Cori et al. AIDS 2015 | [Cori et al. AIDS 2015][Cori2015] |
+| Relative rate of progression when on ART but virally unsuppressed	| 0.5	| [Cori et al. PLoS One 2014][Cori2014] |
+| Relative rate of progression when on ART and virally unsuppressed	| 0 (no progression)	| Assumption |
+| Proportion in SPVL group < 4, 4-4.5, 4.5-5, ≥ 5 log<sub>10</sub> copies/μL after seroconversion	| 0.25 in each group	| Informed by [Cori et al. AIDS 2015][Cori2015] |
+| Proportion in high / medium / low sexual risk groups when entering population	| Men: 0.5 / 0.4 / 0.1; Women: 0.6 / 0.3 / 0.1	| Assumption |
+| Time to partnership dissolution	| Gamma distribution with shape parameter 10 and scale parameter 2.5	| Assumption |
+
+[Hollingsworth2008]: http://dx.doi.org/10.1086/590501
+[Cori2014]: http://dx.doi.org/10.1371/journal.pone.0084511
+[Cori2015]: http://journals.lww.com/aidsonline/Fulltext/2015/11280/CD4__cell_dynamics_in_untreated_HIV_1_infection__.7.aspx
+[Boily2009]: http://dx.doi.org/10.1016/S1473-3099(09)70021-0
+[Auvert2005]: http://dx.doi.org/10.1371/journal.pmed.0020298
+[Bailey2007]: http://dx.doi.org/10.1016/S0140-6736(07)60312-2
+[Gray2007]: http://dx.doi.org/10.1016/S0140-6736(07)60313-4
+
 
 ****
 
