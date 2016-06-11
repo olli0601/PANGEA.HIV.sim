@@ -8,10 +8,6 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate<- function()
 	dfa		<- project.PANGEA.TEST.pipeline.Aug2015.evaluate.read()
 	#	check for updated submissions, and keep 
 	dfa		<- project.PANGEA.TEST.pipeline.Aug2015.keep.most.recent.submission(dfa, format='%d.%m.%Y')
-	#	save submissions
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_08_results/results'
-	save(dfa, file=paste(outdir,'/submissions.R',sep=''))
-	load(paste(outdir,'/submissions.R',sep=''))
 	#	add objective legend
 	dfa		<- merge(dfa, data.table(USED_GENES=c('pol','all'), USED_GENES_L=c('pol gene','pol+gag+env\ngenome') ), by='USED_GENES')
 	set(dfa, NULL, 'TEAM', dfa[, factor(TEAM)])
@@ -30,12 +26,17 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate<- function()
 	set(dfa, NULL, 'INT_T', dfa[, factor(INT_T, levels=c('fast','slow','none'), labels=c('fast','slow','none'))])
 	set(dfa, NULL, 'AC_T', dfa[, factor(AC_T, levels=c('low','high'), labels=c('low','high'))])
 	set(dfa, NULL, 'IMPRT', dfa[, factor(IMPRT*100, levels=c(0,2,5,20), labels=paste(c(0,2,5,20),'%',sep=''))])
-	set(dfa, NULL, 'SMPL_C', dfa[, factor(SMPL_C*100, levels=c(8, 16, 30, 60), labels=paste(c(8, 16, 30, 60),'%',sep=''))])
+	set(dfa, NULL, 'SMPL_C', dfa[, factor(SMPL_C*100, levels=c(8, 16, 30, 60), labels=paste(c(8, 16, 25, 50),'%',sep=''))])
 	set(dfa, NULL, 'SMPL_D', dfa[, factor(SMPL_D, levels=c(5,3), labels=c(5,3))])	
 	set(dfa, dfa[, which(SMPL_M=='overs')], 'SMPL_M', 'much')
 	set(dfa, dfa[, which(SMPL_M=='extrs')], 'SMPL_M', 'extreme')
 	set(dfa, dfa[, which(is.na(SMPL_M))], 'SMPL_M', 'extreme')
-	set(dfa, NULL, 'SMPL_M', dfa[, factor(SMPL_M, levels=c('much','extreme'), labels=c('much','extreme'))])	
+	set(dfa, NULL, 'SMPL_M', dfa[, factor(SMPL_M, levels=c('much','extreme'), labels=c('much','extreme'))])
+	#	save submissions
+	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_08_results/results'
+	save(dfa, file=paste(outdir,'/submissions.R',sep=''))
+	load(paste(outdir,'/submissions.R',sep=''))
+	
 	tmp		<- unique(subset( dfa, select=c(DATAT_L, SC_RND, DATA_T, SC, AC_T, INT_T, IMPRT, SMPL_N, SMPL_C, SMPL_M, SMPL_D) ))
 	setkey(tmp, DATAT_L, AC_T, INT_T, DATA_T, IMPRT, SMPL_C, SMPL_D, SMPL_M)
 	tmp[, SCENARIO_L:= paste('%AC=',AC_T,' ARTup=',INT_T,' EXT=',IMPRT,'\n',DATA_T,' ',SMPL_N,' ',SMPL_C,' ',SMPL_D,' ',SMPL_M, ' (',SC_RND,')',sep='')]
@@ -372,6 +373,12 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate.primary.CovariatesPCIncidence<- fu
 					MSE=mean( (central-central_t)^2 ), MSE_L=mean( (log(central)-log(central_t))^2 ),
 					ARME=mean(central-central_t), ARME_L=mean(log(central)-log(central_t))), by='TEAM']
 	
+	dfc2	<- subset(tmp, !OUTLIER)[, list( COR=cor(central_t, central), COR_LOG=cor(log(central_t), log(central)), 											 
+					MAE=mean( abs(central-central_t) ), MAE_L=mean( abs(log(central)-log(central_t)) ), 
+					MSE=mean( (central-central_t)^2 ), MSE_L=mean( (log(central)-log(central_t))^2 ),
+					ARME=mean(central-central_t), ARME_L=mean(log(central)-log(central_t))), by=c('TEAM','DATAT_L')]
+	
+	
 	require(gamlss)
 	bw.AIC			<- vector('list', tmp[, length(unique(TEAM))])
 	names(bw.AIC)	<- tmp[, unique(TEAM)]
@@ -626,7 +633,12 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate.primary.CovariatesIncidenceRatio<-
 											 MSE=mean( (central-central_t)^2 ), MSE_L=mean( (log(central)-log(central_t))^2 ),
 											 ARME= mean( central-central_t ), 
 											 HAME_R=1/mean(1/(central/central_t)), ARME_L=mean(log(central)-log(central_t))), by='TEAM']
-	
+	dfc2	<- subset(tmp, !OUTLIER)[, list( COR=cor(central_t, central), COR_LOG=cor(log(central_t), log(central)), 											 
+											 MAE=mean( abs(central-central_t) ), MAE_L=mean( abs(log(central)-log(central_t)) ), 
+											 MSE=mean( (central-central_t)^2 ), MSE_L=mean( (log(central)-log(central_t))^2 ),
+											 ARME= mean( central-central_t ), 
+											 HAME_R=1/mean(1/(central/central_t)), ARME_L=mean(log(central)-log(central_t))), by=c('DATAT_L','TEAM')]							 
+							 
 	require(gamlss)
 	bw.AIC			<- vector('list', tmp[, length(unique(TEAM))])
 	names(bw.AIC)	<- tmp[, unique(TEAM)]

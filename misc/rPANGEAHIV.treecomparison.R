@@ -49,6 +49,280 @@ treedist.pathdifference<- function(otree,stree, lambda=1)
 	ld				<- sum((lambda*dt1[ind]+(1-lambda)*ct1[ind] - lambda*dt2[ind]-(1-lambda)*ct2[ind])^2)
 	c('path'=sqrt(pd), 'path.std'=sqrt(pd/choose(l,2)), 'pathl'=sqrt(ld))
 }
+#--------------------------------------------------------------------------------------------------------
+#
+#--------------------------------------------------------------------------------------------------------
+project.PANGEA.visualize.call.patterns.align150623<- function()
+{
+	outdir			<- '/Users/Oliver/Dropbox (Infectious Disease)/2016_PANGEA_treecomp/figures'
+	min.coverage	<- 600
+	min.depth		<- 10
+	#with.gaps		<- 1
+	#outfile			<- '150623_PANGEAGlobal2681_C5_wgaps.pdf'
+	with.gaps		<- 0
+	outfile			<- '150623_PANGEAGlobal2681_C10.pdf'
+	
+	
+	infile			<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PANGEA_150623/150623_PANGEAGlobal2681_C10.fa'
+	so				<- read.dna(infile, format='fasta')
+	rownames(so)	<- gsub('-','_',rownames(so)) 
+	#	drop LTR from sequences
+	#	need to load latest alignment, get LTR start, and translate into one common sequence
+	infile			<- '~/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/alignments_160110/PANGEA_HIV_n5003_Imperial_v160110_GlobalAlignment.rda'
+	load(infile)	#loads sqi, sq
+	tmp				<- sq[which(grepl('HXB2',rownames(sq))),]
+	pattern			<- 'a-*t-*g-*g-*g-*t-*g-*c-*g-*a-*g-*a-*g-*c-*g-*t-*c-*a'
+	idx.st.in.sq	<- regexpr(pattern, paste(as.character( tmp ),collapse=''))
+	tx.common		<- intersect( rownames(so) , rownames(sq) )[1]
+	pattern			<- paste(as.character( sq[tx.common, idx.st.in.sq:(idx.st.in.sq+10)]),collapse='')	
+	idx.st.in.so	<- regexpr(pattern, paste(as.character(so[tx.common,]), collapse=''))	
+	so				<- so[, seq.int(idx.st.in.so, ncol(so))]
+	#	drop sites outside the HIV reference compendium
+	#tx.common		<- tail( intersect( rownames(so) , rownames(sq) ), 1 )
+	tx.common		<- 'PG14_ZA100095_S01002'
+	tmp				<- gsub('-|?','', paste( as.character(sq[tx.common,]), collapse='') )	
+	pattern			<- substring(tmp, nchar(tmp)-20, nchar(tmp) )
+	pattern			<- paste(strsplit(pattern, '')[[1]], collapse='-*')
+	tmp				<- so[tx.common, ]
+	idx.end.in.so	<- regexpr(pattern, paste(as.character( tmp ),collapse=''))
+	idx.end.in.so	<- as.integer(idx.end.in.so+attr(idx.end.in.so,'match.length')-1L)
+	so				<- so[, seq.int(1, idx.end.in.so)]
+	# 	drop gap only columns
+	if(!with.gaps)
+	{
+		tmp			<- apply( as.character(so), 2, function(x) !all(x%in%c('?','-','n')) ) 
+		so			<- so[, tmp]		
+	}
+	#	convert into chunks
+	ch				<- lapply(seq_len(nrow(so)), function(i)
+			{
+				z	<- gregexpr('1+', paste(as.numeric( !as.character( so[i,] )%in%c('-','?','n') ), collapse='') )[[1]]
+				data.table(PANGEA_ID= rownames(so)[i], POS=as.integer(z), DEPTH=min.depth, REP=attr(z,"match.length"))
+			})
+	ch				<- do.call('rbind',ch)	
+	set(ch, NULL, 'SITE', ch[, regmatches(PANGEA_ID, regexpr('_[A-Z]+',PANGEA_ID))])
+	set(ch, NULL, 'SITE', ch[, substring(SITE,2)])
+	ch				<- merge(ch, ch[, list(COV=sum(REP)), by='PANGEA_ID'], by='PANGEA_ID')
+	#	select min.coverage, select min.depth
+	ch			<- subset(ch, !is.na(SITE) & COV>=min.coverage & DEPTH>=min.depth)
+	#	define chunks
+	ch[, POS_NEXT:= POS+REP]	
+	ch		<- ch[, list(SITE=SITE, POS=POS, DEPTH=DEPTH, REP=REP, CHUNK=cumsum(as.numeric(c(TRUE, POS[-1]!=POS_NEXT[-length(POS_NEXT)])))), by='PANGEA_ID']
+	ch		<- ch[, list(SITE=SITE[1], POS_CH=min(POS), REP_CH=sum(REP), DEPTH_CH= sum(DEPTH*REP)/sum(REP) ), by=c('PANGEA_ID','CHUNK')]
+	ch[, DEPTH_MIN:=min.depth]
+	set(ch, NULL, 'SITE', ch[, factor(SITE, levels=c('BW', 'ZA', 'UG'), labels=c('Botswana', 'South Africa', 'Uganda'))])
+	ch				<- merge(ch, ch[, list(COV=sum(REP_CH)), by='PANGEA_ID'], by='PANGEA_ID')
+	ch[, COVP:= COV/ncol(so)]	
+	#	
+	setkey(ch, PANGEA_ID)	
+	dcast.data.table(unique(ch)[, list(P=seq(0,1,0.1), Q=quantile(COV, p=seq(0,1,0.1))), by='SITE'], P~SITE, value.var='Q')
+	dcast.data.table(unique(ch)[, list(Q=seq(1e3,8e3,1e3), P=ecdf(COV)(seq(1e3,8e3,1e3))), by='SITE'], Q~SITE, value.var='P')
+	#	proportion of non-gaps in alignment
+	#unique(ch)[, sum(COV)] / (nrow(unique(ch))*ncol(so))
+	nrow(unique(ch))
+	#	C5: 	2367
+	#	C10: 	2126
+	unique(ch)[, mean(COVP)]
+	#	C5: 	0.6201531
+	#	C10:	0.6510485
+	unique(ch)[, mean(COV)]
+	#	C5: 	5472.231
+	#	C10:	5744.852
+	
+	#	plot chunks
+	require(viridis)
+	ch		<- merge(ch, ch[, list(POS_CHF=min(POS_CH)), by='PANGEA_ID'], by='PANGEA_ID')	
+	setkey(ch, SITE, PANGEA_ID)	
+	tmp		<- unique(ch)
+	setkey(tmp, POS_CHF)	
+	if(min.depth==5)
+		tmp[, PLOT:=ceiling(seq_len(nrow(tmp))/600)]
+	if(min.depth==10)
+		tmp[, PLOT:=ceiling(seq_len(nrow(tmp))/535)]	
+	ch		<- merge(ch, subset(tmp, select=c(PANGEA_ID, PLOT)), by='PANGEA_ID')
+	set(ch, NULL, 'PLOT', ch[, factor(PLOT, levels=c(4,3,2,1), labels=c(4,3,2,1))])
+	setkey(ch, POS_CH, SITE)
+	set(ch, NULL, 'PANGEA_ID', ch[, factor(PANGEA_ID, levels=unique(PANGEA_ID), labels=unique(PANGEA_ID))])
+	ggplot(ch, aes(y=PANGEA_ID, yend=PANGEA_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=SITE)) +
+			scale_x_continuous(expand=c(0,0), breaks=seq(0,10e3,1e3), minor_breaks=seq(0,10e3,100)) +
+			scale_colour_manual(values=c('Botswana'="#1B0C42FF", 'South Africa'="#CF4446FF", 'Uganda'="#781C6DFF")) +			
+			geom_segment() + theme_bw() + 
+			facet_wrap(~PLOT, scales='free_y', ncol=4) +
+			labs(x='\nalignment position', y='PANGEA-HIV sequences\n', colour='sampling\nlocation') + 			
+			theme(	axis.text.y=element_blank(), axis.ticks.y=element_blank(), axis.line.y=element_blank(), legend.position='bottom',
+					strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))	
+	ggsave(file=file.path(outdir,outfile), w=15, h=10, limitsize = FALSE) 
+}
+#--------------------------------------------------------------------------------------------------------
+#
+#--------------------------------------------------------------------------------------------------------
+project.PANGEA.visualize.call.patterns.align160110<- function()
+{
+	min.coverage	<- 600
+	min.depth		<- 5
+	
+	infile			<- '/Users/Oliver/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/readlengths/bam_stats_150218.rda'
+	load(infile)
+	infile			<- '~/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/alignments_160110/PANGEA_HIV_n5003_Imperial_v160110_GlobalAlignment.rda'
+	load(infile)	#loads sqi, sq
+	outdir			<- '/Users/Oliver/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/data'
+	
+	
+	
+	#	add SANGER_ID
+	infile.s	<- "~/Dropbox (Infectious Disease)/pangea_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_Summary.csv"
+	si			<- as.data.table(read.csv(infile.s, stringsAsFactors=FALSE))
+	setnames(si, colnames(si), toupper(gsub('.','_',colnames(si),fixed=1))) 
+	set(si, NULL, 'PANGEA_ID', si[, gsub(' ','',PANGEA_ID)])
+	setnames(si, 'CLINICAL_GENOME_COVERAGE', 'COV')
+	tmp			<- subset(si, select=c(PANGEA_ID, SANGER_ID))
+	set(tmp, NULL, 'PANGEA_ID', tmp[,gsub('-','_',PANGEA_ID)])
+	#	of the duplicate PANGEA_IDs, consider only those with larger coverage	
+	sqi			<- merge(sqi, tmp, by='PANGEA_ID', all.x=1, allow.cartesian=TRUE)
+	tmp			<- sqi[, list(SANGER_ID=SANGER_ID[which.max(COV)]), by='PANGEA_ID']
+	sqi			<- merge(sqi, tmp, by=c('PANGEA_ID','SANGER_ID'))
+	#	select min.coverage
+	tmp			<- subset(sqi, !is.na(SITE) & COV>=min.coverage, c(PANGEA_ID, SANGER_ID, COV, SITE))
+	tmp2		<- tmp[, which(is.na(SANGER_ID))]
+	set(tmp, tmp2, 'SANGER_ID', tmp[tmp2, PANGEA_ID])
+	setnames(bam.cov, c('FILE_ID','COV'), c('SANGER_ID','DEPTH'))
+	bam.cov		<- merge(bam.cov, tmp, by='SANGER_ID')
+	#	select min.depth
+	bam.ch		<- subset(bam.cov, DEPTH>=min.depth)
+	#	define chunks
+	bam.ch[, POS_NEXT:= POS+REP]	
+	bam.ch		<- bam.ch[, list(SITE=SITE, POS=POS, DEPTH=DEPTH, REP=REP, CHUNK=cumsum(as.numeric(c(TRUE, POS[-1]!=POS_NEXT[-length(POS_NEXT)])))), by='SANGER_ID']
+	bam.ch		<- bam.ch[, list(SITE=SITE[1], POS_CH=min(POS), REP_CH=sum(REP), DEPTH_CH= sum(DEPTH*REP)/sum(REP) ), by=c('SANGER_ID','CHUNK')]
+	bam.ch		<- merge(bam.ch, bam.ch[, list(COV=sum(REP_CH)), by='SANGER_ID'], by='SANGER_ID')
+	bam.ch[, COVP:= COV/ncol(sq)]	
+	bam.ch[, DEPTH_MIN:=min.depth]
+	set(bam.ch, NULL, 'SITE', bam.ch[, factor(SITE, levels=c('BW', 'ZA', 'UG'), labels=c('Botswana', 'South Africa', 'Uganda'))])
+	#
+	unique(bam.ch)[, mean(COVP)]
+	#	0.6400059
+	unique(bam.ch)[, mean(COV)]
+	#	6425.659
+	
+	#	plot chunks
+	require(viridis)
+	setkey(bam.ch, POS_CH, SITE)
+	set(bam.ch, NULL, 'SANGER_ID', bam.ch[, factor(SANGER_ID, levels=unique(SANGER_ID), labels=unique(SANGER_ID))])
+	ggplot(bam.ch, aes(x=SANGER_ID, xend=SANGER_ID, y=POS_CH, yend=POS_CH+REP_CH-1L, colour=SITE)) +
+			scale_y_continuous(expand=c(0,0),limits=c(0,10e3), breaks=seq(0,10e3,500), minor_breaks=seq(0,10e3,100)) +
+			scale_colour_manual(values=c('Botswana'="#1B0C42FF", 'South Africa'="#CF4446FF", 'Uganda'="#781C6DFF")) +			
+			geom_segment() + theme_bw() + labs(y='genome position', x='Sequenced individual') + coord_flip() +
+			theme(axis.text.y=element_blank(), axis.ticks.y=element_blank(), axis.line.y=element_blank() )
+	ggsave(file=file.path(outdir,'PANGEA_HIV_n5003_Imperial_v160110_selectedchunks.pdf'), w=10, h=60, limitsize = FALSE)
+	#
+	#	without bam files, just from alignment (min.depth is 10, but we can delete all-gap cols)
+	#
+	outdir			<- '/Users/Oliver/Dropbox (Infectious Disease)/2016_PANGEA_treecomp/figures'
+	min.coverage	<- 600
+	min.depth		<- 10
+	#with.gaps		<- 1
+	#outfile		<- '150623_PANGEAGlobal2681_C5_wgaps.pdf'
+	with.gaps		<- 0
+	outfile			<- '160110_PANGEAGlobal5003_C10.pdf'
+	infile			<- '~/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/alignments_160110/PANGEA_HIV_n5003_Imperial_v160110_GlobalAlignment.rda'
+	load(infile)	#loads sqi, sq
+	#	sq has already LTR trimmed and sites outside ref compendium dropped
+	#	drop references
+	
+	# 	drop gap only columns
+	if(!with.gaps)
+	{
+		tmp			<- apply( as.character(sq), 2, function(x) !all(x%in%c('?','-','n')) ) 
+		sq			<- sq[, tmp]		
+	}
+	#	convert into chunks
+	ch				<- lapply(seq_len(nrow(sq)), function(i)
+			{
+				z	<- gregexpr('1+', paste(as.numeric( !as.character( sq[i,] )%in%c('-','?','n') ), collapse='') )[[1]]
+				data.table(PANGEA_ID= rownames(sq)[i], POS=as.integer(z), DEPTH=min.depth, REP=attr(z,"match.length"))
+			})
+	ch				<- do.call('rbind',ch)	
+	#	define SITE
+	tmp				<- ch[, which(grepl('^R[0-9]+_',PANGEA_ID))]
+	set(ch, tmp, 'SITE', 'ZA')
+	tmp				<- ch[, which(is.na(SITE) & grepl('PG[0-9]+_[A-Z]+',PANGEA_ID))]	
+	set(ch, tmp, 'SITE', ch[tmp, regmatches(PANGEA_ID, regexpr('PG[0-9]+_[A-Z]+',PANGEA_ID))])
+	set(ch, NULL, 'SITE', ch[, gsub('PG[0-9]+_','',SITE)])
+	ch				<- subset(ch, !is.na(SITE))	
+	ch				<- merge(ch, ch[, list(COV=sum(REP)), by='PANGEA_ID'], by='PANGEA_ID')
+	#	select min.coverage, select min.depth
+	ch			<- subset(ch, COV>=min.coverage & DEPTH>=min.depth)
+	#	define chunks
+	ch[, POS_NEXT:= POS+REP]	
+	ch		<- ch[, list(SITE=SITE, POS=POS, DEPTH=DEPTH, REP=REP, CHUNK=cumsum(as.numeric(c(TRUE, POS[-1]!=POS_NEXT[-length(POS_NEXT)])))), by='PANGEA_ID']
+	ch		<- ch[, list(SITE=SITE[1], POS_CH=min(POS), REP_CH=sum(REP), DEPTH_CH= sum(DEPTH*REP)/sum(REP) ), by=c('PANGEA_ID','CHUNK')]
+	ch[, DEPTH_MIN:=min.depth]
+	set(ch, NULL, 'SITE', ch[, factor(SITE, levels=c('BW', 'ZA', 'UG'), labels=c('Botswana', 'South Africa', 'Uganda'))])
+	ch				<- merge(ch, ch[, list(COV=sum(REP_CH)), by='PANGEA_ID'], by='PANGEA_ID')
+	ch[, COVP:= COV/ncol(sq)]	
+	#	
+	setkey(ch, PANGEA_ID)	
+	dcast.data.table(unique(ch)[, list(P=seq(0,1,0.1), Q=quantile(COV, p=seq(0,1,0.1))), by='SITE'], P~SITE, value.var='Q')
+	dcast.data.table(unique(ch)[, list(Q=seq(1e3,8e3,1e3), P=ecdf(COV)(seq(1e3,8e3,1e3))), by='SITE'], Q~SITE, value.var='P')
+	#	proportion of non-gaps in alignment
+	#unique(ch)[, sum(COV)] / (nrow(unique(ch))*ncol(so))
+	nrow(unique(ch))	
+	#	C10: 	4253
+	#	    Botswana 	South Africa       	Uganda 
+    #     	344          813         		3096 
+	unique(ch)[, mean(COVP)]
+	#	C10:	0.5848233
+	unique(ch)[, mean(COVP), by='SITE']
+	#	1:     Botswana 0.7327631
+	#	2:       Uganda 0.4991186
+	#	3: South Africa 0.7605369
+	unique(ch)[, mean(COV)]
+	#	C10:	5702.612
+	unique(ch)[, mean(COV), by='SITE']
+	#	           SITE       V1
+	#	1:     Botswana 7356.942
+	#	2:       Uganda 5011.151
+	#	3: South Africa 7635.791
+	#	plot chunks
+	require(viridis)
+	ch		<- merge(ch, ch[, list(POS_CHF=min(POS_CH)), by='PANGEA_ID'], by='PANGEA_ID')	
+	setkey(ch, SITE, PANGEA_ID)	
+	tmp		<- unique(ch)
+	setkey(tmp, POS_CHF)	
+	tmp[, PLOT:=ceiling(seq_len(nrow(tmp))/1070)]
+	ch		<- merge(ch, subset(tmp, select=c(PANGEA_ID, PLOT)), by='PANGEA_ID')
+	set(ch, NULL, 'PLOT', ch[, factor(PLOT, levels=c(4,3,2,1), labels=c(4,3,2,1))])
+	setkey(ch, POS_CH, SITE)
+	set(ch, NULL, 'PANGEA_ID', ch[, factor(PANGEA_ID, levels=unique(PANGEA_ID), labels=unique(PANGEA_ID))])
+	ggplot(ch, aes(y=PANGEA_ID, yend=PANGEA_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=SITE)) +
+			scale_x_continuous(expand=c(0,0), breaks=seq(0,10e3,1e3), minor_breaks=seq(0,10e3,100)) +
+			scale_colour_manual(values=c('Botswana'="#1B0C42FF", 'South Africa'="#CF4446FF", 'Uganda'="#781C6DFF")) +			
+			geom_segment() + theme_bw() + 
+			facet_wrap(~PLOT, scales='free_y', ncol=4) +
+			labs(x='\nalignment position', y='PANGEA-HIV sequences\n', colour='sampling\nlocation') + 			
+			theme(	axis.text.y=element_blank(), axis.ticks.y=element_blank(), axis.line.y=element_blank(), legend.position='bottom',
+					strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))	
+	ggsave(file=file.path(outdir,outfile), w=15, h=15, limitsize = FALSE)
+	#
+	#	for comparison, ATHENA data set
+	#
+	infile		<- "/Users/Oliver/duke/2013_HIV_NL/ATHENA_2013/data/tmp/ATHENA_2013_03_NoDRAll+LANL_Sequences_Thu_Aug_01_17:05:23_2013.fasta"
+	sq			<- read.dna(infile, format='fa')
+	sq			<- sq[1:1293,]
+	sqi			<- data.table(FASTA= rownames(sq))
+	sqi[, FRGN:= grepl('^TN', FASTA) | grepl('PROT+P51', FASTA)]
+	sq			<- sq[ subset(sqi, !FRGN)[, FASTA], ]
+	#	remove all gap cols
+	sq			<- as.character(sq)
+	tmp			<- apply(sq, 2, function(x) !all(x%in%c('-','n','?')))
+	sq			<- sq[,tmp]
+	#	count coverage
+	sqi			<- subset(sqi, !FRGN)[, list(COV=length(which( !sq[FASTA,]%in%c('-','n','?') ))), by='FASTA']
+	sqi[, COVP:= COV/ncol(sq)]
+	sqi[, mean(COVP)]
+	#	0.96
+}
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 01.11.15
 ##	from https://www.cs.upc.edu/~valiente/comput-biol/
@@ -82,6 +356,38 @@ quartets.distance.cmd	<- function(otree, stree, PROG.QDIST='/apps/qdist/2.0/bin/
 	cmd<- paste(PROG.QDIST,file1,file2)
 	tmp		<- system(cmd, intern=TRUE)
 	c('TAXA_NJ'=Ntip(otree), 'NQD'=as.numeric(tail(unlist(strsplit(tmp[2],'\t')),1)))
+}
+treedist.get.tree.100bs<- function(phr, phs, tmpdir)
+{
+	require(ggtree)
+	require(phangorn)	
+	#	write to tmp directory
+	write.tree(phr, file=file.path(tmpdir,'phr.newick'))
+	invisible(sapply(seq_along(phs), function(i){		write.tree(phs[[i]], file=file.path(tmpdir, paste('phs',i,'.newick', sep='')))		}))
+	cmd				<- paste('for i in $(seq 1 ',length(phs),'); do cat ',file.path(tmpdir,'phs$i.newick'),' >> ',file.path(tmpdir,'phc.newick'),'; done', sep='')
+	system(cmd)
+	cmd				<- paste('cd ',tmpdir,'\nraxmlHPC-AVX -f b -t phr.newick -z phc.newick -m GTRCAT -s alg -n TEST', sep='')
+	system(cmd)
+	#	prepare RAXML tree for plotting
+	raxml 	<- read.raxml(file.path(tmpdir,'RAxML_bipartitionsBranchLabels.TEST'))
+	pho		<- raxml@phylo
+	tmp		<- as.data.table(raxml@bootstrap)
+	z		<- subset(tmp, bootstrap==100)[, {
+				#node	<- 1597
+				desc	<- Descendants(pho, node, type='all')
+				if( any(desc%in%subset(tmp, bootstrap<100)[, node]) )
+					desc<- NA_integer_
+				list(desc=desc)
+			}, by='node']
+	z		<- subset(z, !is.na(desc))
+	z[, bootstrap:=100]
+	z[, node:=NULL]
+	setnames(z, 'desc', 'node')
+	z		<- rbind(z, data.table(node= setdiff(seq.int(Nnode(pho, internal.only=FALSE)), z[, node]), bootstrap=0))
+	raxml@bootstrap	<- as.data.frame(z)
+	#	delete stuff
+	invisible(file.remove(list.files(tmpdir, full.names=TRUE)))
+	raxml
 }
 treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file=NULL, with.save=0)
 {
@@ -142,6 +448,27 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 	
 	if(with.save)
 		save(strs, ttrs, tinfo, submitted.info, sclu.info, file=gsub('\\.rda','_QD\\.rda',file))
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 30.04.16
+##--------------------------------------------------------------------------------------------------------
+treedist.closest.ind<- function(ph, model.reg)
+{
+	tmp			<- cophenetic.phylo(ph)
+	diag(tmp)	<- Inf
+	ans			<- data.table(IDPOP=rownames(tmp), IDPOP_CL=colnames(tmp)[apply(tmp, 1, which.min)])
+	ans			<- merge(ans, ans[,  list(GD=tmp[IDPOP, IDPOP_CL]), by='IDPOP'], by='IDPOP')
+	if( !model.reg )
+	{
+		set(ans, NULL, 'IDPOP', ans[, toupper(gsub('-FEMALE|-MALE','',sapply(strsplit(IDPOP,'_',fixed=1),'[[',1)))] ) 
+		set(ans, NULL, 'IDPOP_CL', ans[, toupper(gsub('-FEMALE|-MALE','',sapply(strsplit(IDPOP_CL,'_',fixed=1),'[[',1)))] )		
+	}
+	if( model.reg )
+	{
+		set(ans, NULL, 'IDPOP', ans[, sapply(strsplit(IDPOP,'|',fixed=1),'[[',1)] ) 
+		set(ans, NULL, 'IDPOP_CL', ans[, sapply(strsplit(IDPOP_CL,'|',fixed=1),'[[',1)] )		
+	}
+	ans
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 03.12.15
@@ -1136,6 +1463,156 @@ treecomparison.submissions.151016<- function()
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 03.12.15
 ##--------------------------------------------------------------------------------------------------------
+treecomparison.submissions.update.160430<- function()
+{
+	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	timetag			<- '160430'
+	#
+	# collect results so far
+	#	
+	file			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151203.rda'
+	load(file)	
+	#
+	# to tinfo add actual transmitters
+	#
+	# check TRAIN1
+	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tinfo.add		<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tinfo.add		<- merge(tinfo.add, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
+	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
+	# check TRAIN2
+	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='150701_REGIONAL_TRAIN2']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN4
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN4' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)	
+	tmp[, SC:='150701_REGIONAL_TRAIN4']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN3
+	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN3' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='150701_REGIONAL_TRAIN3']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN5
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN5' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)
+	tmp[, SC:='150701_REGIONAL_TRAIN5']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# add transmitters for regional to tinfo
+	tinfo			<- merge(tinfo, tinfo.add, by=c('IDPOP', 'SC'), all.x=1)
+	#
+	# compute closest individual on true trees
+	#
+	tmp				<- unique(subset(tinfo, select=c(SC, BRL_T, IDX_T)))
+	tmp				<- tmp[, {
+				print(IDX_T)
+				ph			<- ttrs[[IDX_T]]
+				model.reg	<- grepl('REGIONAL',SC)
+				treedist.closest.ind(ph, model.reg)
+			}, by=c('SC','BRL_T','IDX_T')]
+	tinfo			<- merge(tinfo, tmp, by=c('SC','BRL_T','IDX_T','IDPOP'))
+	set(tinfo, NULL, 'IDPOP_CL', tinfo[, gsub('IDPOP_','',IDPOP_CL)])
+	#
+	# compute closest individual on simulated trees and determine proportion if either transmitter or among recipients
+	#	
+	sucl			<- subset(submitted.info, MODEL=='R')[, {
+				print(IDX)
+				#IDX<- 557; SUB_IDX_T<-2; SC<- '150701_REGIONAL_TRAIN2'
+				ph			<- strs[[IDX]]
+				model.reg	<- grepl('REGIONAL',SC)
+				ans			<- treedist.closest.ind(ph, model.reg)
+				ans			<- subset(ans, GD<=0.045)
+				tmp			<- subset(tinfo, IDX_T==SUB_IDX_T, c(IDPOP, IDTR, IDREC))
+				ans			<- merge(ans, tmp, by='IDPOP')
+				set(ans, NULL, 'IDPOP_CL', ans[, gsub('IDPOP_','',IDPOP_CL)])
+				ans[, IDCL:= as.character(IDTR)]
+				tmp			<- ans[, which(!is.na(IDREC))]
+				set(ans, tmp, 'IDCL', ans[tmp, paste(IDCL, IDREC, sep=',')])
+				if(nrow(ans))
+				{
+					tmp			<- ans[, list(CLD= IDPOP_CL%in%strsplit(IDCL,',')[[1]]) , by='IDPOP']
+					tmp			<- tmp[, mean(CLD)]
+				}
+				if(!nrow(ans))
+					tmp			<- NA_real_
+				list(TR_REC_perc= tmp)
+			}, by=c('IDX')]
+	submitted.info	<- merge(submitted.info, sucl, by='IDX', all.x=1)
+	# compute same proportion on true trees
+	tmp				<- subset(tinfo, BRL_T=='subst')[, {
+				ans		<- data.table(IDPOP=IDPOP, IDCL= as.character(IDTR), IDREC=IDREC, IDPOP_CL=IDPOP_CL, GD=GD)
+				ans		<- subset(ans, GD<=0.045)
+				tmp		<- ans[, which(!is.na(IDREC))]
+				set(ans, tmp, 'IDCL', ans[tmp, paste(IDCL, IDREC, sep=',')])
+				tmp			<- ans[, list(CLD= IDPOP_CL%in%strsplit(IDCL,',')[[1]]) , by='IDPOP']
+				list(TR_REC_perc_T= tmp[, mean(CLD)])
+			}, by='IDX_T']
+	setnames(tmp, 'IDX_T','SUB_IDX_T')
+	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
+	#
+	# save
+	#
+	outfile			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_160430.rda'
+	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, ttdists1, RFttdists, file=outfile)
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 03.12.15
+##--------------------------------------------------------------------------------------------------------
 treecomparison.submissions.update.151203<- function()
 {
 	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
@@ -1181,6 +1658,130 @@ treecomparison.submissions.update.151203<- function()
 	#
 	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151203.rda'
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, ttdists1, RFttdists, file=outfile)	
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 03.12.15
+##--------------------------------------------------------------------------------------------------------
+treecomparison.ana.160502<- function()
+{	
+	require(ggplot2)
+	require(data.table)
+	require(ape)
+	require(scales)	
+	require(ggtree)
+	require(phangorn)
+
+	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	timetag			<- '160502'
+	load(paste(edir,'/','submitted_160430.rda',sep=''))
+	
+	#
+	#	plot trees
+	#
+	tmpdir			<- '~/duke/tmp'
+	sc_id			<- '150701_REGIONAL_TRAIN5'
+	gene_id			<- 'GAG+POL+ENV'
+	team_id			<- 'RAXML'
+	for(sc_id in c("150701_REGIONAL_TRAIN1","150701_REGIONAL_TRAIN2","150701_REGIONAL_TRAIN3","150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5"))
+	{
+		for(team_id in c("IQTree","RAXML"))
+		{
+			for(gene_id in submitted.info[, unique(GENE)])
+			{
+				#gene_id<- 'POL'
+				tmp				<- subset(submitted.info, TEAM==team_id & SC==sc_id & GENE==gene_id)
+				if(team_id=="MetaPIGA")
+					tmp			<- subset(tmp, grepl("best solution_use",FILE))
+				phr				<- ttrs[[ tmp[1, SUB_IDX_T] ]]
+				phs				<- lapply(tmp[, IDX], function(i) strs[[i]] )
+				#	drop to common tips
+				z				<- setdiff(phr$tip.label, phs[[1]]$tip.label)
+				#stopifnot( length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+				if(length(z))
+					phr			<- drop.tip(phr, z, rooted=TRUE, root.edge=1)	
+				phr				<- multi2di(phr,random =FALSE)
+				pho				<- treedist.get.tree.100bs(phr, phs, tmpdir)
+				
+				ggtree(pho, layout="fan", aes(color=bootstrap), size=0.2) +
+						scale_colour_continuous(low="grey70", high="#1B0C42FF", guide="none") +
+						#scale_colour_continuous(low="#1B0C42FF", high="#D64B40FF", guide="none") + 
+						theme_tree2(legend.position='right') + theme(axis.text=element_blank())
+				file			<- file.path(edir, paste(timetag, '_AgreeTree100bs_', sc_id, '_', team_id, '_', gene_id, '.pdf', sep=''))		
+				ggsave(file=file, w=6, h=6)
+			}
+		}		
+	}
+	#	average gappiness
+	
+	#
+	#	plot prob closest
+	#
+	sa		<- copy(submitted.info)	
+	#
+	set(sa, NULL, 'MODEL', sa[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
+	set(sa, sa[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
+	set(sa, NULL, 'SC', sa[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
+							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+	set(sa, NULL, 'GAPS', sa[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for Botswana\nsequences','as for Uganda\nsequences'))])
+	set(sa, NULL, 'BEST', sa[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])									
+	set(sa, NULL, 'GENE', sa[, factor(GENE, levels=c('POL','GAG+POL+ENV'),labels=c('pol','gag+pol+env'))])	
+	set(sa, NULL, 'TEAM', sa[, factor(TEAM, levels=sa[, sort(unique(TEAM))],labels=sa[, sort(unique(TEAM))])])
+	set(sa, NULL, 'EXT', sa[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
+	set(sa, NULL, 'ACUTE', sa[, factor(ACUTE, levels=c('low','high'),labels=c('10%','40%'))])
+	set(sa, NULL, 'ART', sa[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
+	sa		<- subset(sa, OTHER=='N')
+	#
+	subset(sa, MODEL=='Model: Regional')[, table(TEAM, GENE, SC)]
+	#		
+	ggplot(subset(sa, !is.na(TR_REC_perc) & ACUTE=='10%'), aes(x=GAPS)) +
+		geom_jitter(aes(y=TR_REC_perc, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
+		scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8, 'MetaPIGA'=17)) +
+		geom_point(aes(y=TR_REC_perc_T), colour="#D64B40FF", size=2) +
+		scale_colour_manual(values=c('pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+		scale_y_continuous(labels = scales::percent, limit=c(0,0.4), expand=c(0,0)) +
+		labs(	x='\nGappiness of full-genome sequences', 
+				y='phylogenetically closest individual is\ntransmitter or next infected\n',
+				colour='part of genome used\nfor tree reconstruction',
+				pch='algorithm') +
+		theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','pTransRec_by_gaps.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
+	#
+	#	Quartett distance
+	#
+	load(paste(edir,'/','submitted_151101_BLQDKC.rda',sep=''))
+	sc		<- copy(sclu.info)
+	#
+	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N=CLU_N[1], MXGPS_CLU= max(GPS), MDGPS_CLU=median(GPS)), by=c('SC','IDCLU')]
+	sc		<- merge(sc, tmp, by=c('SC','IDCLU'))	
+	set(sc, NULL, 'MODEL', sc[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
+	set(sc, sc[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
+	set(sc, NULL, 'SC', sc[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
+							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+	set(sc, NULL, 'GAPS', sc[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for Botswana\nsequences','as for Uganda\nsequences'))])
+	set(sc, NULL, 'BEST', sc[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])									
+	set(sc, NULL, 'GENE', sc[, factor(GENE, levels=c('POL','GAG+POL+ENV'),labels=c('pol','gag+pol+env'))])	
+	set(sc, NULL, 'TEAM', sc[, factor(TEAM, levels=sc[, sort(unique(TEAM))],labels=sc[, sort(unique(TEAM))])])
+	set(sc, NULL, 'EXT', sc[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
+	set(sc, NULL, 'ART', sc[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
+	sc		<- subset(sc, OTHER=='N')	
+	sc		<- sc[, list( SB_NQD=mean(NQDC, na.rm=TRUE) ), by=c('SC','GENE','TEAM','BEST','IDX','FILE','GAPS','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
+	sc		<- subset(sc, MODEL=='Model: Regional')
+	
+	ggplot(subset(sc, ACUTE=='low' & TEAM!='MetaPIGA'), aes(x=GAPS)) +
+			geom_jitter(aes(y=SB_NQD, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
+			scale_colour_manual(values=c('pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.4)) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8)) +
+			labs(	x='\nGappiness of full-genome sequences', 
+					y='Quartett distance\n(standardized)\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','QD_polvsall_by_gaps.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
+	
+	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 03.12.15

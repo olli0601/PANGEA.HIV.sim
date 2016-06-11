@@ -1127,7 +1127,7 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 		tmp		<- melt(df.sample, id.vars=c('YR'))
 		set(tmp, NULL, 'variable', tmp[, factor(variable, levels=tmp[, unique(variable)], labels=tmp[, unique(variable)])])
 		
-		ggplot(tmp, aes(x=YR, y=value, group=variable)) + geom_step(with.guide=FALSE) + 
+		ggplot(tmp, aes(x=YR, y=value, group=variable)) + geom_step() + 
 				facet_grid(variable~., scales='free_y')  + 
 				theme_bw() + scale_x_continuous(name='year', breaks=seq(1980,pipeline.args['yr.end',][, as.numeric(v)],2)) +
 				theme(strip.text=element_text(size=7))
@@ -2201,6 +2201,8 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	#
 	#	create SeqGen input files
 	#
+	#z<- read.tree(text= subset(df.seqgen, IDCLU==1)[, NEWICK] )	
+	#z<- read.tree(text= subset(df.seqgen, IDCLU==1 & GENE=='GAG' & CODON_POS=='CP1')[, NEWICK] )
 	df.ph.out	<- df.seqgen[,	{
 				#print( table( strsplit(ANCSEQ, ''), useNA='if') )
 				file	<- paste(indir.sg,'/',infile.prefix, IDCLU, '_', GENE, '_', CODON_POS,'.seqgen',sep='')
@@ -2240,11 +2242,13 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	#	call SeqGen command line
 	#
 	cat(paste('\nUsing Gamma rate variation, gamma=',pipeline.args['er.gamma',][, as.numeric(v)]))
-	tmp		<- df.ph.out[, {	
+	tmp		<- subset(df.ph.out, IDCLU==1 & GENE=='GAG' & CODON_POS=='CP1')[, {	
 				cat(paste('\nProcess', IDCLU, GENE, CODON_POS))				
 				cmd	<- cmd.SeqGen(indir.sg, FILE, indir.sg, gsub('seqgen','phy',FILE), prog=PR.SEQGEN, prog.args=paste('-n',1,' -k1 -or -z',SEED,sep=''), 
 						alpha=alpha, gamma=pipeline.args['er.gamma',][, as.numeric(v)], invariable=0, scale=mu, freq.A=a, freq.C=c, freq.G=g, freq.T=t,
 						rate.AC=ac, rate.AG=ag, rate.AT=at, rate.CG=cg, rate.CT=1, rate.GT=gt)
+				cat(cmd)
+				stop()
 				system(cmd)				
 				list(CMD=cmd)							
 			}, by='FILE']
@@ -2275,8 +2279,9 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	#
 	#	reconstruct genes from codon positions
 	#
-	df.seq[, STAT:=paste(GENE,CODON_POS,sep='.')]		
-	df.seq		<- dcast.data.table(df.seq, IDCLU + LABEL ~ STAT, value.var="SEQ")
+	df.seq[, STAT:=paste(GENE,CODON_POS,sep='.')]
+	df.seq		<- subset(df.seq, !grepl('NOEXIST',LABEL) & !is.na(LABEL))
+	df.seq		<- dcast.data.table(df.seq, IDCLU + LABEL ~ STAT, value.var="SEQ")		
 	#	check that seq of correct size
 	stopifnot( df.seq[, all( nchar(GAG.CP1)==nchar(GAG.CP2) & nchar(GAG.CP1)==nchar(GAG.CP3) )] )
 	stopifnot( df.seq[, all( nchar(POL.CP1)==nchar(POL.CP2) & nchar(POL.CP1)==nchar(POL.CP3) )] )
@@ -2292,7 +2297,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 				list(GAG=gag, POL=pol, ENV=env, IDCLU=IDCLU)
 			}, by=c('LABEL')]
 	#	check that we have indeed seq for all sampled individuals
-	df.seq		<- subset( df.seq, !grepl('NOEXIST',LABEL) )	
+
 	tmp			<- df.seq[, sapply( strsplit(LABEL, treelabel.idx.sep, fixed=TRUE), '[[', treelabel.idx.idpop )]
 	df.seq[, IDPOP:=as.integer(substr(tmp,7,nchar(tmp)))]	
 	stopifnot( setequal( subset( df.inds, !is.na(TIME_SEQ) )[, IDPOP], df.seq[,IDPOP]) )

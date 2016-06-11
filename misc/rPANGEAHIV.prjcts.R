@@ -2186,6 +2186,7 @@ project.PANGEA.treecomparison.gaps.RobinsonFould.ByPartitionScheme<- function()
 			theme_bw() + theme(panel.margin.x = unit(0.8, "lines"))
 	ggsave(file= paste(indir.wgaps,'/150630_ExaML_PartitionNoneOrCodon_RF_box.pdf',sep=''), w=5, h=4)			
 }
+
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 01.07.15
 ##--------------------------------------------------------------------------------------------------------
@@ -2779,6 +2780,32 @@ project.PANGEA.TEST.pipeline.Apr2015.Manon<- function()
 				}, by='label']
 		
 	}
+}
+project.PANGEA.TEST.pipeline.June2016.Josh<- function()
+{		
+		library(PANGEA.HIV.sim)
+		pipeline.args	<- sim.regional.args( 	seed=42, 
+												s.MODEL='Prop2SuggestedSampling', 
+												report.prop.recent=1.0,
+												epi.acute='high', epi.intervention='none', 
+												epi.import=0.05, root.edge.fixed=0,												
+												wher.mu=log(0.00447743)-0.5^2/2, wher.sigma=0.5, bwerm.mu=log(0.002239075)-0.3^2/2, bwerm.sigma=0.3, er.gamma=4,
+												dbg.GTRparam=0, dbg.rER=0, 
+												index.starttime.mode='fix1970', startseq.mode='one', seqtime.mode="AtDiag")								
+		
+		# proposed standard run and control simulation
+		pipeline.vary	<- data.table(	label=					paste('-s',100*seq(1.0,0.2,-0.1),sep=''),										
+										s.PREV.max= 			seq(1,0.2,-0.1)	)			
+		dummy			<- pipeline.vary[, {				
+					set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.PREV.max))
+					print(pipeline.args)										
+					
+					tmpdir			<- '/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone'
+					tmpdir			<- paste(tmpdir,label,sep='')
+					dir.create(tmpdir, showWarnings=FALSE)																		
+					file			<- sim.regional(tmpdir, pipeline.args=pipeline.args)
+					#system(file)																										
+				}, by='label']
 }
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.TEST.pipeline.Apr2015.Manon.postprocess<- function()

@@ -4,12 +4,12 @@ if(!any(args=='--args'))
 if(any(args=='--args'))
 	args<- args[-(1:match("--args", args)) ]
 #	default args
-indir.epi			<- '/Users/Oliver/git/HPTN071sim/tmp140914/TrChains'
-infile.epi			<- '140716_RUN001_SAVE.R'		
-indir.sg			<- '/Users/Oliver/git/HPTN071sim/tmp140908/SeqGen'
-infile.prefix		<- '140716_RUN001_'
-infile.args			<- NA
-outdir				<- '/Users/Oliver/git/HPTN071sim/tmp140908'
+indir.epi			<- '/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone-s20/TrChains'
+infile.epi			<- '150129_HPTN071_scHN_SAVE.R'		
+indir.sg			<- '/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone-s20/SeqGen'
+infile.prefix		<- '150129_HPTN071_scHN_'
+infile.args			<- '/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone-s20/150129_HPTN071_scHN_PipeArgs.R'
+outdir				<- '/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone-s20'
 with.plot			<- 1
 with.NJ				<- 1
 verbose				<- 1
