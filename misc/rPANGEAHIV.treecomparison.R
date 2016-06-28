@@ -425,18 +425,23 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 				stree		<- unroot(strs[[IDX]])
 				otree		<- unroot(ttrs[[IDX_T]])
 				z			<- IDX_T
-				z			<- subset(tinfo, CLU_N>3 & IDX_T==z)
+				#	get all clusters of this true tree (with IDX_T) that are of size>=3 (use "tinfo" for that)
+				z			<- subset(tinfo, CLU_N>3 & IDX_T==z)	
+				setkey(z, TAXA)
+				z			<- unique(z)				
 				z			<- merge(z, data.table(TAXA=stree$tip.label, IN_STREE=1), by='TAXA', all.x=1)
+				#	calculate the size of these clusters in the simulated tree
 				z			<- merge(z, z[, list(CLU_NS= length(which(IN_STREE==1))), by='IDCLU'], by='IDCLU')
+				#	get all clusters of size >= 3 in both the simulated and true tree
 				z			<- subset(z, CLU_NS>3)
+				#	if there any such clusters, calculate the quartet distance
 				if(nrow(z))
 				{
-					#IDCLU	<- 6
-					#TAXA	<- subset(z, IDCLU==6)[, TAXA]
+					#IDCLU	<- 6; TAXA	<- subset(z, IDCLU==6)[, TAXA]
 					ans		<- z[, {								
-								sclu<- unroot(drop.tip(stree, setdiff(stree$tip.label,TAXA)))
-								oclu<- unroot(drop.tip(otree, union( setdiff(otree$tip.label, stree$tip.label), setdiff(otree$tip.label,TAXA))))
-								z<- quartets.distance.cmd(oclu, sclu)
+								sclu	<- unroot(drop.tip(stree, setdiff(stree$tip.label,TAXA)))
+								oclu	<- unroot(drop.tip(otree, union( setdiff(otree$tip.label, stree$tip.label), setdiff(otree$tip.label,TAXA))))
+								z		<- quartets.distance.cmd(oclu, sclu)
 								list(NQDC=z['NQD'])
 							}, by='IDCLU']	
 				}
@@ -457,7 +462,7 @@ treedist.closest.ind<- function(ph, model.reg)
 	tmp			<- cophenetic.phylo(ph)
 	diag(tmp)	<- Inf
 	ans			<- data.table(IDPOP=rownames(tmp), IDPOP_CL=colnames(tmp)[apply(tmp, 1, which.min)])
-	ans			<- merge(ans, ans[,  list(GD=tmp[IDPOP, IDPOP_CL]), by='IDPOP'], by='IDPOP')
+	ans			<- merge(ans, ans[,  list(IDPOP_CL_GD=tmp[IDPOP, IDPOP_CL]), by='IDPOP'], by='IDPOP')
 	if( !model.reg )
 	{
 		set(ans, NULL, 'IDPOP', ans[, toupper(gsub('-FEMALE|-MALE','',sapply(strsplit(IDPOP,'_',fixed=1),'[[',1)))] ) 
@@ -473,7 +478,7 @@ treedist.closest.ind<- function(ph, model.reg)
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 03.12.15
 ##--------------------------------------------------------------------------------------------------------
-treedist.robinsonfould.wrapper<- function(submitted.info, ttrs, strs)
+treedist.robinsonfould.wrapper<- function(submitted.info, ttrs, strs, check.binary.sim=TRUE)
 {
 	require(phangorn)
 	setkey(submitted.info, IDX)
@@ -482,11 +487,11 @@ treedist.robinsonfould.wrapper<- function(submitted.info, ttrs, strs)
 	tmp				<- submitted.info[, {
 				cat('\nAt IDX', IDX)
 				stree		<- unroot(strs[[IDX]])
-				otree		<- unroot(multi2di(ttrs[[TIME_IDX_T]]))				
-				if(!is.binary.tree(stree))
+				otree		<- unroot(multi2di(ttrs[[TIME_IDX_T]], random=FALSE))				
+				if(check.binary.sim && !is.binary.tree(stree))
 				{
 					cat('\nFound non-binary tree at IDX',IDX)
-					stree	<- multi2di(stree)
+					stree	<- multi2di(stree, random=FALSE)
 				}
 				#print(stree)
 				#print(otree)
@@ -511,16 +516,14 @@ treedist.robinsonfouldclusters.wrapper<- function(submitted.info, ttrs, strs, ti
 	#IDX<- 1; TIME_IDX_T<-12		
 	setkey(tinfo, IDX_T)
 	tmp		<- subset(submitted.info, MODEL=='R')[, {
+				#IDX<- 208; TIME_IDX_T<- 16
 				cat('\nAt IDX', IDX)
-				stree		<- unroot(strs[[IDX]])
-				otree		<- unroot(multi2di(ttrs[[TIME_IDX_T]]))				
-				if(!is.binary.tree(stree))
-				{
-					cat('\nFound non-binary tree at IDX',IDX)
-					stree	<- multi2di(stree)
-				}
+				stree		<- strs[[IDX]]
+				otree		<- ttrs[[TIME_IDX_T]]				
 				z			<- TIME_IDX_T
 				z			<- subset(tinfo, CLU_N>3 & IDX_T==z)
+				setkey(z, TAXA)
+				z			<- unique(z)
 				z			<- merge(z, data.table(TAXA=stree$tip.label, IN_STREE=1), by='TAXA', all.x=1)
 				z			<- merge(z, z[, list(CLU_NS= length(which(IN_STREE==1))), by='IDCLU'], by='IDCLU')
 				z			<- subset(z, CLU_NS>3)
@@ -924,6 +927,594 @@ treecomparison.submissions.151119<- function()
 	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151119_SRFQD.rda'
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
 }
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.submissions.160627<- function()	
+{
+	require(data.table)
+	require(ape)
+	require(phangorn)
+	require(parallel)
+	#
+	#	get true trees
+	#
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
+	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
+	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('Vill.*DATEDTREE', tfiles) ] )
+	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
+	tmp		<- rbind( subset(tfiles, SC=='VILL_99_APR15'), subset(tfiles, SC=='VILL_99_APR15'), subset(tfiles, SC=='VILL_99_APR15') )
+	set(tmp, NULL, 'SC', c('150701_VILL_SCENARIO-C','150701_VILL_SCENARIO-D','150701_VILL_SCENARIO-E'))
+	tfiles	<- rbind(tfiles, tmp)
+	tmp		<- list.files(indir, pattern='newick$', full.names=TRUE)
+	tmp		<- data.table( FILE_T= tmp[ grepl('Reg.*DATEDTREE', tmp) ] )
+	tmp[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
+	tfiles	<- rbind(tfiles, tmp)
+	tfiles[, BRL_T:= 'time']	
+	set(tfiles, tfiles[, which(grepl('REG',SC) & grepl('SUBST',FILE_T))], 'BRL_T', 'subst')	
+	ttrs	<- lapply(tfiles[, FILE_T], function(x)	read.tree(file=x) )
+	names(ttrs)	<- tfiles[, SC]	
+	for(z in c('VILL_99_APR15','150701_VILL_SCENARIO-C','150701_VILL_SCENARIO-D','150701_VILL_SCENARIO-E'))
+		ttrs[[z]]	<- root(ttrs[[z]], node=Ntip(ttrs[[z]])+2, resolve.root=1)	
+	tfiles[, IDX_T:=seq_along(ttrs)]
+	tfiles[, TAXAN_T:= sapply(ttrs, Ntip)]
+	#	info on true trees
+	tinfo	<- merge(tfiles, do.call('rbind',lapply(seq_along(ttrs), function(i) data.table(TAXA=ttrs[[i]]$tip.label, IDX_T=i))), by='IDX_T')	
+	tinfo[, IDPOP:=NA_character_]
+	tmp		<- tinfo[, which(grepl('REGIONAL',SC))]
+	set(tinfo, tmp, 'IDPOP', tinfo[tmp,regmatches(TAXA, regexpr('IDPOP_[0-9]+',TAXA))])
+	tmp		<- tinfo[, which(!grepl('REGIONAL',SC))]
+	set(tinfo, tmp, 'IDPOP', tinfo[tmp, regmatches(TAXA, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',TAXA))])		
+	stopifnot(subset(tinfo, grepl('VILL',SC))[, length(which(substring(TAXA,1,10)!=substring(IDPOP,1,10)))]==0)	
+	stopifnot( tinfo[, length(which(is.na(IDPOP)))==0] )	
+	set(tinfo, NULL, 'IDPOP', tinfo[,toupper(IDPOP)])
+	set(tinfo, NULL, 'TAXA', tinfo[,toupper(TAXA)])
+	#	read cluster membership from DATEDCLUTREES	
+	tmp		<- list.files(indir, pattern='DATEDCLUTREES', full.names=TRUE)
+	tmp		<- data.table( 	FILE_CLU_T= tmp, 
+			SC= toupper(gsub('_DATEDCLUTREES','',gsub('.newick','',basename(tmp)))),
+			BRL_T= 'time') 
+	tfiles	<- merge(tfiles, tmp, by=c('SC','BRL_T'), all=1)	
+	tmp		<- subset(tfiles, !is.na(FILE_CLU_T))[, {
+				z		<- read.tree(FILE_CLU_T)
+				do.call('rbind',lapply(seq_along(z), function(i) data.table(IDCLU=i, TAXA=z[[i]]$tip.label)))				
+			}, by=c('SC','BRL_T')]	
+	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all=1)
+	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N= length(IDPOP)), by=c('SC','BRL_T','IDCLU')]
+	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','IDCLU'), all=1)
+	#	read sequences and determine %gappiness
+	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
+	tmp		<- data.table( FILE_SEQ_T= tmp, SC= toupper(gsub('_SIMULATED','',gsub('.fa','',basename(tmp)))))
+	z		<- subset(tmp, SC=='VILL_99_APR15')
+	set(z, NULL, 'SC', '150701_VILL_SCENARIO-C')
+	tmp		<- rbind( tmp, z )	
+	tfiles	<- merge(tfiles, tmp, by='SC', all=1)
+	tmp		<- subset(tfiles, !is.na(FILE_SEQ_T))[, {
+				z		<- read.dna(FILE_SEQ_T, format='fasta')	
+				ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))
+				ans		<- apply(ans[c('n','-','?'),], 2, sum)
+				list(TAXA=rownames(z), GPS=ans)				
+			}, by=c('SC','BRL_T')]
+	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all.x=1)
+	#
+	# to tinfo add actual transmitters
+	#
+	# check TRAIN1
+	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tinfo.add		<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tinfo.add		<- merge(tinfo.add, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
+	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
+	# check TRAIN2
+	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='150701_REGIONAL_TRAIN2']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN4
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN4' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)	
+	tmp[, SC:='150701_REGIONAL_TRAIN4']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN3
+	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN3' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='150701_REGIONAL_TRAIN3']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN5
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN5' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(DOB==DOB_CH)], ch[, all(GENDER==GENDER_CH)], ch[, all(TIME_SEQ==TIME_SEQ_CH)] )
+	subset(ch, TIME_SEQ!=TIME_SEQ_CH)
+	tmp[, SC:='150701_REGIONAL_TRAIN5']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	#
+	# 	add transmitters for regional to tinfo
+	#
+	tinfo			<- merge(tinfo, tinfo.add, by=c('IDPOP', 'SC'), all.x=1)
+	#
+	#	add true node depths to tinfo
+	#
+	tmp				<- tinfo[,	{
+									cat(IDX_T,'\n')
+									ph<- ttrs[[IDX_T]]
+									list(DEPTH_T=node.depth.edgelength(ph)[seq_len(Ntip(ph))], TAXA=ph$tip.label)
+								}, by='IDX_T']
+	tinfo			<- merge(tinfo, tmp, by=c('IDX_T','TAXA'), all.x=1)
+	#
+	#	get submitted trees
+	#	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
+	infiles	<- list.files(indir, pattern='treefile$', recursive=1, full.names=1)
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201510'
+	infiles	<- c(infiles, list.files(indir, pattern='treefile$', recursive=1, full.names=1))	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTREE_Update_gag'
+	infiles	<- c(infiles, list.files(indir, pattern='treefile$', recursive=1, full.names=1))	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
+	infiles	<- c(infiles, list.files(indir, pattern='*tree*', recursive=1, full.names=1))
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
+	infiles	<- c(infiles, list.files(indir, pattern='*RAxML_bestTree*', recursive=1, full.names=1))
+	infiles	<- c(infiles, list.files(indir, pattern="best_tree", recursive=1, full.names=1))
+	infiles	<- data.table(FILE=infiles)
+	strs	<- lapply(infiles[, FILE], function(x)
+			{
+				cat(x)
+				read.tree(file=x)	
+			})
+	names(strs)	<- infiles[, FILE]
+	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
+	tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
+	tmp		<- data.table(FILE=tmp)	
+	tmp.trees			<- lapply(tmp[, FILE], function(x)
+			{
+				cat(x)
+				read.nexus(file=x)	
+			})
+	sapply(tmp.trees, length)
+	MetaPIGA.trees			<- c(lapply(tmp.trees, '[[', 1), lapply(tmp.trees, '[[', 2), lapply(tmp.trees, '[[', 3), lapply(tmp.trees, '[[', 4))
+	names(MetaPIGA.trees)	<- c(sapply(tmp.trees, function(x) paste(names(x)[1],'_use',sep='')), sapply(tmp.trees, function(x) names(x)[2]), sapply(tmp.trees, function(x) names(x)[3]), sapply(tmp.trees, function(x) names(x)[4]))	
+	names(MetaPIGA.trees)	<- gsub("'",'',names(MetaPIGA.trees), fixed=1)	
+	strs					<- c(strs, MetaPIGA.trees)	
+	submitted.info			<- data.table(FILE=names(strs))
+	#
+	#	re-root simulated trees with rtt
+	#			
+	strs_rtt	<- lapply(seq_along(strs), function(i)
+			{
+				cat('\n',i)
+				#i	<- 628 ; i<- 241
+				ph	<- strs[[i]]
+				tmp	<- data.table(TAXA=ph$tip.label)	
+				tmp[, T_SEQ:= tmp[, regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA)) ]]
+				#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
+				phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)], ncpu=4)
+				phr
+			})
+	names(strs_rtt)	<- names(strs)
+	#
+	#	ladderize all trees
+	#		
+	ttrs	<- lapply(ttrs, ladderize)
+	strs	<- lapply(strs, ladderize)
+	strs_rtt<- lapply(strs_rtt, ladderize)
+	#
+	#
+	#	
+	submitted.info[, IDX:=seq_along(strs)]	
+	submitted.info[, TEAM:=NA_character_]
+	set(submitted.info, submitted.info[, which(grepl('RAXML|RAxML',FILE))], 'TEAM', 'RAXML')
+	set(submitted.info, submitted.info[, which(grepl('IQTree',FILE))], 'TEAM', 'IQTree')
+	set(submitted.info, submitted.info[, which(grepl('MetaPIGA|Consensus pruning|Best individual of population',FILE))], 'TEAM', 'MetaPIGA')
+	set(submitted.info, submitted.info[, which(grepl('PhyML',FILE))], 'TEAM', 'PhyML')	
+	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )
+	#
+	#	scenario
+	#	
+	submitted.info[, SC:=NA_character_]
+	tmp		<- submitted.info[, which(grepl('150701_Regional_TRAIN[0-9]', FILE))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, regmatches(FILE, regexpr('150701_Regional_TRAIN[0-9]',FILE))])
+	tmp		<- submitted.info[, which(grepl('150701_Vill_SCENARIO-[A-Z]', FILE))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, regmatches(FILE, regexpr('150701_Vill_SCENARIO-[A-Z]',FILE))])
+	tmp		<- submitted.info[, which(is.na(SC) & grepl('TRAIN[0-9]', FILE))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, paste('150701_Regional_',regmatches(FILE, regexpr('TRAIN[0-9]',FILE)),sep='')])
+	tmp		<- submitted.info[, which(is.na(SC) & grepl('scenario[A-Z]', FILE))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, paste('150701_Vill_',regmatches(FILE, regexpr('scenario[A-Z]',FILE)),sep='')])
+	tmp		<- submitted.info[, which(is.na(SC) & grepl('150701_regional_train[0-9]', FILE))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, regmatches(FILE, regexpr('150701_regional_train[0-9]',FILE))])
+	tmp		<- submitted.info[, which(is.na(SC) & grepl('150701_vill_scenario-[A-Z]', FILE))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, regmatches(FILE, regexpr('150701_vill_scenario-[A-Z]',FILE))])
+	tmp		<- submitted.info[, which(is.na(SC) & grepl('Vill_99_Apr15', FILE))]
+	set(submitted.info, tmp, 'SC', 'Vill_99_Apr15')	
+	set(submitted.info, NULL, 'SC', submitted.info[, toupper(SC)])
+	tmp		<- submitted.info[, which(grepl('150701_VILL_SCENARIO[A-Z]', SC))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, gsub('150701_VILL_SCENARIO','150701_VILL_SCENARIO-',SC)])
+	stopifnot( submitted.info[, length(which(is.na(SC)))==0] )
+	#
+	#	set covariates of scenarios
+	#
+	tmp		<- data.table(	SC=		c("150701_REGIONAL_TRAIN1","150701_REGIONAL_TRAIN2","150701_REGIONAL_TRAIN3","150701_REGIONAL_TRAIN4" ,"150701_REGIONAL_TRAIN5", "150701_VILL_SCENARIO-A", "150701_VILL_SCENARIO-B", "VILL_99_APR15","150701_VILL_SCENARIO-C", "150701_VILL_SCENARIO-D", "150701_VILL_SCENARIO-E"),
+							MODEL=	c('R','R','R','R','R','V','V','V','V','V','V'),
+							SEQCOV= c(0.16, 0.16, 0.16, 0.16, 0.16, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6),
+							ACUTE=	c('low', 'low', 'high', 'low', 'high', 'high', 'high', 'high', 'high', 'high', 'high'),
+							GAPS=	c('none', 'low', 'low', 'high', 'high', 'low', 'high', 'none', 'none', 'low', 'high'), 
+							ART=	c('none', 'none', 'none', 'none', 'none', 'none', 'none', 'fast', 'fast', 'fast', 'fast'),
+							EXT= 	c('5pc', '5pc', '5pc', '5pc', '5pc', '~0pc', '~0pc', '~0pc', '~0pc', '~0pc', '~0pc')	)
+	submitted.info	<- merge(submitted.info, tmp, by='SC')
+	#
+	#	set which gene used to construct tree (either pol or concatenated gag+pol+env)
+	#
+	submitted.info[, GENE:=NA_character_]
+	set(submitted.info, submitted.info[, which(TEAM=='RAXML' & grepl('full', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(TEAM=='RAXML' & grepl('pol', FILE))], 'GENE', 'POL')
+	set(submitted.info, submitted.info[, which(TEAM=='RAXML' & grepl('gag', FILE))], 'GENE', 'GAG')
+	stopifnot(nrow(subset(submitted.info, TEAM=='RAXML' & is.na(GENE)))==0)
+	set(submitted.info, submitted.info[, which(TEAM=='PhyML' & grepl('gag', FILE))], 'GENE', 'GAG')
+	set(submitted.info, submitted.info[, which(TEAM=='PhyML' & grepl('pol', FILE))], 'GENE', 'POL')
+	set(submitted.info, submitted.info[, which(TEAM=='PhyML' & grepl('gagpolenv', FILE))], 'GENE', 'GAG+POL+ENV')
+	stopifnot(nrow(subset(submitted.info, TEAM=='RAXML' & is.na(GENE)))==0)
+	set(submitted.info, submitted.info[, which(TEAM=='MetaPIGA')], 'GENE', 'GAG+POL+ENV')	
+	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & grepl('[0-9]_partition', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & grepl('[0-9]_pol_partition', FILE))], 'GENE', 'POL')
+	stopifnot(nrow(subset(submitted.info, TEAM=='IQTree' & is.na(GENE)))==0)	
+	#
+	#	best tree for each scenario
+	#
+	submitted.info[, BEST:='N']
+	set(submitted.info, submitted.info[, which(grepl('RAxML', FILE) & grepl('best_tree', FILE))], 'BEST', 'Y')	
+	#	copied from ListOfBestTrees_IQTree150818.txt
+	#	there are several best trees for some scenarios
+	tmp	<- c( 	'150701_Vill_SCENARIO-A_IQTree150814_partition_12_3_07',	
+				'150701_Vill_SCENARIO-A_IQTree150814_partition_12_3_04.',	
+				'150701_Vill_SCENARIO-B_IQTree150814_partition_12_3_03.',	
+				'Vill_99_Apr15_IQTree150814_partition_123.',			
+				'150701_Vill_SCENARIO-D_IQTree150814_partition_12_3.',	
+				'150701_Vill_SCENARIO-E_IQTree150814_partition_12_3.',
+				'150701_Vill_SCENARIO-A_IQTree150814_pol_partition_12_3.',	
+				'150701_Vill_SCENARIO-B_IQTree150814_pol_partition_12_3_05.',
+				'Vill_99_Apr15_IQTree150814_pol_partition_12_3_09.',		
+				'Vill_99_Apr15_IQTree150814_pol_partition_12_3_10.',		
+				'150701_Vill_SCENARIO-D_IQTree150814_pol_partition_12_3_05.',
+				'150701_Vill_SCENARIO-D_IQTree150814_pol_partition_12_3_06.',
+				'150701_Vill_SCENARIO-D_IQTree150814_pol_partition_12_3_09.',
+				'150701_Vill_SCENARIO-E_IQTree150814_pol_partition_12_3_06.',
+				'150701_Regional_TRAIN1_IQTree150818_partition_123_03.',	
+				'150701_Regional_TRAIN1_IQTree150818_pol_partition_123_05.')
+	tmp	<- sapply(tmp, function(x) submitted.info[, which((grepl('IQTree150814/', FILE, fixed=1) | grepl('IQTree150818/', FILE, fixed=1)) & grepl(x, FILE, fixed=1))] )
+	set(submitted.info, tmp, 'BEST', 'Y')
+	tmp	<- c(	'150701_Regional_TRAIN2_IQTree151019_partition_123_10', 			
+				'150701_Regional_TRAIN3_IQTree151019_partition_123_03',	
+				'150701_Regional_TRAIN4_IQTree151019_partition_123_10',	
+				'150701_Regional_TRAIN5_IQTree151019_partition_123_01',
+				'150701_Regional_TRAIN2_IQTree151019_pol_partition_123_08',
+				'150701_Regional_TRAIN3_IQTree151019_pol_partition_123_08',	
+				'150701_Regional_TRAIN4_IQTree151019_pol_partition_123_05',
+				'150701_Regional_TRAIN5_IQTree151019_pol_partition_123_10')
+	tmp	<- sapply(tmp, function(x) submitted.info[, which((grepl('IQTree151019', FILE, fixed=1)) & grepl(x, FILE, fixed=1))] )
+	set(submitted.info, tmp, 'BEST', 'Y')
+	#	PhyML: read log likelihood	 
+	lkl		<- data.table(FILE= list.files('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML', pattern='*phyml_stats*', recursive=1, full.names=1))
+	lkl		<- lkl[, {
+				z		<- readLines(FILE)
+				z		<- as.numeric( gsub('\\s','',gsub('Log-likelihood:','',gsub('^\\.','',z[ which( grepl('Log-likelihood', z) ) ]))) )
+				list( LOGLKL=z )
+			}, by='FILE']
+	lkl[, SC:=NA_character_]
+	tmp		<- lkl[, which(is.na(SC) & grepl('150701_regional_train[0-9]', FILE))]
+	set(lkl, tmp, 'SC', lkl[tmp, regmatches(FILE, regexpr('150701_regional_train[0-9]',FILE))])
+	tmp		<- lkl[, which(is.na(SC) & grepl('150701_vill_scenario-[A-Z]', FILE))]
+	set(lkl, tmp, 'SC', lkl[tmp, regmatches(FILE, regexpr('150701_vill_scenario-[A-Z]',FILE))])
+	set(lkl, NULL, 'SC', lkl[, toupper(SC)])
+	lkl[, TEAM:= 'PhyML']
+	lkl[, GENE:= NA_character_]
+	set(lkl, lkl[, which(TEAM=='PhyML' & grepl('gag', FILE))], 'GENE', 'GAG')
+	set(lkl, lkl[, which(TEAM=='PhyML' & grepl('pol', FILE))], 'GENE', 'POL')
+	set(lkl, lkl[, which(TEAM=='PhyML' & grepl('gagpolenv', FILE))], 'GENE', 'GAG+POL+ENV')
+	setkey(lkl, GENE, SC)
+	tmp		<- lkl[, list( FILE_BEST=FILE[ which.max(LOGLKL)[1] ] ), by=c('GENE','SC','TEAM')]
+	set(tmp, NULL, 'FILE_BEST', tmp[, gsub('phyml_stats','phyml_tree',FILE_BEST)])	
+	set(submitted.info, submitted.info[, which(FILE%in%tmp$FILE_BEST)], 'BEST', 'Y')
+	#
+	#	set OTHER (ie old or some preliminary/unknown tree)
+	#
+	submitted.info[, OTHER:='N']
+	#	MetaPIGA tree to be used is first in nexus list (which was tagged with best above)
+	set(submitted.info, submitted.info[, which(TEAM=='MetaPIGA' & !grepl('use', FILE))], 'OTHER', 'Y')
+	#	IQTree did several uploads, use only most recent in main analysis
+	set(submitted.info, submitted.info[, which(grepl('150701_Regional_TRAIN1_IQTree150814', FILE))], 'OTHER', 'Y')
+	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & MODEL=='R' & !grepl('TRAIN1', SC) & grepl('201507/',FILE,fixed=1))], 'OTHER', 'Y')
+	#
+	#	number taxa in tree
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, TAXAN:= sapply(strs, Ntip)]
+	#
+	#	are trees rooted?
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, ROOTED:=factor(sapply(strs, is.rooted),levels=c(TRUE,FALSE),labels=c('Y','N'))]
+	#
+	#	add BRL_UNITS
+	#
+	submitted.info[, BRL:='subst']
+	#
+	#	add index of true tree
+	#
+	require(phangorn)
+	tmp				<- subset(tfiles, select=c('SC','IDX_T','BRL_T'))
+	tmp				<- dcast.data.table(tmp, SC~BRL_T, value.var='IDX_T')
+	setnames(tmp, c('subst','time'), c("SUB_IDX_T","TIME_IDX_T"))
+	submitted.info	<- merge(submitted.info, tmp, by='SC')
+	submitted.info	<- merge(submitted.info, unique(subset(tfiles, select=c('SC','TAXAN_T'))), by='SC')	
+	stopifnot(nrow(subset(submitted.info, TAXAN>TAXAN_T))==0)
+	#
+	#	fix taxa names that teams have changed
+	#
+	tmp		<- subset(submitted.info, TEAM=='IQTree' & MODEL=='R')[, IDX]
+	for(i in tmp)
+	{
+		strs[[i]]$tip.label		<- sapply(strsplit(strs[[i]]$tip.label,'_'), function(x)	paste(x[1],'_',x[2],'|',x[3],'|',x[4],'_',x[5],'|',x[6],sep='')	)
+		strs_rtt[[i]]$tip.label	<- sapply(strsplit(strs_rtt[[i]]$tip.label,'_'), function(x)	paste(x[1],'_',x[2],'|',x[3],'|',x[4],'_',x[5],'|',x[6],sep='')	)
+	}
+	for(i in seq_along(strs))
+	{
+		strs[[i]]$tip.label		<- toupper(strs[[i]]$tip.label)
+		strs_rtt[[i]]$tip.label	<- toupper(strs_rtt[[i]]$tip.label)
+	}
+	for(i in seq_along(ttrs))
+	{
+		ttrs[[i]]$tip.label	<- toupper(ttrs[[i]]$tip.label)
+	}	
+	###
+	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='R')[, IDX]
+	for(i in tmp)
+	{
+		
+		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('IDPOP_[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
+		z	<- merge(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA)), z, by=c('IDPOP','SC'))
+		setkey(z, IDX)
+		stopifnot(nrow(z)==Ntip(strs[[i]]))
+		strs[[i]]$tip.label	<- z[, TAXA]
+		#
+		z	<- data.table(IDX=seq_along(strs_rtt[[i]]$tip.label), IDPOP=regmatches(strs_rtt[[i]]$tip.label, regexpr('IDPOP_[0-9]+',strs_rtt[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
+		z	<- merge(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA)), z, by=c('IDPOP','SC'))
+		setkey(z, IDX)
+		stopifnot(nrow(z)==Ntip(strs_rtt[[i]]))
+		strs_rtt[[i]]$tip.label	<- z[, TAXA]		
+	}
+	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='V')[, IDX]
+	for(i in tmp)
+	{
+		
+		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
+		z	<- merge(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA)), z, by=c('IDPOP','SC'))
+		stopifnot(nrow(z)==length(strs[[i]]$tip.label))
+		setkey(z, IDX)
+		strs[[i]]$tip.label	<- z[, TAXA]
+		#
+		z	<- data.table(IDX=seq_along(strs_rtt[[i]]$tip.label), IDPOP=regmatches(strs_rtt[[i]]$tip.label, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',strs_rtt[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
+		z	<- merge(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA)), z, by=c('IDPOP','SC'))
+		stopifnot(nrow(z)==length(strs_rtt[[i]]$tip.label))
+		setkey(z, IDX)
+		strs_rtt[[i]]$tip.label	<- z[, TAXA]
+	}
+	#
+	#	plot simulated trees versus true tree
+	#
+	require(ggtree)	
+	invisible(subset(submitted.info, OTHER=='N')[, 
+			{
+				#IDX		<- c(531,532,533,534,535,536,537,538,539,540,748,749,750,751,752,753,754,755,756,757,870)
+				#TEAM	<- c(1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0 , 0  ,0  ,0  ,0 )
+				#GENE	<- rep('POL', length(IDX))
+				tmp		<- lapply(IDX, function(i) strs_rtt[[i]] )
+				class(tmp) 	<- "multiPhylo"
+				names(tmp)	<- paste(TEAM, GENE, IDX, sep='-')
+				p	<- ggtree(tmp, size=0.1) + facet_wrap(~.id, ncol=10, scales='free_x')				
+				pdf(file=file.path(outdir, paste('strs_rtt_160727_',SC,'.pdf',sep='')), w=40, h=length(IDX)/10*12)
+				print(p)
+				dev.off()	
+				NULL
+			}, by=c('SC')])
+	#
+	#	long branch attraction
+	#
+	lba		<- submitted.info[, {
+				#IDX<-638; SUB_IDX_T<- 1
+				cat(IDX,'\n')
+				ph	<- strs_rtt[[IDX]]
+				tmp	<- data.table(DEPTH=node.depth.edgelength(ph)[seq_len(Ntip(ph))], TAXA=ph$tip.label)
+				tmp	<- merge(tmp, unique(subset(tinfo, IDX_T==SUB_IDX_T, c(TAXA,DEPTH_T))), by='TAXA')
+				tmp
+			}, by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
+	#
+	# compute closest individual on true trees
+	#
+	tmp				<- unique(subset(tinfo, select=c(SC, BRL_T, IDX_T)))
+	tmp				<- tmp[, {
+				print(IDX_T)
+				ph			<- ttrs[[IDX_T]]
+				model.reg	<- grepl('REGIONAL',SC)
+				treedist.closest.ind(ph, model.reg)
+			}, by=c('SC','BRL_T','IDX_T')]
+	tinfo			<- merge(tinfo, tmp, by=c('SC','BRL_T','IDX_T','IDPOP'))
+	set(tinfo, NULL, 'IDPOP_CL', tinfo[, gsub('IDPOP_','',IDPOP_CL)])
+	#
+	# compute on true trees the proportion if either transmitter or among recipients
+	#
+	#tmp				<- subset(tinfo, BRL_T=='subst')[, {
+	#			#z<- subset(tinfo, BRL_T=='subst' & IDX_T==1); IDPOP<- z$IDPOP; IDTR<- z$IDTR; IDREC<- z$IDREC; IDPOP_CL<- z$IDPOP_CL; IDPOP_CL_GD<- z$IDPOP_CL_GD
+	#			gds	<- data.table(IDPOP=as.integer(gsub('IDPOP_','',IDPOP)), IDTR= as.integer(IDTR), IDREC=IDREC, IDPOP_CL=as.integer(IDPOP_CL), IDPOP_CL_GD=IDPOP_CL_GD)
+	#			gds[, CL_PH_PAIR:= gds[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
+	#			tmp		<- gds[, which(CL_PH_PAIR=='1')]
+	#			set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
+	#			tmp		<- gds[, which(CL_PH_PAIR=='0')]
+	#			set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
+	#			setkey(gds, CL_PH_PAIR)
+	#			list(Q=seq(0.01,0.5,0.01), IDPOP_CL_GD=unique(gds)[, quantile(IDPOP_CL_GD, p=seq(0.01,0.5,0.01))])
+	#		}, by=c('IDX_T','SC','BRL_T')]
+	#ggplot(tmp, aes(x=Q, y=IDPOP_CL_GD, colour=SC)) + geom_line()	
+	tmp				<- subset(tinfo, BRL_T=='subst')[, {
+				#z<- subset(tinfo, BRL_T=='subst' & IDX_T==1); IDPOP<- z$IDPOP; IDTR<- z$IDTR; IDREC<- z$IDREC; IDPOP_CL<- z$IDPOP_CL; IDPOP_CL_GD<- z$IDPOP_CL_GD
+				gds	<- data.table(IDPOP=as.integer(gsub('IDPOP_','',IDPOP)), IDTR= as.integer(IDTR), IDREC=IDREC, IDPOP_CL=as.integer(IDPOP_CL), IDPOP_CL_GD=IDPOP_CL_GD)
+				gds[, CL_PH_PAIR:= gds[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
+				tmp		<- gds[, which(CL_PH_PAIR=='1')]
+				set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
+				tmp		<- gds[, which(CL_PH_PAIR=='0')]
+				set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
+				setkey(gds, CL_PH_PAIR)
+				ans		<- subset(gds, IDPOP_CL_GD<=Inf)				
+				#	define tr->POP pairs
+				ans[, TR_PAIR:= ans[, as.character(as.numeric(IDPOP<IDTR))]]
+				tmp		<- ans[, which(TR_PAIR=='1')]
+				set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDPOP,IDTR,sep=',')])
+				tmp		<- ans[, which(TR_PAIR=='0')]
+				set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDTR,IDPOP,sep=',')])
+				#	define POP->rec pairs
+				ans[, REC_PAIR:= ans[, as.character(as.numeric(IDPOP<IDREC))]]
+				tmp		<- ans[, which(REC_PAIR=='1')]
+				set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDPOP,IDREC,sep=',')])
+				tmp		<- ans[, which(REC_PAIR=='0')]
+				set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDREC,IDPOP,sep=',')])
+				#	determine matches
+				ans[, IN:= CL_PH_PAIR==TR_PAIR]
+				tmp		<- ans[, which(!is.na(IDREC) & !IN)]
+				set(ans, tmp, 'IN', ans[tmp, CL_PH_PAIR==REC_PAIR])
+				#	calculate proportion of phylog closest pairs that are true transmission pairs
+				ans		<- ans[, list(IN=any(IN)), by='CL_PH_PAIR']
+				list(TR_REC_perc_T= ans[, mean(as.numeric(IN))]  )
+			}, by='IDX_T']
+	setnames(tmp, 'IDX_T','SUB_IDX_T')
+	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
+	#
+	# compute closest individual on simulated trees and determine proportion if either transmitter or among recipients
+	#	
+	sucl			<- subset(submitted.info, MODEL=='R')[, {
+				print(IDX)
+				#IDX<- 557; SUB_IDX_T<-2; SC<- '150701_REGIONAL_TRAIN2'
+				ph			<- strs[[IDX]]
+				model.reg	<- grepl('REGIONAL',SC)
+				gds			<- treedist.closest.ind(ph, model.reg)
+				gds			<- subset(gds, IDPOP_CL_GD<=Inf)
+				if(nrow(gds)>0)
+				{
+					tmp			<- subset(tinfo, IDX_T==SUB_IDX_T, c(IDPOP, IDTR, IDREC))
+					ans			<- merge(gds, tmp, by='IDPOP')
+					set(ans, NULL, 'IDPOP', ans[, as.integer(gsub('IDPOP_','',IDPOP))])
+					set(ans, NULL, 'IDPOP_CL', ans[, as.integer(gsub('IDPOP_','',IDPOP_CL))])
+					set(ans, NULL, 'IDTR', ans[, as.integer(IDTR)])
+					set(ans, NULL, 'IDREC', ans[, as.integer(IDREC)])
+					#	get phylogenetically closest pairs			
+					ans[, CL_PH_PAIR:= ans[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
+					tmp		<- ans[, which(CL_PH_PAIR=='1')]
+					set(ans, tmp, 'CL_PH_PAIR', ans[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
+					tmp		<- ans[, which(CL_PH_PAIR=='0')]
+					set(ans, tmp, 'CL_PH_PAIR', ans[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
+					setkey(ans, CL_PH_PAIR)
+					#	define tr->POP pairs
+					ans[, TR_PAIR:= ans[, as.character(as.numeric(IDPOP<IDTR))]]
+					tmp		<- ans[, which(TR_PAIR=='1')]
+					set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDPOP,IDTR,sep=',')])
+					tmp		<- ans[, which(TR_PAIR=='0')]
+					set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDTR,IDPOP,sep=',')])
+					#	define POP->rec pairs
+					ans[, REC_PAIR:= ans[, as.character(as.numeric(IDPOP<IDREC))]]
+					tmp		<- ans[, which(REC_PAIR=='1')]
+					set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDPOP,IDREC,sep=',')])
+					tmp		<- ans[, which(REC_PAIR=='0')]
+					set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDREC,IDPOP,sep=',')])
+					#	determine matches
+					ans[, IN:= CL_PH_PAIR==TR_PAIR]
+					tmp		<- ans[, which(!is.na(IDREC) & !IN)]
+					set(ans, tmp, 'IN', ans[tmp, CL_PH_PAIR==REC_PAIR])
+					#	calculate proportion of phylog closest pairs that are true transmission pairs
+					ans		<- ans[, list(IN=any(IN)), by='CL_PH_PAIR']
+					ans		<- ans[, mean(as.numeric(IN))] 
+				}
+				if(!nrow(gds))
+					ans		<- NA_real_				
+				list(TR_REC_perc= ans  )				
+			}, by=c('IDX')]
+	submitted.info	<- merge(submitted.info, sucl, by='IDX', all.x=1)
+	#
+	#	compute Robinson Fould of complete tree SSS
+	#
+	tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs)
+	submitted.info	<- merge(submitted.info, tmp, by='IDX')
+	
+	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	save(strs, strs_rtt, ttrs, tinfo, submitted.info, lba,  file=file.path(outdir,'submitted_160627.rda'))
+	
+	#	compute Robinson Fould of clusters, then take sum
+	tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
+	sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')
+	#
+	strs.new			<- strs
+	ttrs.new			<- ttrs
+	tinfo.new			<- copy(tinfo)
+	submitted.info.new	<- copy(submitted.info)
+	sclu.info.new		<- copy(sclu.info)
+	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	z			<- load(paste(outdir, 'submitted_151119_S.rda', sep='/'))	
+	stopifnot( nrow(subset(merge(subset(submitted.info, select=c('FILE','IDX')), subset(submitted.info.new, select=c('FILE','IDX')), by='FILE'), IDX.x!=IDX.y))==0 )	
+	submitted.info		<- merge(submitted.info.new, subset(submitted.info, select=c('IDX','NQD','lm_intercept','lm_slope','lm_rsq')), by='IDX')
+	strs				<- strs.new
+	ttrs				<- ttrs.new
+	sclu.info			<- merge(sclu.info.new, subset(sclu.info, select=c('IDX','IDCLU','NQDC')), by=c('IDX','IDCLU'))
+	#
+	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151119_SRFQD.rda'
+	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
+}
+
 treecomparison.submissions.151101<- function()	
 {
 	require(data.table)
@@ -1660,6 +2251,146 @@ treecomparison.submissions.update.151203<- function()
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, ttdists1, RFttdists, file=outfile)	
 }
 ##--------------------------------------------------------------------------------------------------------
+##	olli 23.06.11
+##--------------------------------------------------------------------------------------------------------
+treecomparison.ana.160623<- function()
+{	
+	require(ggplot2)
+	require(data.table)
+	require(ape)
+	require(scales)	
+	require(ggtree)
+	require(phangorn)
+	
+	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	timetag			<- '160627'
+	load(paste(edir,'/','submitted_160430.rda',sep=''))
+	
+	sa		<- copy(submitted.info)	
+	#
+	set(sa, NULL, 'MODEL', sa[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
+	set(sa, sa[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
+	set(sa, NULL, 'SC', sa[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
+							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+	set(sa, NULL, 'GAPS', sa[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for Botswana\nsequences','as for Uganda\nsequences'))])
+	set(sa, NULL, 'BEST', sa[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])									
+	set(sa, NULL, 'GENE', sa[, factor(GENE, levels=c('POL','GAG+POL+ENV'),labels=c('pol','gag+pol+env'))])	
+	set(sa, NULL, 'TEAM', sa[, factor(TEAM, levels=sa[, sort(unique(TEAM))],labels=sa[, sort(unique(TEAM))])])
+	set(sa, NULL, 'EXT', sa[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
+	set(sa, NULL, 'ACUTE', sa[, factor(ACUTE, levels=c('low','high'),labels=c('10%','40%'))])
+	set(sa, NULL, 'ART', sa[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
+	sa		<- subset(sa, OTHER=='N')
+	#
+	#	on full tree
+	#	
+	ggplot(subset(sa, ACUTE=='10%' & TEAM!='MetaPIGA' & MODEL=='Model: Regional'), aes(x=TAXAN)) +
+			geom_jitter(aes(y=SB_NRF, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
+			scale_colour_manual(values=c('pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 1)) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8)) +
+			labs(	x='\nnumber of taxa in simulated tree', 
+					y='RF distance\n(standardized)\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom') +
+			facet_grid(~GAPS)
+	file	<- file.path(edir, paste(timetag,'_','RF_polvsall_by_gaps_taxan_RegionalAcute10pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
+	
+	ggplot(subset(sa, ACUTE=='40%' & TEAM!='MetaPIGA'), aes(x=TAXAN)) +
+			geom_jitter(aes(y=SB_NRF, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
+			scale_colour_manual(values=c('pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 1)) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8)) +
+			labs(	x='\nnumber of taxa in simulated tree', 
+					y='RF distance\n(standardized)\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom') +
+			facet_grid(~GAPS)
+	file	<- file.path(edir, paste(timetag,'_','RF_polvsall_by_gaps_taxan_AllAcute40pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
+	
+	ggplot(subset(sa, TEAM!='MetaPIGA'), aes(x=TAXAN)) +
+			geom_jitter(aes(y=SB_NQD, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
+			scale_colour_manual(values=c('pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 1)) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8)) +
+			labs(	x='\nnumber of taxa in simulated tree', 
+					y='Quartet distance\n(standardized)\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom') +
+			facet_grid(~GAPS)
+	file	<- file.path(edir, paste(timetag,'_','QD_polvsall_by_gaps_taxan_AllAcute40pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
+	
+	#
+	#	on clusters
+	#
+	sc		<- copy(sclu.info)
+	#
+	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N=CLU_N[1], MXGPS_CLU= max(GPS), MDGPS_CLU=median(GPS)), by=c('SC','IDCLU')]
+	sc		<- merge(sc, tmp, by=c('SC','IDCLU'))	
+	set(sc, NULL, 'MODEL', sc[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
+	set(sc, sc[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
+	set(sc, NULL, 'SC', sc[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
+							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+	set(sc, NULL, 'GAPS', sc[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for Botswana\nsequences','as for Uganda\nsequences'))])
+	set(sc, NULL, 'BEST', sc[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])									
+	set(sc, NULL, 'GENE', sc[, factor(GENE, levels=c('POL','GAG+POL+ENV'),labels=c('pol','gag+pol+env'))])	
+	set(sc, NULL, 'TEAM', sc[, factor(TEAM, levels=sc[, sort(unique(TEAM))],labels=sc[, sort(unique(TEAM))])])
+	set(sc, NULL, 'EXT', sc[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
+	set(sc, NULL, 'ART', sc[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
+	sc		<- subset(sc, OTHER=='N')	
+	sc		<- sc[, list( SB_NQD=mean(SB_NQDC, na.rm=TRUE) ), by=c('SC','GENE','TEAM','BEST','IDX','FILE','GAPS','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
+	sc		<- subset(sc, MODEL=='Model: Regional')
+	
+	ggplot(subset(sc, ACUTE=='low' & TEAM!='MetaPIGA'), aes(x=TAXAN)) +
+			geom_jitter(aes(y=SB_NQD, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
+			scale_colour_manual(values=c('pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.4)) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8)) +
+			labs(	x='\nGappiness of full-genome sequences', 
+					y='Quartett distance\n(standardized)\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom') +
+			facet_grid(~GAPS)
+	#
+	#	long branches on regional
+	#
+	
+	#	get reference of error without long branches
+	lba[, ERR:= DEPTH_T-DEPTH]
+	#	these are the closest trees in terms of NRF
+	ref.box		<- subset(lba, IDX==858)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
+	ref.box		<- subset(lba, IDX==2)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
+	subset(lba, IDX==858)[, sd(ERR)*10]
+	#	this suggests the following Tukey criterion:
+	ref.box		<- c(-0.04,0.04)
+	ref.box		<- c(-0.1,0.1)
+	tmp			<- lba[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR<ref.box[1] | ERR>ref.box[2])), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
+	tmp[, OUTLIER_N:=TAXAN*OUTLIER_P]
+	#ggplot(tmp, aes(x=OUTLIER_P, fill=GENE)) + 
+	#		geom_histogram(binwidth=0.1) + 	
+	#		facet_grid(GAPS~TEAM)  + theme_bw() +
+	#		labs(	x='\ngaps', 
+	#				y='branch length to root\n50% too small or too large\n(% of all taxa in tree)\n')
+	
+	
+	ggplot(tmp, aes(x=factor(GAPS, levels=c('none','low','high'), labels=c('none','low','high')), y=OUTLIER_P, colour=GENE)) + 
+			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) + 
+			scale_y_continuous(labels = scales::percent, limits=c(0, 1)) +
+			facet_grid(~TEAM)  + theme_bw() +
+			labs(	x='\ngaps', 
+					y='branch length to root\n50% too small or too large\n(% of all taxa in tree)\n')
+	file	<- file.path(edir, paste(timetag,'_','longbranches.pdf',sep=''))
+	ggsave(file=file, w=10, h=7)
+	
+	
+}
+##--------------------------------------------------------------------------------------------------------
 ##	olli 03.12.15
 ##--------------------------------------------------------------------------------------------------------
 treecomparison.ana.160502<- function()
@@ -1672,8 +2403,10 @@ treecomparison.ana.160502<- function()
 	require(phangorn)
 
 	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
-	timetag			<- '160502'
-	load(paste(edir,'/','submitted_160430.rda',sep=''))
+	#timetag			<- '160502'
+	#load(paste(edir,'/','submitted_160430.rda',sep=''))
+	timetag			<- '160627'	
+	load(paste(edir,'/','submitted_160627.rda',sep=''))
 	
 	#
 	#	plot trees
@@ -1738,7 +2471,7 @@ treecomparison.ana.160502<- function()
 		scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8, 'MetaPIGA'=17)) +
 		geom_point(aes(y=TR_REC_perc_T), colour="#D64B40FF", size=2) +
 		scale_colour_manual(values=c('pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
-		scale_y_continuous(labels = scales::percent, limit=c(0,0.4), expand=c(0,0)) +
+		scale_y_continuous(labels = scales::percent, limit=c(0,0.1), expand=c(0,0)) +
 		labs(	x='\nGappiness of full-genome sequences', 
 				y='phylogenetically closest individual is\ntransmitter or next infected\n',
 				colour='part of genome used\nfor tree reconstruction',

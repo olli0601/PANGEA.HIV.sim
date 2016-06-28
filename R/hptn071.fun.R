@@ -645,10 +645,10 @@ PANGEA.Seqsampler.SimulateGuideToSamplingTimes.v2<- function(df.ind, seqtime.mod
 	{
 		df.ind[, T1_SEQ:= df.ind[, DIAG_T]]	
 		tmp		<- df.ind[, which(is.na(T1_SEQ) & DOD-TIME_TR>0.5)]
-		set( df.ind, tmp, 'T1_SEQ', df.ind[tmp, runif(length(tmp), TIME_TR+0.5, DOD)] )
-		tmp		<- df.ind[, which( is.na(DIAG_T) & T1_SEQ>min(DIAG_T, na.rm=1) )]
+		set( df.ind, tmp, 'T1_SEQ', df.ind[tmp, runif(length(tmp), TIME_TR+0.5, DOD)] )	#	define a random sequencing time
+		tmp		<- df.ind[, which( is.na(DIAG_T) & T1_SEQ>min(DIAG_T, na.rm=1) )]		#	no sequences before diagnosing started in 2000
 		set( df.ind, tmp, 'T1_SEQ', NA_real_)
-		tmp	<- df.ind[, which(T1_SEQ>ART1_T)]
+		tmp	<- df.ind[, which(T1_SEQ>ART1_T)]											#	no sequences if the proposed date is after the first ART date
 		set(df.ind, tmp, 'T1_SEQ', df.ind[tmp,ART1_T])		
 	}
 	if(seqtime.mode=='AtART')
@@ -2242,16 +2242,40 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	#	call SeqGen command line
 	#
 	cat(paste('\nUsing Gamma rate variation, gamma=',pipeline.args['er.gamma',][, as.numeric(v)]))
-	tmp		<- subset(df.ph.out, IDCLU==1 & GENE=='GAG' & CODON_POS=='CP1')[, {	
+	tmp		<- df.ph.out[, {	
 				cat(paste('\nProcess', IDCLU, GENE, CODON_POS))				
 				cmd	<- cmd.SeqGen(indir.sg, FILE, indir.sg, gsub('seqgen','phy',FILE), prog=PR.SEQGEN, prog.args=paste('-n',1,' -k1 -or -z',SEED,sep=''), 
 						alpha=alpha, gamma=pipeline.args['er.gamma',][, as.numeric(v)], invariable=0, scale=mu, freq.A=a, freq.C=c, freq.G=g, freq.T=t,
 						rate.AC=ac, rate.AG=ag, rate.AT=at, rate.CG=cg, rate.CT=1, rate.GT=gt)
-				cat(cmd)
-				stop()
-				system(cmd)				
+				system(cmd)		
 				list(CMD=cmd)							
 			}, by='FILE']
+	#
+	#	check for non-zero length and if necessary repeat seq-gen
+	#
+	infiles		<- list.files(indir.sg)
+	infiles		<- infiles[ grepl('*phy$', infiles)  ]	
+	if(!length(infiles))	stop('cannot find files matching criteria')		
+	infile.df	<- data.table(FILE=infiles)	
+	infile.df	<- infile.df[, list(SIZE= file.size(file.path(indir.sg, FILE))), by='FILE']	
+	tmp			<- infile.df[, strsplit(FILE, '_') ]
+	infile.df[, CODON_POS:= gsub('.phy','',sapply(tmp, function(x) rev(x)[label.idx.codonpos]))]
+	infile.df[, GENE:= sapply(tmp, function(x) rev(x)[label.idx.gene])]
+	infile.df[, IDCLU:= as.integer(sapply(tmp, function(x) rev(x)[label.idx.clu]))]	
+	tmp			<- subset(infile.df, SIZE==0, c(IDCLU, GENE, CODON_POS))
+	tmp			<- merge(tmp, df.ph.out, by=c('IDCLU','GENE','CODON_POS'))
+	if(nrow(tmp))
+	{
+		cat('Found simulated phy files with zero bytes -- try and repeat')
+		invisible(tmp[, {	
+					cat(paste('\nProcess', IDCLU, GENE, CODON_POS))				
+					cmd	<- cmd.SeqGen(indir.sg, FILE, indir.sg, gsub('seqgen','phy',FILE), prog=PR.SEQGEN, prog.args=paste('-n',1,' -k1 -or -z',SEED,sep=''), 
+							alpha=alpha, gamma=pipeline.args['er.gamma',][, as.numeric(v)], invariable=0, scale=mu, freq.A=a, freq.C=c, freq.G=g, freq.T=t,
+							rate.AC=ac, rate.AG=ag, rate.AT=at, rate.CG=cg, rate.CT=1, rate.GT=gt)
+					system(cmd)		
+					list(CMD=cmd)							
+				}, by='FILE'])		
+	}	
 	#
 	#	process SeqGen runs
 	#
@@ -2260,6 +2284,8 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	infiles		<- infiles[ grepl('*phy$', infiles)  ]	
 	if(!length(infiles))	stop('cannot find files matching criteria')		
 	infile.df	<- data.table(FILE=infiles)
+	infile.df	<- infile.df[, list(SIZE= file.size(file.path(indir.sg, FILE))), by='FILE']	
+	stopifnot( !nrow(subset(infile.df, SIZE==0)) )	#abort if there are still zero byte files
 	tmp			<- infile.df[, strsplit(FILE, '_') ]
 	infile.df[, CODON_POS:= sapply(tmp, function(x) rev(x)[label.idx.codonpos])]
 	infile.df[, GENE:= sapply(tmp, function(x) rev(x)[label.idx.gene])]
@@ -2279,8 +2305,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	#
 	#	reconstruct genes from codon positions
 	#
-	df.seq[, STAT:=paste(GENE,CODON_POS,sep='.')]
-	df.seq		<- subset(df.seq, !grepl('NOEXIST',LABEL) & !is.na(LABEL))
+	df.seq[, STAT:=paste(GENE,CODON_POS,sep='.')]	
 	df.seq		<- dcast.data.table(df.seq, IDCLU + LABEL ~ STAT, value.var="SEQ")		
 	#	check that seq of correct size
 	stopifnot( df.seq[, all( nchar(GAG.CP1)==nchar(GAG.CP2) & nchar(GAG.CP1)==nchar(GAG.CP3) )] )
@@ -2297,7 +2322,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 				list(GAG=gag, POL=pol, ENV=env, IDCLU=IDCLU)
 			}, by=c('LABEL')]
 	#	check that we have indeed seq for all sampled individuals
-
+	df.seq		<- subset(df.seq, !grepl('NOEXIST',LABEL))
 	tmp			<- df.seq[, sapply( strsplit(LABEL, treelabel.idx.sep, fixed=TRUE), '[[', treelabel.idx.idpop )]
 	df.seq[, IDPOP:=as.integer(substr(tmp,7,nchar(tmp)))]	
 	stopifnot( setequal( subset( df.inds, !is.na(TIME_SEQ) )[, IDPOP], df.seq[,IDPOP]) )
