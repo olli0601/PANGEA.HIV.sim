@@ -406,7 +406,7 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 	tmp				<- submitted.info[, {
 				cat('\nAt IDX', IDX)
 				stree		<- unroot(strs_rtt[[IDX]])
-				otree		<- unroot(ttrs[[IDX_T]])								
+				otree		<- unroot(ttrs[[SUB_IDX_T]])								
 				#print(stree)
 				#print(otree)
 				z			<- setdiff(otree$tip.label, stree$tip.label)
@@ -421,10 +421,10 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 	setkey(tinfo, IDX_T)
 	tmp		<- subset(submitted.info, MODEL=='R')[, {
 				cat('\nAt IDX', IDX)
-				#	IDX<- 241; IDX_T<- 2
+				#	IDX<- 241; SUB_IDX_T<- 2
 				stree		<- strs_rtt[[IDX]]
-				otree		<- ttrs[[IDX_T]]
-				z			<- IDX_T
+				otree		<- ttrs[[SUB_IDX_T]]
+				z			<- SUB_IDX_T
 				#	get all clusters of this true tree (with IDX_T) that are of size>=3 (use "tinfo" for that)
 				z			<- subset(tinfo, CLU_N>3 & IDX_T==z)	
 				setkey(z, TAXA)
