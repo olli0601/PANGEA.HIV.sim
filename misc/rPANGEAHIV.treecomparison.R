@@ -405,7 +405,7 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 	#IDX_T<-7
 	tmp				<- submitted.info[, {
 				cat('\nAt IDX', IDX)
-				stree		<- unroot(strs[[IDX]])
+				stree		<- unroot(strs_rtt[[IDX]])
 				otree		<- unroot(ttrs[[IDX_T]])								
 				#print(stree)
 				#print(otree)
@@ -422,8 +422,8 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 	tmp		<- subset(submitted.info, MODEL=='R')[, {
 				cat('\nAt IDX', IDX)
 				#	IDX<- 241; IDX_T<- 2
-				stree		<- unroot(strs[[IDX]])
-				otree		<- unroot(ttrs[[IDX_T]])
+				stree		<- strs_rtt[[IDX]]
+				otree		<- ttrs[[IDX_T]]
 				z			<- IDX_T
 				#	get all clusters of this true tree (with IDX_T) that are of size>=3 (use "tinfo" for that)
 				z			<- subset(tinfo, CLU_N>3 & IDX_T==z)	
@@ -1124,39 +1124,21 @@ treecomparison.submissions.160627<- function()
 	MetaPIGA.trees			<- c(lapply(tmp.trees, '[[', 1), lapply(tmp.trees, '[[', 2), lapply(tmp.trees, '[[', 3), lapply(tmp.trees, '[[', 4))
 	names(MetaPIGA.trees)	<- c(sapply(tmp.trees, function(x) paste(names(x)[1],'_use',sep='')), sapply(tmp.trees, function(x) names(x)[2]), sapply(tmp.trees, function(x) names(x)[3]), sapply(tmp.trees, function(x) names(x)[4]))	
 	names(MetaPIGA.trees)	<- gsub("'",'',names(MetaPIGA.trees), fixed=1)	
-	strs					<- c(strs, MetaPIGA.trees)	
+	strs					<- c(strs, MetaPIGA.trees)
+	#
+	#
+	#
 	submitted.info			<- data.table(FILE=names(strs))
+	submitted.info[, IDX:=seq_along(strs)]
 	#
-	#	re-root simulated trees with rtt
+	# set team
 	#			
-	strs_rtt	<- lapply(seq_along(strs), function(i)
-			{
-				cat('\n',i)
-				#i	<- 628 ; i<- 241
-				ph	<- strs[[i]]
-				tmp	<- data.table(TAXA=ph$tip.label)	
-				tmp[, T_SEQ:= tmp[, regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA)) ]]
-				#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
-				phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)], ncpu=4)
-				phr
-			})
-	names(strs_rtt)	<- names(strs)
-	#
-	#	ladderize all trees
-	#		
-	ttrs	<- lapply(ttrs, ladderize)
-	strs	<- lapply(strs, ladderize)
-	strs_rtt<- lapply(strs_rtt, ladderize)
-	#
-	#
-	#	
-	submitted.info[, IDX:=seq_along(strs)]	
 	submitted.info[, TEAM:=NA_character_]
 	set(submitted.info, submitted.info[, which(grepl('RAXML|RAxML',FILE))], 'TEAM', 'RAXML')
 	set(submitted.info, submitted.info[, which(grepl('IQTree',FILE))], 'TEAM', 'IQTree')
 	set(submitted.info, submitted.info[, which(grepl('MetaPIGA|Consensus pruning|Best individual of population',FILE))], 'TEAM', 'MetaPIGA')
 	set(submitted.info, submitted.info[, which(grepl('PhyML',FILE))], 'TEAM', 'PhyML')	
-	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )
+	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )	
 	#
 	#	scenario
 	#	
@@ -1205,6 +1187,7 @@ treecomparison.submissions.160627<- function()
 	set(submitted.info, submitted.info[, which(TEAM=='MetaPIGA')], 'GENE', 'GAG+POL+ENV')	
 	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & grepl('[0-9]_partition', FILE))], 'GENE', 'GAG+POL+ENV')
 	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & grepl('[0-9]_pol_partition', FILE))], 'GENE', 'POL')
+	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & grepl('[0-9]_gag_partition', FILE))], 'GENE', 'GAG')
 	stopifnot(nrow(subset(submitted.info, TEAM=='IQTree' & is.na(GENE)))==0)	
 	#
 	#	best tree for each scenario
@@ -1240,6 +1223,11 @@ treecomparison.submissions.160627<- function()
 				'150701_Regional_TRAIN4_IQTree151019_pol_partition_123_05',
 				'150701_Regional_TRAIN5_IQTree151019_pol_partition_123_10')
 	tmp	<- sapply(tmp, function(x) submitted.info[, which((grepl('IQTree151019', FILE, fixed=1)) & grepl(x, FILE, fixed=1))] )
+	set(submitted.info, tmp, 'BEST', 'Y')
+	tmp	<- c(	'150701_Regional_TRAIN1_IQTree160530_gag_partition_123_09', 			
+				'150701_Regional_TRAIN2_IQTree160530_gag_partition_123_06',	
+				'150701_Regional_TRAIN4_IQTree160530_gag_partition_123_02')
+	tmp	<- sapply(tmp, function(x) submitted.info[, which((grepl('IQTREE_Update_gag', FILE, fixed=1)) & grepl(x, FILE, fixed=1))] )
 	set(submitted.info, tmp, 'BEST', 'Y')
 	#	PhyML: read log likelihood	 
 	lkl		<- data.table(FILE= list.files('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML', pattern='*phyml_stats*', recursive=1, full.names=1))
@@ -1302,13 +1290,11 @@ treecomparison.submissions.160627<- function()
 	tmp		<- subset(submitted.info, TEAM=='IQTree' & MODEL=='R')[, IDX]
 	for(i in tmp)
 	{
-		strs[[i]]$tip.label		<- sapply(strsplit(strs[[i]]$tip.label,'_'), function(x)	paste(x[1],'_',x[2],'|',x[3],'|',x[4],'_',x[5],'|',x[6],sep='')	)
-		strs_rtt[[i]]$tip.label	<- sapply(strsplit(strs_rtt[[i]]$tip.label,'_'), function(x)	paste(x[1],'_',x[2],'|',x[3],'|',x[4],'_',x[5],'|',x[6],sep='')	)
+		strs[[i]]$tip.label		<- sapply(strsplit(strs[[i]]$tip.label,'_'), function(x)	paste(x[1],'_',x[2],'|',x[3],'|',x[4],'_',x[5],'|',x[6],sep='')	)		
 	}
 	for(i in seq_along(strs))
 	{
-		strs[[i]]$tip.label		<- toupper(strs[[i]]$tip.label)
-		strs_rtt[[i]]$tip.label	<- toupper(strs_rtt[[i]]$tip.label)
+		strs[[i]]$tip.label		<- toupper(strs[[i]]$tip.label)		
 	}
 	for(i in seq_along(ttrs))
 	{
@@ -1317,36 +1303,46 @@ treecomparison.submissions.160627<- function()
 	###
 	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='R')[, IDX]
 	for(i in tmp)
-	{
-		
+	{		
+		cat(i,'\n')
 		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('IDPOP_[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
-		z	<- merge(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA)), z, by=c('IDPOP','SC'))
+		z	<- merge(unique(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA))), z, by=c('IDPOP','SC'))
 		setkey(z, IDX)
 		stopifnot(nrow(z)==Ntip(strs[[i]]))
-		strs[[i]]$tip.label	<- z[, TAXA]
-		#
-		z	<- data.table(IDX=seq_along(strs_rtt[[i]]$tip.label), IDPOP=regmatches(strs_rtt[[i]]$tip.label, regexpr('IDPOP_[0-9]+',strs_rtt[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
-		z	<- merge(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA)), z, by=c('IDPOP','SC'))
-		setkey(z, IDX)
-		stopifnot(nrow(z)==Ntip(strs_rtt[[i]]))
-		strs_rtt[[i]]$tip.label	<- z[, TAXA]		
+		strs[[i]]$tip.label	<- z[, TAXA]			
 	}
 	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='V')[, IDX]
 	for(i in tmp)
 	{
 		
 		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
-		z	<- merge(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA)), z, by=c('IDPOP','SC'))
+		z	<- merge(unique(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA))), z, by=c('IDPOP','SC'))
 		stopifnot(nrow(z)==length(strs[[i]]$tip.label))
 		setkey(z, IDX)
-		strs[[i]]$tip.label	<- z[, TAXA]
-		#
-		z	<- data.table(IDX=seq_along(strs_rtt[[i]]$tip.label), IDPOP=regmatches(strs_rtt[[i]]$tip.label, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',strs_rtt[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
-		z	<- merge(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA)), z, by=c('IDPOP','SC'))
-		stopifnot(nrow(z)==length(strs_rtt[[i]]$tip.label))
-		setkey(z, IDX)
-		strs_rtt[[i]]$tip.label	<- z[, TAXA]
+		strs[[i]]$tip.label	<- z[, TAXA]		
 	}
+	#
+	#	re-root simulated trees with rtt
+	#		
+	options(warn=2)
+	strs_rtt	<- lapply(seq_along(strs), function(i)
+			{
+				cat('\n',i)
+				#i	<- 628 ; i<- 241; i<- 571
+				ph	<- strs[[i]]
+				tmp	<- data.table(TAXA=ph$tip.label)	
+				tmp[, T_SEQ:= tmp[, regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA)) ]]
+				#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
+				phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)], ncpu=4)
+				phr
+			})
+	names(strs_rtt)	<- names(strs)
+	#
+	#	ladderize all trees
+	#		
+	ttrs	<- lapply(ttrs, ladderize)
+	strs	<- lapply(strs, ladderize)
+	strs_rtt<- lapply(strs_rtt, ladderize)	
 	#
 	#	plot simulated trees versus true tree
 	#
@@ -1488,15 +1484,16 @@ treecomparison.submissions.160627<- function()
 	#
 	#	compute Robinson Fould of complete tree SSS
 	#
-	tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs)
+	tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs_rtt)
 	submitted.info	<- merge(submitted.info, tmp, by='IDX')
-	
-	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	save(strs, strs_rtt, ttrs, tinfo, submitted.info, lba,  file=file.path(outdir,'submitted_160627.rda'))
-	
 	#	compute Robinson Fould of clusters, then take sum
 	tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
 	sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')
+	
+	
+	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	save(strs, strs_rtt, ttrs, tinfo, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160627.rda'))
+	
 	#
 	strs.new			<- strs
 	ttrs.new			<- ttrs
