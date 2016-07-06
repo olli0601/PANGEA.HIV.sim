@@ -944,6 +944,71 @@ treecomparison.submissions.151119<- function()
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
 }
 ##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.11
+##--------------------------------------------------------------------------------------------------------
+treecomparison.ana.160627.standardize.KC<- function()
+{	
+	require(ggplot2)
+	require(data.table)
+	require(ape)
+	require(scales)	
+	require(ggtree)
+	require(phangorn)
+	
+	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	timetag			<- '160627'
+	load(paste(edir,'/','submitted_160627_QDPDKC.rda',sep=''))
+	
+	
+	sc		<- copy(sclu.info)
+	#
+	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N=CLU_N[1], MXGPS_CLU= max(GPS), MDGPS_CLU=median(GPS)), by=c('SC','IDCLU')]
+	sc		<- merge(sc, tmp, by=c('SC','IDCLU'))	
+	set(sc, NULL, 'MODEL', sc[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
+	set(sc, sc[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
+	set(sc, NULL, 'SC', sc[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
+							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+	set(sc, NULL, 'GAPS', sc[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for Botswana\nsequences','as for Uganda\nsequences'))])
+	set(sc, NULL, 'BEST', sc[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])									
+	set(sc, NULL, 'GENE', sc[, factor(GENE, levels=c('GAG','POL','GAG+POL+ENV'),labels=c('gag','pol','gag+pol+env'))])	
+	set(sc, NULL, 'TEAM', sc[, factor(TEAM, levels=sc[, sort(unique(TEAM))],labels=sc[, sort(unique(TEAM))])])
+	set(sc, NULL, 'EXT', sc[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
+	set(sc, NULL, 'ART', sc[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
+	sc		<- subset(sc, OTHER=='N')	
+	
+	
+	require(gamlss)
+	ggplot(subset(sc, TEAM!='MetaPIGA' & CLU_N<100), aes(x=CLU_N, y=KC, colour=GENE, pch=TEAM)) + geom_point() + facet_grid(~SC)
+	ggplot(subset(sc, TEAM!='MetaPIGA' & SC=='sc 1'), aes(x=CLU_N, y=KC, colour=GENE, pch=TEAM)) + geom_point()
+	
+	#
+	#	look reasonable to divive KC by CLU_N*(CLU_N-1)/2
+	#
+	kc.std.d	<- subset(sc, TEAM!='MetaPIGA' & SC=='sc 1')
+	kc.std.m1	<- gamlss(KC~CLU_N-1, data=kc.std.d)
+	kc.std.m2	<- gamlss(KC~poly(CLU_N,2, raw=TRUE)-1, data=kc.std.d)	
+	#gamlss(KC~CLU_N+I(CLU_N^2)-1, data=kc.std.d)
+	kc.std.m3	<- gamlss(KC~I(CLU_N*(CLU_N-1)/2)-1, data=kc.std.d)
+	kc.std.m4	<- gamlss(KC~poly(CLU_N,4, raw=TRUE)-1, data=kc.std.d)
+	#kc.std.m4	<- gamlss(KC~I(sqrt(CLU_N*(CLU_N-1)/2))-1, data=kc.std.d)
+	kc.std.da	<- subset(sc, TEAM!='MetaPIGA' & SC%in%c('sc 1','sc 2','sc 4'))
+	tmp.m1		<- predict(kc.std.m1, data=kc.std.d, newdata=kc.std.da, type='response', se.fit=FALSE)
+	tmp.m2		<- predict(kc.std.m2, data=kc.std.d, newdata=kc.std.da,type='response', se.fit=FALSE)
+	tmp.m3		<- predict(kc.std.m3, data=kc.std.d, newdata=kc.std.da,type='response', se.fit=FALSE)
+	tmp.m4		<- predict(kc.std.m4, data=kc.std.d, newdata=kc.std.da,type='response', se.fit=FALSE)
+	kc.std.da[, KC.m1:=tmp.m1]
+	kc.std.da[, KC.m2:=tmp.m2]
+	kc.std.da[, KC.m3:=tmp.m3]
+	kc.std.da[, KC.m4:=tmp.m4]
+	kc.std.da	<- melt(kc.std.da, measure.vars=c('KC.m1','KC.m2','KC.m3','KC.m4'))
+	set(kc.std.da, NULL, 'variable', kc.std.da[, factor(variable, levels=c('KC.m1','KC.m2','KC.m3','KC.m4'), labels=c('KC~CLU_N-1','KC~poly(CLU_N,2, raw=TRUE)-1','KC~I(CLU_N*(CLU_N-1)/2)-1','KC~poly(CLU_N,4, raw=TRUE)-1'))])
+	ggplot(kc.std.da, aes(x=CLU_N)) + geom_point(aes(y=KC,colour=GENE, pch=TEAM)) + 
+			geom_line(aes(y=value, linetype=variable, group=variable)) +
+			#scale_linetype_manual(values=c('KC~CLU_N-1'='a','KC~poly(CLU_N,2, raw=TRUE)-1'='e','KC~I(CLU_N*(CLU_N-1)/2)-1'='f','KC~poly(CLU_N,4, raw=TRUE)-1'='j')) +
+			facet_grid(~SC)
+	ggsave(file.path(edir, paste(timetag,'_','dependence_KC_clustersize.pdf',sep='')), w=15, h=7)
+}
+##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.16
 ##--------------------------------------------------------------------------------------------------------
 treecomparison.submissions.160627<- function()	
@@ -1529,7 +1594,15 @@ treecomparison.submissions.160627<- function()
 	#	SAVE
 	#
 	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	save(strs, strs_rtt, ttrs, tinfo, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160627_QDPD.rda'))	
+	save(strs, strs_rtt, ttrs, tinfo, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160627_QDPD.rda'))
+	#
+	#	ADD other summaries
+	#
+	load( file.path(outdir, 'submitted_160704_KC.rda') )
+	sclu.info.kc	<- copy(sclu.info)
+	load( file.path(outdir, 'submitted_160627_QDPD.rda') )
+	sclu.info		<- merge(sclu.info, subset(sclu.info.kc, select=c(IDX, TEAM, GENE, BRL, IDCLU, KC)), by=c('IDX','TEAM','GENE','BRL','IDCLU'))
+	save(strs, strs_rtt, ttrs, tinfo, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160627_QDPDKC.rda'))
 }
 
 treecomparison.submissions.151101<- function()	
@@ -2268,9 +2341,9 @@ treecomparison.submissions.update.151203<- function()
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, ttdists1, RFttdists, file=outfile)	
 }
 ##--------------------------------------------------------------------------------------------------------
-##	olli 23.06.11
+##	olli 27.06.11
 ##--------------------------------------------------------------------------------------------------------
-treecomparison.ana.160623<- function()
+treecomparison.ana.160627<- function()
 {	
 	require(ggplot2)
 	require(data.table)
@@ -2281,7 +2354,7 @@ treecomparison.ana.160623<- function()
 	
 	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag			<- '160627'
-	load(paste(edir,'/','submitted_160627_QDPD.rda',sep=''))
+	load(paste(edir,'/','submitted_160627_QDPDKC.rda',sep=''))
 	
 	sa		<- copy(submitted.info)	
 	#
@@ -2375,19 +2448,28 @@ treecomparison.ana.160623<- function()
 	set(sc, NULL, 'EXT', sc[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
 	set(sc, NULL, 'ART', sc[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
 	sc		<- subset(sc, OTHER=='N')	
-	
-	tmp		<- melt(subset(sc, IDX==45), measure.var=c('NPD','NPDSQ','NRFC','NQDC'))
+	#
+	#	add size adjusted KC
+	#	
+	require(gamlss)
+	kc.std.d	<- subset(sc, TEAM!='MetaPIGA' & SC=='sc 1')
+	kc.std.m3	<- gamlss(KC~I(CLU_N*(CLU_N-1)/2), data=kc.std.d)
+	sc			<- subset(sc, TEAM!='MetaPIGA' & SC%in%c('sc 1','sc 2','sc 4'))	
+	sc[, KCadj:= KC / predict(kc.std.m3, data=kc.std.d, newdata=sc,type='response', se.fit=FALSE)]	
+	ggplot(sc, aes(x=CLU_N)) + geom_point(aes(y=KCadj,colour=GENE, pch=TEAM)) +	scale_y_log10() + facet_grid(~SC)	
+	tmp		<- melt(subset(sc, IDX==45), measure.var=c('NPD','NPDSQ','NRFC','NQDC','KCadj'))
 	ggplot( tmp, aes(x=CLU_N, y=value, colour=GENE, pch=TEAM)) + geom_point() + facet_grid(GENE+TEAM+IDX~variable)
 	#
 	#	check dependence on size of cluster
 	#
-	ggplot( melt(sc, measure.var=c('NPD','NPDSQ','NRFC','NQDC')), aes(x=CLU_N, y=value, colour=GENE, pch=TEAM)) + geom_point() + facet_grid(variable+TEAM+IDX~GENE, scales='free_y')
+	ggplot( melt(sc, measure.var=c('NPD','NPDSQ','NRFC','NQDC','KCadj')), aes(x=CLU_N, y=value, colour=GENE, pch=TEAM)) + geom_point() + facet_grid(variable+TEAM+IDX~GENE, scales='free_y')
 	file	<- file.path(edir, paste(timetag,'_','dependence_on_clustersize.pdf',sep=''))
 	ggsave(file=file, w=10, h=1000, limitsize = FALSE)
-	
-	
-	sc		<- sc[, list( 	NRFme=mean(NRFC, na.rm=TRUE), 	NQDme=mean(NQDC, na.rm=TRUE), 	NPDme=mean(NPD, na.rm=TRUE), 	NPDSQme=mean(NPDSQ, na.rm=TRUE),
-						  	NRFmd=median(NRFC, na.rm=TRUE), 	NQDmd=median(NQDC, na.rm=TRUE), NPDmd=median(NPD, na.rm=TRUE), 	NPDSQmd=median(NPDSQ, na.rm=TRUE)
+	#
+	#
+	#	
+	sc		<- sc[, list( 	NRFme=mean(NRFC, na.rm=TRUE), 	NQDme=mean(NQDC, na.rm=TRUE), 	NPDme=mean(NPD, na.rm=TRUE), 	NPDSQme=mean(NPDSQ, na.rm=TRUE),		KCAme=mean(KCadj, na.rm=TRUE),
+						  	NRFmd=median(NRFC, na.rm=TRUE), 	NQDmd=median(NQDC, na.rm=TRUE), NPDmd=median(NPD, na.rm=TRUE), 	NPDSQmd=median(NPDSQ, na.rm=TRUE),	KCAmd=median(KCadj, na.rm=TRUE)
 							), by=c('SC','GENE','TEAM','BEST','IDX','FILE','GAPS','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
 	sc		<- subset(sc, MODEL=='Model: Regional')
 	
@@ -2430,6 +2512,18 @@ treecomparison.ana.160623<- function()
 	file	<- file.path(edir, paste(timetag,'_','PD_clumean_polvsall_by_gaps_taxan1600_Acute10pc.pdf',sep=''))
 	ggsave(file=file, w=5, h=7)
 	
+	ggplot(subset(sc, ACUTE=='low' & TEAM!='MetaPIGA'), aes(x=GAPS)) +
+			geom_jitter(aes(y=KCAme, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(expand=c(0,0), limits=c(0, 2)) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8)) +
+			labs(	x='\nGappiness of full-genome sequences', 
+					y='KC distance\n(adjusted for dependence on sub-tree size)\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','KC_clumean_polvsall_by_gaps_taxan1600_Acute10pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
 	
 	#
 	#	long branches on regional

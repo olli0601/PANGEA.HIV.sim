@@ -57,7 +57,7 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate<- function()
 	tmp		<- data.table(expand.grid(ANA='Pr_Seq', SC_RND=subset(dfd, DATA_T=='seq')[, SC_RND], stringsAsFactors=FALSE))
 	dfr		<- copy(tmp)
 	#	Primary Objectives, on trees
-	tmp		<- subset(dfd, DATA_T=='phy' & SMPL_D==5 & (DATAT_L=='Regional' & IMPRT=='5%' & SMPL_M=='much' & SMPL_N==1600 | DATAT_L=='Village' & SMPL_C=='30%')  )
+	tmp		<- subset(dfd, DATA_T=='phy' & SMPL_D==5 & (DATAT_L=='Regional' & IMPRT=='5%' & SMPL_M=='much' & SMPL_N==1600 | DATAT_L=='Village' & SMPL_C=='25%')  )
 	dfr		<- rbind(dfr, data.table(expand.grid(ANA='Pr_Phy', SC_RND=tmp[, SC_RND], stringsAsFactors=FALSE)))
 	#	Secondary: sequence coverage
 	tmp		<- subset(dfd, DATA_T=='phy' & SMPL_D==5 & INT_T!='none' & (DATAT_L=='Regional' & IMPRT=='5%' & SMPL_M=='much' | DATAT_L=='Village')  )
@@ -424,19 +424,21 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate.primary.sortedPCIncidence<- functi
 	tmp		<- merge(tmp, tmp2, by=c('SC_RND','TEAM'), all=1)
 	
 	ggplot( tmp, aes(x=SC_RND, group=TEAM, colour=gsub('using\n','',DATA_T2))) +
-			geom_point(aes(y=central, shape=factor(OBJ_i, levels=c(-1,0,1), labels=c('declining','stable','increasing'))), position=position_dodge(width = 0.90)) + 
+			#geom_point(aes(y=central, shape=factor(OBJ_i, levels=c(-1,0,1), labels=c('declining','stable','increasing'))), position=position_dodge(width = 0.90)) +
+			geom_point(aes(y=central), pch=16, position=position_dodge(width = 0.90)) +
 			geom_errorbar(aes(ymin=lower95, ymax=upper95), na.rm=TRUE, position=position_dodge(width = 0.90)) +
 			geom_point(aes(y=central_t), colour='black', pch=18) +
 			coord_cartesian(ylim=c(0,20)) +
 			scale_colour_brewer(palette='Set1') +
+			scale_y_continuous(expand=c(0,0)) +
 			#scale_y_continuous(breaks=seq(0,3,0.5), minor_breaks=seq(0,3,0.1)) +
 			#scale_size_manual(values = seq(1.5, by=0.5, length.out=4)) +
-			scale_shape_manual(values = c(0, 1, 5)) +
+			#scale_shape_manual(values = c(0, 1, 5)) +
 			facet_wrap(~TEAM, ncol=3) +
-			labs(x='\nPANGEA data set', y='Estimated and true % Incidence\n', colour='Estimates based on', shape='Estimated trend in incidence during intervention') +
+			labs(x='\nPANGEA data set', y='Estimated and true % Incidence\n', colour='Estimates based on') +
 			theme_bw() + 
 			theme(legend.position='bottom', axis.text.x=element_text(size=5.5), panel.grid.major.y=element_line(colour='grey70', size=1), panel.grid.minor.y=element_line(colour='grey70', size=0.4))
-	ggsave(file=paste(outdir,'/res_acrossTEAM_Primary_PcIncidence.pdf',sep=''), width=10, height=7)
+	ggsave(file=paste(outdir,'/res_acrossTEAM_Primary_PcIncidence_2.pdf',sep=''), width=11, height=7, useDingbats=FALSE)
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 25.11.15
@@ -458,19 +460,19 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate.primary.sortedIncidenceRatio<- fun
 	tmp		<- merge(tmp, tmp2, by=c('SC_RND','TEAM'), all=1)
 	
 	ggplot( tmp, aes(x=SC_RND, group=TEAM, colour=gsub('using\n','',DATA_T2))) +
-			geom_point(aes(y=central, shape=factor(OBJ_i, levels=c(-1,0,1), labels=c('declining','stable','increasing'))), position=position_dodge(width = 0.90)) + 
+			geom_point(aes(y=central), pch=16, position=position_dodge(width = 0.90)) + 
 			geom_errorbar(aes(ymin=lower95, ymax=upper95), na.rm=TRUE, position=position_dodge(width = 0.90)) +
 			geom_point(aes(y=central_t), colour='black', pch=18) +
 			coord_cartesian(ylim=c(0,1.99)) +
 			scale_colour_brewer(palette='Set1') +
-			scale_y_continuous(breaks=seq(0,3,0.5), minor_breaks=seq(0,3,0.1)) +
+			scale_y_continuous(breaks=seq(0,3,0.5), minor_breaks=seq(0,3,0.1), expand=c(0,0)) +
 			#scale_size_manual(values = seq(1.5, by=0.5, length.out=4)) +
-			scale_shape_manual(values = c(0, 1, 5)) +
+			#scale_shape_manual(values = c(0, 1, 5)) +
 			facet_wrap(~TEAM, ncol=3) +
-			labs(x='\nPANGEA data set', y='Estimated and true incidence ratio\n', colour='Estimates based on', shape='Estimated trend in incidence during intervention') +
+			labs(x='\nPANGEA data set', y='Estimated and true incidence ratio\n', colour='Estimates based on') +
 			theme_bw() + 
 			theme(legend.position='bottom', axis.text.x=element_text(size=5.5), panel.grid.major.y=element_line(colour='grey70', size=1), panel.grid.minor.y=element_line(colour='grey70', size=0.4))
-	ggsave(file=paste(outdir,'/res_acrossTEAM_Primary_IncidenceRatio.pdf',sep=''), width=10, height=7)
+	ggsave(file=paste(outdir,'/res_acrossTEAM_Primary_IncidenceRatio_2.pdf',sep=''), width=11, height=7, useDingbats=FALSE)
 	
 	ggplot( tmp, aes(x=SC_RND, group=TEAM, colour=gsub('using\n','',DATA_T2))) +
 			geom_point(aes(y=central, shape=factor(OBJ_i, levels=c(-1,0,1), labels=c('declining','stable','increasing'))), position=position_dodge(width = 0.90)) + 
@@ -536,20 +538,20 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate.primary.sortedAcutePercent<- funct
 	set(tmp, tmp2, 'SMPL_C_BEFORE', tmp[tmp2, paste(SMPL_C_BEFORE,' just before intervention\n',SMPL_C,' after intervention',sep='')])
 	
 	ggplot( tmp, aes(x=SC_RND, group=TEAM, colour=gsub('using\n','',DATA_T2))) +
-			geom_point(aes(y=central, shape=SMPL_C_BEFORE, size=SMPL_C_BEFORE), position=position_dodge(width = 0.90)) +
+			geom_point(aes(y=central), position=position_dodge(width = 0.90), pch=16) +
 			geom_errorbar(aes(ymin=lower95, ymax=upper95), na.rm=TRUE, position=position_dodge(width = 0.90)) +
 			geom_point(aes(y=central_t), colour='black', pch=18) +
 			coord_cartesian(ylim=c(0,50)) +
 			scale_colour_brewer(palette='Set1') +
 			scale_y_continuous(breaks=seq(0,50,10), minor_breaks=seq(0,50,5)) +
 			scale_size_manual(values = c(1.5, 4, 1.5, 1.5, 4)) +
-			scale_shape_manual(values = c(0, 1, 5, 6, 7)) +
+			#scale_shape_manual(values = c(0, 1, 5, 6, 7)) +
 			facet_wrap(DATAT_L~TEAM, ncol=4, scale='free') +
 			labs(x='\nPANGEA data set', y='Estimated and true % early transmissions\njust before the intervention\n', colour='Estimates based on', shape='Sampling coverage', size='Sampling coverage') +
 			theme_bw() + 
 			theme(legend.position='bottom', axis.text.x=element_text(size=8), panel.grid.major.y=element_line(colour='grey70', size=1), panel.grid.minor.y=element_line(colour='grey70', size=0.4)) +
 			guides(shape=guide_legend(ncol=3), size=guide_legend(ncol=3))
-	ggsave(file=paste(outdir,'/res_acrossTEAM_Primary_PCearlyjustbefore.pdf',sep=''), width=10, height=7)
+	ggsave(file=paste(outdir,'/res_acrossTEAM_Primary_PCearlyjustbefore_2.pdf',sep=''), width=11, height=7, useDingbats=FALSE)
 		
 	ggplot( tmp, aes(x=central_t, y=central, colour=gsub('using\n','',DATA_T2))) +
 			geom_point(aes(shape=SMPL_C, size=SMPL_C)) +
@@ -590,20 +592,20 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate.primary.sortedAcutePercent<- funct
 	
 	ggplot( tmp, aes(x=SC_RND, group=TEAM, colour=gsub('using\n','',DATA_T2))) +
 			#geom_point(aes(y=central, shape=factor(OBJ_iv, levels=c(-1,0,1), labels=c('<15%','15-30%','>30%'))), position=position_dodge(width = 0.90)) +
-			geom_point(aes(y=central, shape=SMPL_C_BEFORE, size=SMPL_C_BEFORE), position=position_dodge(width = 0.90)) +
+			geom_point(aes(y=central), position=position_dodge(width = 0.90), pch=16) +
 			geom_errorbar(aes(ymin=lower95, ymax=upper95), na.rm=TRUE, position=position_dodge(width = 0.90)) +
 			geom_point(aes(y=central_t), colour='black', pch=18) +
 			coord_cartesian(ylim=c(0,50)) +
 			scale_colour_brewer(palette='Set1') +
 			scale_y_continuous(breaks=seq(0,50,10), minor_breaks=seq(0,50,5)) +
-			scale_size_manual(values = c(1.5, 4, 1.5, 1.5, 4)) +
-			scale_shape_manual(values = c(0, 1, 5, 6, 7)) +
+			#scale_size_manual(values = c(1.5, 4, 1.5, 1.5, 4)) +
+			#scale_shape_manual(values = c(0, 1, 5, 6, 7)) +
 			facet_wrap(DATAT_L~TEAM, ncol=4, scale='free') +
 			labs(x='\nPANGEA data set', y='Estimated and true % early transmissions\nafter the intervention\n', colour='Estimates based on', shape='Sampling coverage', size='Sampling coverage') +
 			theme_bw() + 
 			theme(legend.position='bottom', axis.text.x=element_text(size=8), panel.grid.major.y=element_line(colour='grey70', size=1), panel.grid.minor.y=element_line(colour='grey70', size=0.4)) +
 			guides(shape=guide_legend(ncol=3), size=guide_legend(ncol=3))
-	ggsave(file=paste(outdir,'/res_acrossTEAM_Primary_PCearlyafter.pdf',sep=''), width=10, height=7)
+	ggsave(file=paste(outdir,'/res_acrossTEAM_Primary_PCearlyafter_2.pdf',sep=''), width=11, height=7, useDingbats=FALSE)
 	
 }
 ##--------------------------------------------------------------------------------------------------------
