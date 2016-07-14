@@ -214,7 +214,8 @@ pipeline.various<- function()
 prog.treecomparison.metrics<- function()
 {
 	#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
-	file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
+	#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
+	file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'	
 	treedist.quartets.add(file=file, with.save=1)
 	#treedist.billera.add(file=file, with.save=1)
 	quit("no")

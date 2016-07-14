@@ -24,8 +24,7 @@ treedist.pathdifference.wrapper<- function(submitted.info, ttrs, strs)
 				z			<- path.dist(otree, stree)
 				list(PD=z, NPD=z/choose(Ntip(otree),2), NPDSQ=z/sqrt(choose(Ntip(otree),2)))
 			}, by='IDX']
-	submitted.info	<- merge(submitted.info, tmp, by='IDX')
-	submitted.info
+	tmp
 }
 #--------------------------------------------------------------------------------------------------------
 #
@@ -468,7 +467,98 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 	sclu.info	<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))		
 	
 	if(with.save)
-		save(strs, ttrs, tinfo, submitted.info, sclu.info, file=gsub('\\.rda','_QD\\.rda',file))
+		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('\\.rda','_QD\\.rda',file))
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 13.07.16
+##--------------------------------------------------------------------------------------------------------
+treedist.closest.ind.obs<- function(tinfo, gd.thresh)
+{
+	tmp				<- subset(tinfo, BRL_T=='subst')[, {
+				#z<- subset(tinfo, BRL_T=='subst' & IDX_T==1); IDPOP<- z$IDPOP; IDTR<- z$IDTR; IDREC<- z$IDREC; IDPOP_CL<- z$IDPOP_CL; IDPOP_CL_GD<- z$IDPOP_CL_GD
+				gds	<- data.table(IDPOP=as.integer(gsub('IDPOP_','',IDPOP)), IDTR= as.integer(IDTR), IDREC=IDREC, IDPOP_CL=as.integer(IDPOP_CL), IDPOP_CL_GD=IDPOP_CL_GD)
+				gds[, CL_PH_PAIR:= gds[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
+				tmp		<- gds[, which(CL_PH_PAIR=='1')]
+				set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
+				tmp		<- gds[, which(CL_PH_PAIR=='0')]
+				set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
+				setkey(gds, CL_PH_PAIR)
+				ans		<- subset(gds, IDPOP_CL_GD<=gd.thresh)				
+				#	define tr->POP pairs
+				ans[, TR_PAIR:= ans[, as.character(as.numeric(IDPOP<IDTR))]]
+				tmp		<- ans[, which(TR_PAIR=='1')]
+				set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDPOP,IDTR,sep=',')])
+				tmp		<- ans[, which(TR_PAIR=='0')]
+				set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDTR,IDPOP,sep=',')])
+				#	define POP->rec pairs
+				ans[, REC_PAIR:= ans[, as.character(as.numeric(IDPOP<IDREC))]]
+				tmp		<- ans[, which(REC_PAIR=='1')]
+				set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDPOP,IDREC,sep=',')])
+				tmp		<- ans[, which(REC_PAIR=='0')]
+				set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDREC,IDPOP,sep=',')])
+				#	determine matches
+				ans[, IN:= CL_PH_PAIR==TR_PAIR]
+				tmp		<- ans[, which(!is.na(IDREC) & !IN)]
+				set(ans, tmp, 'IN', ans[tmp, CL_PH_PAIR==REC_PAIR])
+				#	calculate proportion of phylog closest pairs that are true transmission pairs
+				ans		<- ans[, list(IN=any(IN)), by='CL_PH_PAIR']
+				list(TR_REC_perc_T= ans[, mean(as.numeric(IN))]  )
+			}, by='IDX_T']
+	setnames(tmp, 'IDX_T','SUB_IDX_T')
+	tmp
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 13.07.16
+##--------------------------------------------------------------------------------------------------------
+treedist.closest.ind.reconstructed<- function(submitted.info, tinfo, gd.thresh)
+{
+	sucl			<- subset(submitted.info, MODEL=='R')[, {
+				print(IDX)
+				#IDX<- 557; SUB_IDX_T<-2; SC<- '150701_REGIONAL_TRAIN2'
+				ph			<- strs[[IDX]]
+				model.reg	<- grepl('REGIONAL',SC)
+				gds			<- treedist.closest.ind(ph, model.reg)
+				gds			<- subset(gds, IDPOP_CL_GD<=gd.thresh)
+				if(nrow(gds)>0)
+				{
+					tmp			<- subset(tinfo, IDX_T==SUB_IDX_T, c(IDPOP, IDTR, IDREC))
+					ans			<- merge(gds, tmp, by='IDPOP')
+					set(ans, NULL, 'IDPOP', ans[, as.integer(gsub('IDPOP_','',IDPOP))])
+					set(ans, NULL, 'IDPOP_CL', ans[, as.integer(gsub('IDPOP_','',IDPOP_CL))])
+					set(ans, NULL, 'IDTR', ans[, as.integer(IDTR)])
+					set(ans, NULL, 'IDREC', ans[, as.integer(IDREC)])
+					#	get phylogenetically closest pairs			
+					ans[, CL_PH_PAIR:= ans[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
+					tmp		<- ans[, which(CL_PH_PAIR=='1')]
+					set(ans, tmp, 'CL_PH_PAIR', ans[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
+					tmp		<- ans[, which(CL_PH_PAIR=='0')]
+					set(ans, tmp, 'CL_PH_PAIR', ans[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
+					setkey(ans, CL_PH_PAIR)
+					#	define tr->POP pairs
+					ans[, TR_PAIR:= ans[, as.character(as.numeric(IDPOP<IDTR))]]
+					tmp		<- ans[, which(TR_PAIR=='1')]
+					set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDPOP,IDTR,sep=',')])
+					tmp		<- ans[, which(TR_PAIR=='0')]
+					set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDTR,IDPOP,sep=',')])
+					#	define POP->rec pairs
+					ans[, REC_PAIR:= ans[, as.character(as.numeric(IDPOP<IDREC))]]
+					tmp		<- ans[, which(REC_PAIR=='1')]
+					set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDPOP,IDREC,sep=',')])
+					tmp		<- ans[, which(REC_PAIR=='0')]
+					set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDREC,IDPOP,sep=',')])
+					#	determine matches
+					ans[, IN:= CL_PH_PAIR==TR_PAIR]
+					tmp		<- ans[, which(!is.na(IDREC) & !IN)]
+					set(ans, tmp, 'IN', ans[tmp, CL_PH_PAIR==REC_PAIR])
+					#	calculate proportion of phylog closest pairs that are true transmission pairs
+					ans		<- ans[, list(IN=any(IN)), by='CL_PH_PAIR']
+					ans		<- ans[, mean(as.numeric(IN))] 
+				}
+				if(!nrow(gds))
+					ans		<- NA_real_				
+				list(TR_REC_perc= ans  )				
+			}, by=c('IDX')]
+	sucl
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 30.04.16
@@ -986,10 +1076,10 @@ treecomparison.ana.160627.standardize.KC<- function()
 	#
 	kc.std.d	<- subset(sc, TEAM!='MetaPIGA' & SC=='sc 1')
 	kc.std.m1	<- gamlss(KC~CLU_N-1, data=kc.std.d)
-	kc.std.m2	<- gamlss(KC~poly(CLU_N,2, raw=TRUE)-1, data=kc.std.d)	
+	kc.std.m2	<- gamlss(KC~poly(CLU_N,2, raw=TRUE), data=kc.std.d)	#this allows for a non-zero baseline, which gave much better fit	
 	#gamlss(KC~CLU_N+I(CLU_N^2)-1, data=kc.std.d)
-	kc.std.m3	<- gamlss(KC~I(CLU_N*(CLU_N-1)/2)-1, data=kc.std.d)
-	kc.std.m4	<- gamlss(KC~poly(CLU_N,4, raw=TRUE)-1, data=kc.std.d)
+	kc.std.m3	<- gamlss(KC~I(CLU_N*(CLU_N-1)/2), data=kc.std.d)
+	kc.std.m4	<- gamlss(KC~poly(CLU_N,4, raw=TRUE), data=kc.std.d)
 	#kc.std.m4	<- gamlss(KC~I(sqrt(CLU_N*(CLU_N-1)/2))-1, data=kc.std.d)
 	kc.std.da	<- subset(sc, TEAM!='MetaPIGA' & SC%in%c('sc 1','sc 2','sc 4'))
 	tmp.m1		<- predict(kc.std.m1, data=kc.std.d, newdata=kc.std.da, type='response', se.fit=FALSE)
@@ -1001,7 +1091,7 @@ treecomparison.ana.160627.standardize.KC<- function()
 	kc.std.da[, KC.m3:=tmp.m3]
 	kc.std.da[, KC.m4:=tmp.m4]
 	kc.std.da	<- melt(kc.std.da, measure.vars=c('KC.m1','KC.m2','KC.m3','KC.m4'))
-	set(kc.std.da, NULL, 'variable', kc.std.da[, factor(variable, levels=c('KC.m1','KC.m2','KC.m3','KC.m4'), labels=c('KC~CLU_N-1','KC~poly(CLU_N,2, raw=TRUE)-1','KC~I(CLU_N*(CLU_N-1)/2)-1','KC~poly(CLU_N,4, raw=TRUE)-1'))])
+	set(kc.std.da, NULL, 'variable', kc.std.da[, factor(variable, levels=c('KC.m1','KC.m2','KC.m3','KC.m4'), labels=c('KC~CLU_N-1','KC~poly(CLU_N,2, raw=TRUE)','KC~I(CLU_N*(CLU_N-1)/2)','KC~poly(CLU_N,4, raw=TRUE)'))])
 	ggplot(kc.std.da, aes(x=CLU_N)) + geom_point(aes(y=KC,colour=GENE, pch=TEAM)) + 
 			geom_line(aes(y=value, linetype=variable, group=variable)) +
 			#scale_linetype_manual(values=c('KC~CLU_N-1'='a','KC~poly(CLU_N,2, raw=TRUE)-1'='e','KC~I(CLU_N*(CLU_N-1)/2)-1'='f','KC~poly(CLU_N,4, raw=TRUE)-1'='j')) +
@@ -1195,8 +1285,27 @@ treecomparison.submissions.160627<- function()
 				read.tree(file=x)	
 			})
 	names(strs)	<- infiles[, FILE]
-	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
+	#
+	#	add MetaPIGA full genome trees, version 160713. stored as list of newicks
+	#
+	indir					<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_160713'
+	tmp						<- list.files(indir, pattern='*txt*', recursive=1, full.names=1)
+	tmp.trees				<- lapply(tmp, function(x)
+			{
+				cat(x)
+				read.tree(file=x)	
+			})	
+	MetaPIGA.trees			<- vector('list', sum(sapply(tmp.trees, length)))
+	for(i in seq_along(tmp.trees))				
+		for(j in seq_along(tmp.trees[[i]]))
+			MetaPIGA.trees[[j+(i-1)*length(tmp.trees[[1]])]]	<- tmp.trees[[i]][[j]]	
+	tmp						<- sapply( seq_along(tmp), function(i) paste(gsub('.txt','',tmp[i]), '_tree', seq_along(tmp.trees[[i]]), sep='') )
+	names(MetaPIGA.trees)	<- as.vector(tmp)
+	strs					<- c(strs, MetaPIGA.trees)
+	#
+	#	add MetaPIGA full genome trees, version 150831. stored as nexus
+	#
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_150831'
 	tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
 	tmp		<- data.table(FILE=tmp)	
 	tmp.trees			<- lapply(tmp[, FILE], function(x)
@@ -1339,11 +1448,13 @@ treecomparison.submissions.160627<- function()
 	#	set OTHER (ie old or some preliminary/unknown tree)
 	#
 	submitted.info[, OTHER:='N']
-	#	MetaPIGA tree to be used is first in nexus list (which was tagged with best above)
-	set(submitted.info, submitted.info[, which(TEAM=='MetaPIGA' & !grepl('use', FILE))], 'OTHER', 'Y')
+	#	all MetaPIGA trees in 'MetaPIGA_150831' are old
+	set(submitted.info, submitted.info[, which(TEAM=='MetaPIGA' & !grepl('MetaPIGA',FILE))], 'OTHER', 'Y')
 	#	IQTree did several uploads, use only most recent in main analysis
 	set(submitted.info, submitted.info[, which(grepl('150701_Regional_TRAIN1_IQTree150814', FILE))], 'OTHER', 'Y')
 	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & MODEL=='R' & !grepl('TRAIN1', SC) & grepl('201507/',FILE,fixed=1))], 'OTHER', 'Y')
+	#	RAxML gag_1606 are old
+	set(submitted.info, submitted.info[, which(TEAM=='RAXML' & grepl('gag_gene_1606',FILE))], 'OTHER', 'Y')
 	#
 	#	number taxa in tree
 	#
@@ -1421,6 +1532,10 @@ treecomparison.submissions.160627<- function()
 				phr
 			})
 	names(strs_rtt)	<- names(strs)
+	
+	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	#save(strs, strs_rtt, ttrs, tinfo, tfiles, file=file.path(outdir,'submitted_160713.rda'))
+	
 	#
 	#	ladderize all trees
 	#		
@@ -1490,88 +1605,21 @@ treecomparison.submissions.160627<- function()
 	#			list(Q=seq(0.01,0.5,0.01), IDPOP_CL_GD=unique(gds)[, quantile(IDPOP_CL_GD, p=seq(0.01,0.5,0.01))])
 	#		}, by=c('IDX_T','SC','BRL_T')]
 	#ggplot(tmp, aes(x=Q, y=IDPOP_CL_GD, colour=SC)) + geom_line()	
-	tmp				<- subset(tinfo, BRL_T=='subst')[, {
-				#z<- subset(tinfo, BRL_T=='subst' & IDX_T==1); IDPOP<- z$IDPOP; IDTR<- z$IDTR; IDREC<- z$IDREC; IDPOP_CL<- z$IDPOP_CL; IDPOP_CL_GD<- z$IDPOP_CL_GD
-				gds	<- data.table(IDPOP=as.integer(gsub('IDPOP_','',IDPOP)), IDTR= as.integer(IDTR), IDREC=IDREC, IDPOP_CL=as.integer(IDPOP_CL), IDPOP_CL_GD=IDPOP_CL_GD)
-				gds[, CL_PH_PAIR:= gds[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
-				tmp		<- gds[, which(CL_PH_PAIR=='1')]
-				set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
-				tmp		<- gds[, which(CL_PH_PAIR=='0')]
-				set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
-				setkey(gds, CL_PH_PAIR)
-				ans		<- subset(gds, IDPOP_CL_GD<=Inf)				
-				#	define tr->POP pairs
-				ans[, TR_PAIR:= ans[, as.character(as.numeric(IDPOP<IDTR))]]
-				tmp		<- ans[, which(TR_PAIR=='1')]
-				set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDPOP,IDTR,sep=',')])
-				tmp		<- ans[, which(TR_PAIR=='0')]
-				set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDTR,IDPOP,sep=',')])
-				#	define POP->rec pairs
-				ans[, REC_PAIR:= ans[, as.character(as.numeric(IDPOP<IDREC))]]
-				tmp		<- ans[, which(REC_PAIR=='1')]
-				set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDPOP,IDREC,sep=',')])
-				tmp		<- ans[, which(REC_PAIR=='0')]
-				set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDREC,IDPOP,sep=',')])
-				#	determine matches
-				ans[, IN:= CL_PH_PAIR==TR_PAIR]
-				tmp		<- ans[, which(!is.na(IDREC) & !IN)]
-				set(ans, tmp, 'IN', ans[tmp, CL_PH_PAIR==REC_PAIR])
-				#	calculate proportion of phylog closest pairs that are true transmission pairs
-				ans		<- ans[, list(IN=any(IN)), by='CL_PH_PAIR']
-				list(TR_REC_perc_T= ans[, mean(as.numeric(IN))]  )
-			}, by='IDX_T']
-	setnames(tmp, 'IDX_T','SUB_IDX_T')
+	tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf)
+	setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_Inf')	
 	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
+	tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=0.045)
+	setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_45')	
+	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)	
 	#
 	# compute closest individual on simulated trees and determine proportion if either transmitter or among recipients
 	#	
-	sucl			<- subset(submitted.info, MODEL=='R')[, {
-				print(IDX)
-				#IDX<- 557; SUB_IDX_T<-2; SC<- '150701_REGIONAL_TRAIN2'
-				ph			<- strs[[IDX]]
-				model.reg	<- grepl('REGIONAL',SC)
-				gds			<- treedist.closest.ind(ph, model.reg)
-				gds			<- subset(gds, IDPOP_CL_GD<=Inf)
-				if(nrow(gds)>0)
-				{
-					tmp			<- subset(tinfo, IDX_T==SUB_IDX_T, c(IDPOP, IDTR, IDREC))
-					ans			<- merge(gds, tmp, by='IDPOP')
-					set(ans, NULL, 'IDPOP', ans[, as.integer(gsub('IDPOP_','',IDPOP))])
-					set(ans, NULL, 'IDPOP_CL', ans[, as.integer(gsub('IDPOP_','',IDPOP_CL))])
-					set(ans, NULL, 'IDTR', ans[, as.integer(IDTR)])
-					set(ans, NULL, 'IDREC', ans[, as.integer(IDREC)])
-					#	get phylogenetically closest pairs			
-					ans[, CL_PH_PAIR:= ans[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
-					tmp		<- ans[, which(CL_PH_PAIR=='1')]
-					set(ans, tmp, 'CL_PH_PAIR', ans[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
-					tmp		<- ans[, which(CL_PH_PAIR=='0')]
-					set(ans, tmp, 'CL_PH_PAIR', ans[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
-					setkey(ans, CL_PH_PAIR)
-					#	define tr->POP pairs
-					ans[, TR_PAIR:= ans[, as.character(as.numeric(IDPOP<IDTR))]]
-					tmp		<- ans[, which(TR_PAIR=='1')]
-					set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDPOP,IDTR,sep=',')])
-					tmp		<- ans[, which(TR_PAIR=='0')]
-					set(ans, tmp, 'TR_PAIR', ans[tmp, paste(IDTR,IDPOP,sep=',')])
-					#	define POP->rec pairs
-					ans[, REC_PAIR:= ans[, as.character(as.numeric(IDPOP<IDREC))]]
-					tmp		<- ans[, which(REC_PAIR=='1')]
-					set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDPOP,IDREC,sep=',')])
-					tmp		<- ans[, which(REC_PAIR=='0')]
-					set(ans, tmp, 'REC_PAIR', ans[tmp, paste(IDREC,IDPOP,sep=',')])
-					#	determine matches
-					ans[, IN:= CL_PH_PAIR==TR_PAIR]
-					tmp		<- ans[, which(!is.na(IDREC) & !IN)]
-					set(ans, tmp, 'IN', ans[tmp, CL_PH_PAIR==REC_PAIR])
-					#	calculate proportion of phylog closest pairs that are true transmission pairs
-					ans		<- ans[, list(IN=any(IN)), by='CL_PH_PAIR']
-					ans		<- ans[, mean(as.numeric(IN))] 
-				}
-				if(!nrow(gds))
-					ans		<- NA_real_				
-				list(TR_REC_perc= ans  )				
-			}, by=c('IDX')]
-	submitted.info	<- merge(submitted.info, sucl, by='IDX', all.x=1)
+	tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, gd.thresh=Inf)
+	setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_Inf')		
+	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
+	tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, gd.thresh=0.045)
+	setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_45')		
+	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
 	#
 	#	compute Robinson Fould of complete tree 
 	#
@@ -1581,10 +1629,13 @@ treecomparison.submissions.160627<- function()
 	tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
 	sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')
 	#
-	#	path distance of complete trees
+	#	path distance of complete trees SSS
 	#
 	tmp				<- treedist.pathdifference.wrapper(submitted.info, ttrs, strs)
 	submitted.info	<- merge(submitted.info, tmp, by='IDX')
+	#set(submitted.info, NULL, c("SUB_IDX_T.y","SC.y","FILE.y","TEAM.y","MODEL.y","SEQCOV.y","ACUTE.y","GAPS.y","ART.y", "EXT.y", "GENE.y", "BEST.y","OTHER.y","TAXAN.y","ROOTED.y","BRL.y","TIME_IDX_T.y","TAXAN_T.y","TR_REC_perc_T_Inf.y","TR_REC_perc_T_45.y","TR_REC_perc_Inf.y","TR_REC_perc_45.y","RF.y","NRF.y"), NULL)	
+	#setnames(submitted.info, c("SUB_IDX_T.x", "SC.x", "FILE.x", "TEAM.x", "MODEL.x", "SEQCOV.x", "ACUTE.x", "GAPS.x", "ART.x", "EXT.x", "GENE.x", "BEST.x", "OTHER.x", "TAXAN.x", "ROOTED.x", "BRL.x", "TIME_IDX_T.x", "TAXAN_T.x", "TR_REC_perc_T_Inf.x", "TR_REC_perc_T_45.x", "TR_REC_perc_Inf.x", "TR_REC_perc_45.x", "RF.x", "NRF.x"),
+	#		c("SUB_IDX_T", "SC", "FILE", "TEAM", "MODEL", "SEQCOV", "ACUTE", "GAPS", "ART", "EXT", "GENE", "BEST", "OTHER", "TAXAN", "ROOTED", "BRL", "TIME_IDX_T", "TAXAN_T", "TR_REC_perc_T_Inf", "TR_REC_perc_T_45", "TR_REC_perc_Inf", "TR_REC_perc_45", "RF", "NRF"))
 	#
 	#	path distance of clusters
 	#	
@@ -1594,7 +1645,7 @@ treecomparison.submissions.160627<- function()
 	#	SAVE
 	#
 	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	save(strs, strs_rtt, ttrs, tinfo, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160627_QDPD.rda'))
+	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160713.rda'))
 	#
 	#	ADD other summaries
 	#
