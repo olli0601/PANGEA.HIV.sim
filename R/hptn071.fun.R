@@ -73,6 +73,63 @@ seq.singleton2bifurcatingtree<- function(ph.s, dummy.label=NA)
 	ph.s
 }
 ##--------------------------------------------------------------------------------------------------------
+#	olli 23.07.2016
+##--------------------------------------------------------------------------------------------------------
+#' @import data.table ape
+#' @export 
+seq.bootstrap.gd<- function(seq, seqi, tp, bsn=1e3, bs.seed=42)
+{
+	#for each pair, estimate: actual distance, mean distance, variance in distance:
+	#	(do this pairwise because otherwise too computationally expensive
+	#	by gene
+	tpi	<- tp[, 	{
+				cat('IDX',IDX, round(IDX/nrow(tp),d=3))
+				#TAXA1	<- 'IDPOP_13649|M|DOB_1906.66|2011.23'; TAXA2<- 'IDPOP_27993|F|DOB_1961.29|1991.587'
+				#START	<- 5467; END<- 8139
+				#system.time({
+				df.gd	<- seqi[, {
+							spc		<- as.character(seq[c(TAXA1,TAXA2), START:END])
+							#	use same seed across all bootstrap runs, ie running for every gene is the same as running for the full genome
+							#		and running for every taxon pair is the same as running for the whole alignment
+							set.seed(bs.seed)
+							tmp		<- sapply( seq_len(1+bsn), function(bsi)
+									{
+										#	take bootstrap sample (except if bsi==1)
+										#	the bootstrap is relative to the gene region!											
+										spcb	<- copy(spc)
+										if(bsi>1)
+										{
+											#	note: bootstrap includes ? columns, which adds uncertainty when genetic distances are evaluated over the overlap columns
+											spcb<- spcb[, sample(ncol(spcb), replace=TRUE)]	
+										}
+										spb		<- as.DNAbin(spcb)
+										#	overlap that is not '?'
+										do		<- sum(apply( spcb!='?', 2, prod))
+										#	count genetic distance on overlap region, ie count gaps '-' as well, on anything that is not '?'
+										dn		<- as.numeric( dist.dna(spb, model='N', pairwise.deletion=TRUE) )
+										#	add indels to differences, but not when the other sequence is '?'
+										tmp		<- which( !apply(spcb=='?', 2, any) )
+										if(length(tmp))
+											dn	<- dn + as.numeric(dist.dna(spb[, tmp], model='indel'))
+										#	DN can be > 0 if DO is 0, because of indels
+										c(dn, do)		
+									})	
+							list(IDX=seq_len(ncol(tmp)), DN=tmp[1,], DO=tmp[2,])		
+						}, by='GENE']	
+				#	collect distances for genes
+				ans		<- subset(df.gd, IDX>1)[, list( GD_MEAN=mean(DN/DO), GD_SD=sd(DN/DO) ), by='GENE']				
+				tmp		<- subset(df.gd, IDX==1)[, list( GD=ifelse(DO==0, NA_real_, DN/DO) ), by='GENE']
+				ans		<- merge(tmp, ans, by='GENE')
+				#	calculate distances for full genome
+				tmp		<- subset(df.gd, GENE%in%c('gag','pol','env'))[, list(GENE='gag+pol+env', GD=sum(DN)/sum(DO)), by='IDX']
+				tmp		<- tmp[, list(GD= GD[IDX==1], GD_MEAN=mean(GD[IDX>1]), GD_SD=sd(IDX>1)), by='GENE']
+				ans		<- rbind(ans, tmp)
+				#})
+				ans				
+			}, by=c('TAXA1','TAXA2')]
+	tpi
+}
+##--------------------------------------------------------------------------------------------------------
 #	olli copied from hivclust
 ##--------------------------------------------------------------------------------------------------------
 seq.addrootnode<- function(ph, dummy.label)
@@ -461,6 +518,27 @@ PANGEA.GTR.params<- function()
 	set(log.df, NULL, 'mu', log.df[, mu*mu.gene])
 	set(log.df, NULL, 'meanRate', tmp)
 	set(log.df, NULL, 'mu.gene', NULL)
+	#	plot
+	if(0)	
+	{
+		pr	<- copy(log.df)
+		set(pr, NULL, c('alpha','a','c','g','t','meanRate'), NULL)
+		setnames(pr, 'mu', 'relative\nevolutionary rate')
+		setnames(pr, 'at', 'relative\nsubstitution rate\na->t')
+		setnames(pr, 'ac', 'relative\nsubstitution rate\na->c')
+		setnames(pr, 'ag', 'relative\nsubstitution rate\na->g')
+		setnames(pr, 'cg', 'relative\nsubstitution rate\nc->g')
+		setnames(pr, 'gt', 'relative\nsubstitution rate\ng->t')
+		set(pr, NULL, 'GENE', pr[, factor(GENE, levels=c('GAG','POL','ENV'), labels=c('gag','pol','env'))])
+		set(pr, NULL, 'CODON_POS', pr[, factor(CODON_POS, levels=c('CP1','CP2','CP3'), labels=c('codon\nposition 1','codon\nposition 2','codon\nposition 3'))])
+		pr	<- melt(pr, measure.vars=c('relative\nevolutionary rate','relative\nsubstitution rate\na->t','relative\nsubstitution rate\na->c','relative\nsubstitution rate\nc->g','relative\nsubstitution rate\na->g','relative\nsubstitution rate\ng->t'))
+		ggplot(pr, aes(x=value)) + 				
+				geom_histogram(aes(y = ..density..), bins=50) +
+				facet_grid(GENE+CODON_POS~variable, scales='free') + 
+				theme_bw() + labs(x='', y='sampling distribution')
+		ggsave(file='/Users/Oliver/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures/Supp_Figure_Regional_GTR.pdf', w=10, h=10)
+		
+	}
 	log.df
 }
 ##--------------------------------------------------------------------------------------------------------

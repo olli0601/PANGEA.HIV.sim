@@ -472,7 +472,7 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 13.07.16
 ##--------------------------------------------------------------------------------------------------------
-treedist.closest.ind.obs<- function(tinfo, gd.thresh)
+treedist.closest.ind.obs<- function(tinfo, gd.thresh=Inf, rtn.pairs=FALSE)
 {
 	tmp				<- subset(tinfo, BRL_T=='subst')[, {
 				#z<- subset(tinfo, BRL_T=='subst' & IDX_T==1); IDPOP<- z$IDPOP; IDTR<- z$IDTR; IDREC<- z$IDREC; IDPOP_CL<- z$IDPOP_CL; IDPOP_CL_GD<- z$IDPOP_CL_GD
@@ -500,9 +500,13 @@ treedist.closest.ind.obs<- function(tinfo, gd.thresh)
 				ans[, IN:= CL_PH_PAIR==TR_PAIR]
 				tmp		<- ans[, which(!is.na(IDREC) & !IN)]
 				set(ans, tmp, 'IN', ans[tmp, CL_PH_PAIR==REC_PAIR])
-				#	calculate proportion of phylog closest pairs that are true transmission pairs
-				ans		<- ans[, list(IN=any(IN)), by='CL_PH_PAIR']
-				list(TR_REC_perc_T= ans[, mean(as.numeric(IN))]  )
+				ans		<- ans[, list(TRUE_PAIR=any(IN)), by='CL_PH_PAIR']
+				if(!rtn.pairs)
+				{
+					#	calculate proportion of phylog closest pairs that are true transmission pairs					
+					ans		<- list(TR_REC_perc_T= ans[, mean(as.numeric(TRUE_PAIR))]  )	
+				}
+				ans
 			}, by='IDX_T']
 	setnames(tmp, 'IDX_T','SUB_IDX_T')
 	tmp
@@ -559,6 +563,38 @@ treedist.closest.ind.reconstructed<- function(submitted.info, tinfo, gd.thresh)
 				list(TR_REC_perc= ans  )				
 			}, by=c('IDX')]
 	sucl
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 13.07.16
+##--------------------------------------------------------------------------------------------------------
+treedist.closest.ind.reconstructed.oftruepairs<- function(submitted.info, tinfo.pairs)
+{
+	tmp			<- subset(submitted.info, MODEL=='R')[, {
+				print(IDX)
+				#IDX<- 557; SUB_IDX_T<-2; SC<- '150701_REGIONAL_TRAIN2'
+				ph			<- strs[[IDX]]
+				model.reg	<- grepl('REGIONAL',SC)
+				gds			<- treedist.closest.ind(ph, model.reg)
+				gds			<- subset(gds, IDPOP_CL_GD<=Inf)
+				#	get correct phylogenetically closest pairs
+				z			<- SUB_IDX_T
+				z			<- subset(tinfo.pairs, SUB_IDX_T==z)		
+				z			<- subset(z, TRUE_PAIR_Inf)
+				#	get phylogenetically closest pairs in simulation
+				ans			<- copy(gds)
+				set(ans, NULL, 'IDPOP', ans[, as.integer(gsub('IDPOP_','',IDPOP))])
+				set(ans, NULL, 'IDPOP_CL', ans[, as.integer(gsub('IDPOP_','',IDPOP_CL))])								
+				ans[, CL_PH_PAIR:= ans[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
+				tmp		<- ans[, which(CL_PH_PAIR=='1')]
+				set(ans, tmp, 'CL_PH_PAIR', ans[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
+				tmp		<- ans[, which(CL_PH_PAIR=='0')]
+				set(ans, tmp, 'CL_PH_PAIR', ans[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
+				setkey(ans, CL_PH_PAIR)					
+				#	calculate which of the correct phylogenetically closest pairs are also in the simulation
+				ans		<- merge(z, unique(ans), by='CL_PH_PAIR', all.x=1)				
+				list(TR_PAIR_rec= ans[, mean(!is.na(IDPOP))]  )									
+			}, by=c('IDX')]
+	tmp
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 30.04.16
@@ -1033,8 +1069,119 @@ treecomparison.submissions.151119<- function()
 	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151119_SRFQD.rda'
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
 }
+
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
+treecomparison.bootstrap.gd.dev<- function()
+{
+	require(ape)
+	require(data.table)
+	
+	bsn		<- 1e3
+	batch.n	<- 3200
+	batch.i	<- 1
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
+	infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'	
+	outdir	<- indir
+	outfile	<- paste(gsub('.fa','',infile),'_GDS_BATCH',batch.i,'.rda',sep='')
+	
+	seq		<- read.dna(file.path(indir, infile), format='fa')
+	#	for this first analysis, to see if the resulting trees are meaningful at all, 
+	#	use just gag, pol and full
+	seqi	<- as.data.table(read.csv(file.path(indir, gsub('\\.fa','_gene.txt',infile)), header=0))
+	seqi[, GENE:= regmatches(V2, regexpr('[a-z]+', V2))]
+	seqi[, START:= as.integer(gsub('-','',regmatches(V2, regexpr('[0-9]+-', V2))))]
+	seqi[, END:= as.integer(gsub('-','',regmatches(V2, regexpr('-[0-9]+', V2))))]
+	seqi	<- subset(seqi, select=c(GENE,START,END))
+	#seqi	<- rbind(seqi, data.table(GENE='full', START=1L, END= seqi[, max(END)]))
+		
+	tp		<- as.data.table( t(combn(rownames(seq),2)) )
+	setnames(tp, c('V1','V2'), c('TAXA1','TAXA2'))
+	tp[, IDX:= seq_len(nrow(tp))]
+	#	subset by batch
+	tp[, BATCH:= ceiling(IDX/batch.n)]
+	if(!is.na(batch.i))
+		tp	<- subset(tp, BATCH==batch.i)
+	#for each pair, estimate: actual distance, mean distance, variance in distance:
+	#	(do this pairwise because otherwise too computationally expensive
+	#	by gene
+	tpi	<- tp[, 	{
+				cat('IDX',IDX, round(IDX/nrow(tp),d=3))
+				#TAXA1	<- 'IDPOP_13649|M|DOB_1906.66|2011.23'; TAXA2<- 'IDPOP_27993|F|DOB_1961.29|1991.587'
+				#START	<- 5467; END<- 8139
+				#system.time({
+				df.gd	<- seqi[, {
+										spc		<- as.character(seq[c(TAXA1,TAXA2), START:END])
+										#	use same seed across all bootstrap runs, ie running for every gene is the same as running for the full genome
+										#		and running for every taxon pair is the same as running for the whole alignment
+										set.seed(42)
+										tmp		<- sapply( seq_len(1+bsn), function(bsi)
+												{
+													#	take bootstrap sample (except if bsi==1)
+													#	the bootstrap is relative to the gene region!											
+													spcb	<- copy(spc)
+													if(bsi>1)
+													{
+														#	note: bootstrap includes ? columns, which adds uncertainty when genetic distances are evaluated over the overlap columns
+														spcb<- spcb[, sample(ncol(spcb), replace=TRUE)]	
+													}
+													spb		<- as.DNAbin(spcb)
+													#	overlap that is not '?'
+												 	do		<- sum(apply( spcb!='?', 2, prod))
+													#	count genetic distance on overlap region, ie count gaps '-' as well, on anything that is not '?'
+													dn		<- as.numeric( dist.dna(spb, model='N', pairwise.deletion=TRUE) )
+													#	add indels to differences, but not when the other sequence is '?'
+													tmp		<- which( !apply(spcb=='?', 2, any) )
+													if(length(tmp))
+														dn	<- dn + as.numeric(dist.dna(spb[, tmp], model='indel'))
+													#	DN can be > 0 if DO is 0, because of indels
+													c(dn, do)		
+												})	
+										list(IDX=seq_len(ncol(tmp)), DN=tmp[1,], DO=tmp[2,])		
+									}, by='GENE']	
+				#	collect distances for genes
+				ans		<- subset(df.gd, IDX>1)[, list( GD_MEAN=mean(DN/DO), GD_SD=sd(DN/DO) ), by='GENE']				
+				tmp		<- subset(df.gd, IDX==1)[, list( GD=ifelse(DO==0, NA_real_, DN/DO) ), by='GENE']
+				ans		<- merge(tmp, ans, by='GENE')
+				#	calculate distances for full genome
+				tmp		<- subset(df.gd, GENE%in%c('gag','pol','env'))[, list(GENE='gag+pol+env', GD=sum(DN)/sum(DO)), by='IDX']
+				tmp		<- tmp[, list(GD= GD[IDX==1], GD_MEAN=mean(GD[IDX>1]), GD_SD=sd(IDX>1)), by='GENE']
+				ans		<- rbind(ans, tmp)
+				#})
+				ans				
+			}, by=c('TAXA1','TAXA2')]
+	#	save output to
+	save(tpi, file=file.path(outdir,outfile))
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.11
+treecomparison.create.metadata<- function()
+{	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
+	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	infile.prefix	<- '150701_Regional_TRAIN1_'
+	
+	load( file.path(indir, paste(infile.prefix,'SIMULATED_INTERNAL.R',sep='')) )
+	
+	tmp			<- subset( df.inds, !is.na(TIME_SEQ), select=c(IDPOP, GENDER, DOB, DOD, DIAG_T, DIAG_CD4, ART1_T, ART1_CD4, TIME_SEQ, RECENT_TR ) )	
+	set(tmp, NULL, 'GENDER', tmp[,as.character(GENDER)])
+	tmp2		<- tmp[, which(is.na(DIAG_T) & TIME_SEQ<2000)]
+	cat(paste('\nSet patient variables to NA for archival seq, n=',length(tmp2)))		
+	set(tmp, tmp2, c('DOB','DOD'), NA_real_) 
+	set(tmp, tmp2, 'GENDER', NA_character_)
+	tmp2		<- tmp[, which(is.na(DIAG_T) & TIME_SEQ>=2000)]
+	cat(paste('\nSet patient variables to NA after 2000, n=',length(tmp2)))
+	print(tmp[tmp2,])
+	set(tmp, tmp2, c('DOB','DOD'), NA_real_) 
+	set(tmp, tmp2, 'GENDER', NA_character_)
+	set(tmp, NULL, 'GENDER', tmp[,factor(GENDER)])
+	
+	file			<- paste(outdir, '/', infile.prefix, 'SIMULATED_metadata.csv', sep='')
+	cat(paste('\nwrite to file', file))
+	write.csv(tmp, file)
+
+
+}
 ##--------------------------------------------------------------------------------------------------------
 treecomparison.ana.160627.standardize.KC<- function()
 {	
@@ -1593,24 +1740,14 @@ treecomparison.submissions.160627<- function()
 	#
 	# compute on true trees the proportion if either transmitter or among recipients
 	#
-	#tmp				<- subset(tinfo, BRL_T=='subst')[, {
-	#			#z<- subset(tinfo, BRL_T=='subst' & IDX_T==1); IDPOP<- z$IDPOP; IDTR<- z$IDTR; IDREC<- z$IDREC; IDPOP_CL<- z$IDPOP_CL; IDPOP_CL_GD<- z$IDPOP_CL_GD
-	#			gds	<- data.table(IDPOP=as.integer(gsub('IDPOP_','',IDPOP)), IDTR= as.integer(IDTR), IDREC=IDREC, IDPOP_CL=as.integer(IDPOP_CL), IDPOP_CL_GD=IDPOP_CL_GD)
-	#			gds[, CL_PH_PAIR:= gds[, as.character(as.numeric(IDPOP<IDPOP_CL))]]
-	#			tmp		<- gds[, which(CL_PH_PAIR=='1')]
-	#			set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP,IDPOP_CL,sep=',')])
-	#			tmp		<- gds[, which(CL_PH_PAIR=='0')]
-	#			set(gds, tmp, 'CL_PH_PAIR', gds[tmp, paste(IDPOP_CL,IDPOP,sep=',')])
-	#			setkey(gds, CL_PH_PAIR)
-	#			list(Q=seq(0.01,0.5,0.01), IDPOP_CL_GD=unique(gds)[, quantile(IDPOP_CL_GD, p=seq(0.01,0.5,0.01))])
-	#		}, by=c('IDX_T','SC','BRL_T')]
-	#ggplot(tmp, aes(x=Q, y=IDPOP_CL_GD, colour=SC)) + geom_line()	
 	tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf)
 	setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_Inf')	
 	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
 	tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=0.045)
 	setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_45')	
-	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)	
+	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)		
+	tinfo.pairs		<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf, rtn.pairs=TRUE)
+	setnames(tinfo.pairs, 'TRUE_PAIR','TRUE_PAIR_Inf')
 	#
 	# compute closest individual on simulated trees and determine proportion if either transmitter or among recipients
 	#	
@@ -1620,6 +1757,8 @@ treecomparison.submissions.160627<- function()
 	tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, gd.thresh=0.045)
 	setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_45')		
 	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
+	tmp				<- treedist.closest.ind.reconstructed.oftruepairs(submitted.info, tinfo.pairs)
+	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
 	#
 	#	compute Robinson Fould of complete tree 
 	#
@@ -1645,7 +1784,7 @@ treecomparison.submissions.160627<- function()
 	#	SAVE
 	#
 	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160713.rda'))
+	save(strs, strs_rtt, ttrs, tinfo, tfiles, tinfo.pairs, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160713.rda'))
 	#
 	#	ADD other summaries
 	#
@@ -2405,8 +2544,46 @@ treecomparison.ana.160627<- function()
 	
 	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag			<- '160627'
-	load(paste(edir,'/','submitted_160627_QDPDKC.rda',sep=''))
+	timetag			<- '160713'
+	#load(paste(edir,'/','submitted_160627_QDPDKC.rda',sep=''))
+	load(paste(edir,'/','submitted_160713.rda',sep=''))
+	#
+	#	long branches on regional
+	#
+	lba			<- merge(lba, subset(submitted.info, select=c(IDX, OTHER)), by='IDX')
+	#	get reference of error without long branches
+	lba[, ERR:= DEPTH_T-DEPTH]
+	#	these are the closest trees in terms of NRF
+	ref.box		<- subset(lba, IDX==858)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
+	ref.box		<- subset(lba, IDX==2)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
+	subset(lba, IDX==858)[, sd(ERR)*10]
+	#	this suggests the following Tukey criterion:
+	ref.box		<- c(-0.04,0.04)
+	ref.box		<- c(-0.1,0.1)
+	lba.su		<- subset(lba, OTHER=='N')[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR<ref.box[1] | ERR>ref.box[2])), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
+	lba.su[, OUTLIER_N:=TAXAN*OUTLIER_P]
+	ggplot(lba.su, aes(x=factor(GAPS, levels=c('none','low','high'), labels=c('none','low','high')), y=OUTLIER_P, colour=GENE)) + 
+			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) + 
+			scale_y_continuous(labels = scales::percent, limits=c(0, 1)) +
+			facet_grid(~TEAM+GENE)  + theme_bw() +
+			labs(	x='\ngaps', 
+					y='branch length to root\n50% too small or too large\n(% of all taxa in tree)\n')
+	file	<- file.path(edir, paste(timetag,'_','longbranches.pdf',sep=''))
+	ggsave(file=file, w=15, h=7)
+	#
+	lba.su	<- subset(lba, OTHER=='N')[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR< -0.04 | ERR>0.04)), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
+	ggplot(lba.su, aes(x=factor(GAPS, levels=c('none','low','high'), labels=c('none','low','high')), y=OUTLIER_P, colour=GENE)) + 
+			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) + 
+			scale_y_continuous(labels = scales::percent, limits=c(0, 1)) +
+			facet_grid(~TEAM+GENE)  + theme_bw() +
+			labs(	x='\ngaps', 
+					y='branch length to root\n20% too small or too large\n(% of all taxa in tree)\n')
+	file	<- file.path(edir, paste(timetag,'_','longbranches_20pc.pdf',sep=''))
+	ggsave(file=file, w=15, h=7)
 	
+	#
+	#
+	#
 	sa		<- copy(submitted.info)	
 	#
 	set(sa, NULL, 'MODEL', sa[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
@@ -2423,7 +2600,58 @@ treecomparison.ana.160627<- function()
 	sa		<- subset(sa, OTHER=='N')
 	#
 	#	on full tree
-	#	
+	#		
+	
+	#	prob closest on 4.5% (confounded by branch lengths)
+	tmp		<- merge(sa, subset(lba.su, OUTLIER_P<0.2, IDX), by='IDX')
+	tmp		<- copy(sa)
+	tmp		<- subset(tmp, !is.na(TR_REC_perc_45) & ACUTE=='10%' & TEAM%in%c('RAXML','IQTree'))
+	ggplot(tmp, aes(x=GAPS)) +
+			geom_jitter(aes(y=TR_REC_perc_45, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8, 'MetaPIGA'=17)) +
+			geom_point(aes(y=TR_REC_perc_T_45), colour="black", size=2) +
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, limit=c(0,0.3), expand=c(0,0)) +
+			labs(	x='\nGappiness of full-genome sequences', 
+					y='phylogenetically closest pairs of individual\nthat are true transmission pairs\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','pTransRec45_by_gaps.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
+	#	prob closest w/o GD criterion	
+	tmp		<- subset(sa, !is.na(TR_REC_perc_Inf) & ACUTE=='10%' & TEAM%in%c('RAXML','IQTree'))
+	ggplot(tmp, aes(x=GAPS)) +
+			geom_jitter(aes(y=TR_REC_perc_Inf, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8, 'MetaPIGA'=17)) +
+			geom_point(aes(y=TR_REC_perc_T_Inf), colour="black", size=2) +
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, limit=c(0,0.1), expand=c(0,0)) +
+			labs(	x='\nGappiness of full-genome sequences', 
+					y='phylogenetically closest pairs of individuals\nthat are true transmission pairs\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','pTransRecInf_by_gaps.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
+	#	instead, proportion of recovered transmission pairs? 
+	#	get list of correct pairs in true phylogeny. how many of these do we see in reconstructed phylogeny?
+	tmp		<- subset(sa, !is.na(TR_PAIR_rec) & ACUTE=='10%')
+	ggplot(tmp, aes(x=GAPS)) +
+			geom_jitter(aes(y=TR_PAIR_rec, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
+			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8, 'MetaPIGA'=17)) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, limit=c(0.5,1)) +
+			labs(	x='\nGappiness of full-genome sequences', 
+					y='phylogenetically closest pairs of individuals\nthat are transmission pairs, out of all such pairs\nthat can be identified in the true tree\n',					
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','pTransPairRecovered_by_gaps.pdf',sep=''))
+	ggsave(file=file, w=6, h=7)
+	
+
+
 	ggplot(subset(sa, ACUTE=='10%' & TEAM!='MetaPIGA' & MODEL=='Model: Regional'), aes(x=TAXAN)) +
 			geom_jitter(aes(y=NRF, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
 			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
@@ -2479,8 +2707,7 @@ treecomparison.ana.160627<- function()
 			theme_bw() + theme(legend.position='bottom') +
 			facet_grid(TEAM~.)
 	file	<- file.path(edir, paste(timetag,'_','PD_polvsall_by_gaps_taxan1600_Acute10pc.pdf',sep=''))
-	ggsave(file=file, w=5, h=10)
-	
+	ggsave(file=file, w=5, h=10)	
 	#
 	#	on clusters
 	#
@@ -2575,39 +2802,6 @@ treecomparison.ana.160627<- function()
 			theme_bw() + theme(legend.position='bottom') 
 	file	<- file.path(edir, paste(timetag,'_','KC_clumean_polvsall_by_gaps_taxan1600_Acute10pc.pdf',sep=''))
 	ggsave(file=file, w=5, h=7)
-	
-	#
-	#	long branches on regional
-	#
-	
-	#	get reference of error without long branches
-	lba[, ERR:= DEPTH_T-DEPTH]
-	#	these are the closest trees in terms of NRF
-	ref.box		<- subset(lba, IDX==858)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
-	ref.box		<- subset(lba, IDX==2)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
-	subset(lba, IDX==858)[, sd(ERR)*10]
-	#	this suggests the following Tukey criterion:
-	ref.box		<- c(-0.04,0.04)
-	ref.box		<- c(-0.1,0.1)
-	tmp			<- lba[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR<ref.box[1] | ERR>ref.box[2])), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
-	tmp[, OUTLIER_N:=TAXAN*OUTLIER_P]
-	#ggplot(tmp, aes(x=OUTLIER_P, fill=GENE)) + 
-	#		geom_histogram(binwidth=0.1) + 	
-	#		facet_grid(GAPS~TEAM)  + theme_bw() +
-	#		labs(	x='\ngaps', 
-	#				y='branch length to root\n50% too small or too large\n(% of all taxa in tree)\n')
-	
-	
-	ggplot(tmp, aes(x=factor(GAPS, levels=c('none','low','high'), labels=c('none','low','high')), y=OUTLIER_P, colour=GENE)) + 
-			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) + 
-			scale_y_continuous(labels = scales::percent, limits=c(0, 1)) +
-			facet_grid(~TEAM+GENE)  + theme_bw() +
-			labs(	x='\ngaps', 
-					y='branch length to root\n50% too small or too large\n(% of all taxa in tree)\n')
-	file	<- file.path(edir, paste(timetag,'_','longbranches.pdf',sep=''))
-	ggsave(file=file, w=15, h=7)
-	
-	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 03.12.15

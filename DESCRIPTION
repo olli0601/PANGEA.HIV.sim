@@ -20,3 +20,4 @@ Description: HIV Phylogenetic Simulation Model for the PANGEA-HIV methods
     comparison exercise.
 License: GPL (>=2)
 LazyLoad: yes
+RoxygenNote: 5.0.1

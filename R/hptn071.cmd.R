@@ -12,6 +12,7 @@ PR.HPTN071.LOWACUTE.PAR		<- system.file(package=PR.PACKAGE, "ext", "PangeaParams
 PR.HPTN071.HIGHACUTE		<- system.file(package=PR.PACKAGE, "ext", "popart-highacute")
 PR.HPTN071.HIGHACUTE.PAR	<- system.file(package=PR.PACKAGE, "ext", "PangeaParamsHighAcute")
 PR.VARIOUS					<- paste(PR.STARTME," -exe=VARIOUS",sep='')
+PR.GENDIST					<- paste('Rscript',system.file(package=PR.PACKAGE, "PANGEA.GenDist.calculator.Rscript"),sep=' ')
 
 HPC.MPIRUN					<- {tmp<- c("mpirun","mpiexec"); names(tmp)<- c("debug","cx1.hpc.ic.ac.uk"); tmp}
 HPC.CX1.IMPERIAL			<- "cx1.hpc.ic.ac.uk"		#this is set to system('domainname',intern=T) for the hpc cluster of choice
@@ -239,6 +240,21 @@ cmd.SeqGen.createInputFiles<- function(indir.epi, infile.epi, indir.vts, infile.
 	cmd		<- paste(cmd,paste("echo \'end ",prog,"\'\n",sep=''))
 	cmd		<- paste(cmd,"#######################################################
 # end: run SeqGen.createInputFile
+#######################################################\n",sep='')
+	cmd
+}
+######################################################################################
+#	return command line to run SeqGen and process SeqGen output 	
+cmd.gendist<- function(indir, infile.fa, infile.ge, outdir, outfile, batch.i, prog=PR.GENDIST)
+{
+	cmd<- "#######################################################
+# start: run PANGEA.GenDist.calculator 
+#######################################################"
+	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
+	cmd		<- paste(cmd, paste(prog,' -indir=', indir,' -infile.fa=',infile.fa, ' -infile.ge=', infile.ge,' -outdir=',outdir,' -outfile=',outfile,' -batch.i=',batch.i,' \n', sep=''))
+	cmd		<- paste(cmd,paste("echo \'end ",prog,"\'\n",sep=''))
+	cmd		<- paste(cmd,"#######################################################
+# end: run PANGEA.GenDist.calculator
 #######################################################\n",sep='')
 	cmd
 }

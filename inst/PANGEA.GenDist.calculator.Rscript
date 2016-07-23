@@ -1,0 +1,85 @@
+args <- commandArgs()
+if(!any(args=='--args'))
+	args<- vector("numeric",0)
+if(any(args=='--args'))
+	args<- args[-(1:match("--args", args)) ]
+#	default args
+bsn			<- 1e3
+batch.n		<- 3200
+batch.i		<- 1
+indir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
+infile.fa	<- '150701_Regional_TRAIN4_SIMULATED.fa'
+infile.ge	<- gsub('\\.fa','_gene.txt',infile.fa)
+outdir		<- indir
+outfile		<- paste(gsub('.fa','',infile.fa),'_GDS_BATCH',batch.i,'.rda',sep='')
+#	read args as specified
+if(exists("args"))
+{
+	#	args input
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,6),
+								indir= return(substr(arg,8,nchar(arg))),NA)	}))
+	if(length(tmp)>0) indir<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,10),
+								infile.fa= return(substr(arg,12,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile.fa<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,10),
+								infile.ge= return(substr(arg,12,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile.ge<- tmp[1]	
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,7),
+								outdir= return(substr(arg,9,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outdir<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,8),
+								outfile= return(substr(arg,10,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outfile<- tmp[1]
+	
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,8),
+								batch.i= return(substr(arg,10,nchar(arg))),NA)	}))
+	if(length(tmp)>0) batch.i<- tmp[1]
+}
+if(verbose)
+{
+	cat('\ninput args\n',paste(indir, infile.fa, infile.ge, outdir, outfile, batch.i, sep='\n'))
+}
+#
+#	start script
+#
+require(ape)
+require(data.table)
+require(PANGEA.HIV.sim)
+#
+#	read sequences
+#
+seq		<- read.dna(file.path(indir, infile), format='fa')
+#
+#	read gene limits in this alignment
+#		for this first analysis, to see if the resulting trees are meaningful at all, 
+#		use just gag, pol and full
+#
+seqi	<- as.data.table(read.csv(file.path(indir, infile.ge), header=0))
+seqi[, GENE:= regmatches(V2, regexpr('[a-z]+', V2))]
+seqi[, START:= as.integer(gsub('-','',regmatches(V2, regexpr('[0-9]+-', V2))))]
+seqi[, END:= as.integer(gsub('-','',regmatches(V2, regexpr('-[0-9]+', V2))))]
+seqi	<- subset(seqi, select=c(GENE,START,END))
+#
+#	prepare all taxa pair combinations for which genetic distance is to be estimated
+#
+tp		<- as.data.table( t(combn(rownames(seq),2)) )
+setnames(tp, c('V1','V2'), c('TAXA1','TAXA2'))
+tp[, IDX:= seq_len(nrow(tp))]
+#	subset by batch
+tp[, BATCH:= ceiling(IDX/batch.n)]
+if(!is.na(batch.i))
+	tp	<- subset(tp, BATCH==batch.i)
+#
+#	get distances and save
+#
+tpi		<- seq.bootstrap.gd(seq, seqi, tp, bsn=1e3, bs.seed=42)
+#
+save(tpi, file=file.path(outdir, outfile))
+	

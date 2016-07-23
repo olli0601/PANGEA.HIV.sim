@@ -1,8 +1,3 @@
-#! /Library/Frameworks/R.framework/Versions/3.1/Resources/bin/Rscript
-##
-##	first line in shell script starts with #! and points to absolute path to Rscript
-##	CHANGE  as needed
-##
 ##! /apps/R/3.2.0/lib64/R/bin/Rscript
 ###############################################################################
 #
@@ -27,6 +22,7 @@ HOME		<<- "/Users/Oliver/git/HPTN071sim/"
 #HOME		<<- "/work/or105/Gates_2014"
 DATA		<<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut'
 #DATA		<<- '/work/or105/Gates_2014/2015_PANGEA_haircut'
+#DATA		<<- '/work/or105/Gates_2014/tree_comparison'
 
 DEBUG		<<- 1		#If 1, a dump file is created that can be loaded and computations can be inspected at the point of error.
 LIB.LOC		<<- NULL

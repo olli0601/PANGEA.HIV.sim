@@ -1819,17 +1819,25 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate.secondary.Outliers<- function(dfa,
 	dfo			<- merge(dfo, tmp, by=c('TEAM','OBJ','SC_RND'))
 	dfo[, OUTLIER:=0]
 	set(dfo, dfo[, which(OU_TK)], 'OUTLIER', 1)
-	set(dfo, dfo[, which(OU_GR)], 'OUTLIER', 2)
-	set(dfo, NULL, 'OUTLIER', dfo[, factor(OUTLIER, levels=c(0,1,2), labels=c('No','Mild','Extreme'))])
+	set(dfo, dfo[, which(OU_GR)], 'OUTLIER', 1)
+	set(dfo, NULL, 'OUTLIER', dfo[, factor(OUTLIER, levels=c(0,1), labels=c('No','Yes'))])
 	set(dfo, NULL, 'OBJ', dfo[, factor(OBJ, levels=c('R_ii','R_iii','R_v','R_vi'), labels=c('Incidence\nafter intervention','Incidence reduction\nduring intervention','Proportion of early transmissions\njust before intervention','Proportion of early transmissions\nafter intervention'))])
 	ggplot(dfo, aes(y=TEAM, x=RESID, label=SC_RND, colour=OUTLIER, size=OUTLIER)) + 
-			geom_text(position=position_jitter(width=0, height=0.3)) + 
-			scale_colour_brewer(palette='Dark2') +
-			scale_size_manual(values=c(1,2,3)) +
+			geom_text(position=position_jitter(width=0, height=0.9)) + 
+			scale_colour_manual(values=c('grey20','red3')) +
+			scale_size_manual(values=c(2.2,3)) +
 			theme_bw() + facet_grid(~OBJ, scales='free') +
 			labs(x='\nerror in phylogenetic estimate',y='',size='Outlier',colour='Outlier')
-	ggsave(file=paste(outdir,'/res_acrossTEAM_Secondary_Outliers.pdf',sep=''), width=12, height=5)
+	ggsave(file=paste(outdir,'/res_acrossTEAM_Secondary_Outliers.pdf',sep=''), width=12, height=5, useDingbats=FALSE)
 	
+	ggplot(dfo, aes(y=TEAM, x=RESID, label=SC_RND, colour=OUTLIER, size=OUTLIER)) + 
+			geom_point(data=subset(dfo, OUTLIER=='No'), position=position_jitter(width=0, height=0.9)) +
+			geom_text(data=subset(dfo, OUTLIER=='Yes'), position=position_jitter(width=0, height=0.9)) +
+			scale_colour_manual(values=c('grey40','red3')) +
+			scale_size_manual(values=c(0.8,3)) +
+			theme_bw() + facet_grid(~OBJ, scales='free') +
+			labs(x='\nerror in phylogenetic estimate',y='',size='Outlier',colour='Outlier')
+	ggsave(file=paste(outdir,'/res_acrossTEAM_Secondary_Outliers2.pdf',sep=''), width=12, height=5, useDingbats=FALSE)
 	
 	#
 	#	do PLS on OU_TK as in http://link.springer.com/article/10.1007/s00439-003-0921-9#/page-1 or http://bib.oxfordjournals.org/content/8/1/32.full

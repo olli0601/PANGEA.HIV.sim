@@ -178,7 +178,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)	#align sequences in fasta file with Clustalo
+	if(0)	#align sequences in fasta file with Clustalo
 	{
 		cmd			<- cmd.various()
 		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=771, hpc.mem="5000mb")
@@ -187,6 +187,23 @@ pipeline.various<- function()
 		outfile		<- paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
+	}	
+	if(1)	#calculate genetic distances in alignment + get bootstrap variance
+	{
+		batch.i		<- 1
+		indir		<- file.path(DATA, 'gds')	
+		infile.fa	<- '150701_Regional_TRAIN4_SIMULATED.fa'
+		infile.ge	<- '150701_Regional_TRAIN4_SIMULATED_gene.txt'
+		outdir		<- indir
+		for(batch.i in 1:1)
+		{
+			outfile	<- paste(gsub('.fa','',infile.fa),'_GDS_BATCH',batch.i,'.rda',sep='')
+			cmd		<- cmd.gendist(indir, infile.fa, infile.ge, outdir, outfile, batch.i)		
+			cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=48, hpc.mem="6000mb")
+			cat(cmd)		
+			cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
+			quit("no")	
+		}			
 	}	
 	if(0)
 	{

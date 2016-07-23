@@ -5527,63 +5527,357 @@ project.PANGEA.TEST.Reproducible<- function()
 ##	check simulated sequences: create ExaML tree and estimate R2
 ##	olli 03.02.15
 ##--------------------------------------------------------------------------------------------------------
-project.PANGEA.TEST.PropAcute<- function()
+project.PANGEA.TEST.PropAcute.Village<- function()
+{	
+	#	add dated tree files
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Village'
+	dfi				<- data.table(FILE=list.files(indir, '.*5yr.nex$', full.names=TRUE, recursive=TRUE))
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Village_unblinded/Post-Dynamics-Info/Vill_1-4_TrueTrees'
+	dfi				<- rbind(dfi, data.table(FILE=list.files(indir, 'nex$', full.names=TRUE, recursive=TRUE)))	
+	dfi[, SC:= substr(gsub('Vill_','',regmatches(FILE,regexpr('Vill_[0-9]+_', FILE))),1,2)]
+	#	add basic epi information
+	tmp				<- data.table(	SC=		c('00','01','02','03','04','05','06','07','08','09','10','11'),
+									SCL=	c('Intervention=none, Acute=low', 
+											  'Intervention=fast, Acute=high',
+											  'Intervention=slow, Acute=low',
+											  'Intervention=fast, Acute=low',
+											  'Intervention=slow, Acute=high',
+											  'Intervention=fast, Acute=low',											  
+											  'Intervention=fast, Acute=high',
+											  'Intervention=slow, Acute=high',
+											  'Intervention=slow, Acute=low',											  
+											  'Intervention=slow, Acute=low',
+											  'Intervention=slow, Acute=high',
+											  'Intervention=fast, Acute=low'))
+	dfi				<- merge(dfi, tmp, by='SC')
+	dfi[, INT:= regmatches(SCL,regexpr('Intervention=[a-z]+',SCL))]
+	set(dfi, NULL, 'INT', dfi[, factor(INT, labels=c('Intervention Scale Up\nfast','Intervention Scale Up\nslow','Intervention Scale Up\nnone'), levels=c('Intervention=fast','Intervention=slow','Intervention=none'))])
+	dfi[, AC:= regmatches(SCL,regexpr('Acute=[a-z]+',SCL))]	
+	#	add transmission line list files
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Village_unblinded/Transmission-Lists'
+	tmp				<- data.table(FILE_LIST=list.files(indir, '.csv$', full.names=TRUE, recursive=TRUE))
+	tmp[, SC:= gsub('Vill_','',regmatches(FILE_LIST,regexpr('Vill_[0-9]+', FILE_LIST)))]
+	dfi				<- merge(dfi, tmp, by='SC')
+	#
+	#	get generation time **TO** new infected
+	#
+	trms	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
+			{
+				tmp			<- dfi[i, FILE_LIST]
+				df.trms		<- subset(as.data.table(read.csv(tmp)), EventType=='INFECTION')				
+				df.trms[, EventType:=NULL]
+				setnames(df.trms, c('ActionTime','FromDeme.FromHost','ToDeme.ToHost'), c('TIME_TR','IDTR','IDREC'))				
+				tmp			<- unique(subset(df.trms, select=c(TIME_TR, IDREC)))
+				setnames(tmp, c('TIME_TR','IDREC'), c('TR_INF','IDTR'))
+				df.trms		<- merge(df.trms, tmp, by='IDTR', all.x=1)
+				df.trms		<- subset(df.trms, !is.na(IDTR))	#ignore index case
+				df.trms[, T2REC:= TIME_TR-TR_INF]	
+				ans			<- subset(df.trms, select=c('IDREC','IDTR','T2REC','TIME_TR'))
+				ans[, SC:= dfi[i, SC]]
+				ans[, SCL:= dfi[i, SCL]]
+				ans[, INT:= dfi[i, INT]]
+				ans[, AC:= dfi[i, AC]]
+				ans
+			}))
+	#	
+	#	get genetic distance between sampled individuals
+	#
+	gds	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
+			{
+				#FILE	<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Village_unblinded/Post-Dynamics-Info/Vill_1-4_TrueTrees/Vill_03_Feb2015.nex'
+				tmp				<- dfi[i, FILE]
+				ph				<- read.nexus(tmp)
+				tmp				<- cophenetic.phylo(ph)
+				diag(tmp)		<- Inf
+				gds				<- data.table(LABEL=rownames(tmp), LABEL_CL=colnames(tmp)[apply(tmp, 1, which.min)])
+				gds				<- merge(gds, gds[,  list(BRL=tmp[LABEL, LABEL_CL]), by='LABEL'], by='LABEL')
+				gds[, IDREC:= sapply(strsplit(LABEL,'_',fixed=T),'[[',1),]
+				gds[, TIME_SEQ:=as.numeric(sapply(strsplit(LABEL,'_',fixed=T),'[[',3))]
+				gds[, SC:= dfi[i, SC]]
+				gds[, SCL:= dfi[i, SCL]]
+				gds[, INT:= dfi[i, INT]]
+				gds[, AC:= dfi[i, AC]]				
+				gds				
+			}))
+	#
+	set(gds, NULL, c('LABEL','LABEL_CL'), NULL)
+	#	get info on who sampled
+	trms	<- merge(trms, gds, by=c('SC','SCL','INT','AC','IDREC'), all=1)
+	setnames(trms, 'TIME_SEQ', 'SAMPLED_REC')	
+	tmp		<- subset(trms, select=c(SC, IDREC, SAMPLED_REC) )
+	setnames(tmp, c('IDREC','SAMPLED_REC'), c('IDTR','SAMPLED_TR'))
+	trms	<- merge(trms, tmp, by=c('SC','IDTR'), all.x=1)
+	#
+	#	plot CDF among all sequenced infected by data set
+	#
+	trms[, PERIOD_TR:= trms[, cut(TIME_TR, breaks=c(0,20,40,Inf), labels=c('<=20','20-40','>=40'))]]
+	ggplot(subset(trms, SCL!="Intervention=none, Acute=low" & TIME_TR>20), aes(x=T2REC, colour=SCL, alpha=SC)) + stat_ecdf() + 
+			facet_grid(PERIOD_TR~INT) +  
+			labs(x='\ntime to transmission\nto all sampled individuals\n(years)',y='empirical CDF\n') +
+			#scale_color_brewer(name='simulation data sets', palette='Paired') +
+			scale_color_manual(values=c("#A6CEE3","#1F78B4","#FB9A99","#E31A1C")) +			
+			scale_x_continuous(expand=c(0,0)) +
+			coord_cartesian(xlim=c(0,20)) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(SC))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	outdir	<- '~/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures'
+	file	<- file.path(outdir, '150715_V_Time2TransmissionByACSC.pdf')
+	ggsave(file=file, w=7, h=7)	
+	ggplot(subset(trms, !is.na(SAMPLED_REC) & SCL!="Intervention=none, Acute=low" & TIME_TR>20), aes(x=T2REC, colour=SCL, alpha=SC)) + stat_ecdf() + 
+			facet_grid(PERIOD_TR~INT) +  
+			labs(x='\ntime to transmission\nto all sampled individuals\n(years)',y='empirical CDF\n') +
+			#scale_color_brewer(name='simulation data sets', palette='Paired') +
+			scale_color_manual(values=c("#A6CEE3","#1F78B4","#FB9A99","#E31A1C")) +			
+			scale_x_continuous(expand=c(0,0)) +
+			scale_y_continuous(expand=c(0,0)) +
+			coord_cartesian(xlim=c(0,20)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(SC))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	outdir	<- '~/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures'
+	file	<- file.path(outdir, '150715_V_Time2TransmissionSequencedByACSC.pdf')
+	ggsave(file=file, w=7, h=7)
+	#
+	#	plot CDF among all infected by data set
+	#
+	ggplot(subset(trms, !is.na(SAMPLED_REC) & TIME_TR>20 & SCL!="Intervention=none, Acute=low" ), aes(x=BRL*0.0022, colour=SCL, alpha=SC)) + stat_ecdf() + 
+			facet_grid(PERIOD_TR~INT) +  
+			#labs(x='\ntime spent diverging\nbetween phylogenetically closest individuals',y='empirical CDF') +
+			labs(x='\ngenetic distance\nbetween phylogenetically closest individuals\n(subst/site/year)',y='empirical CDF\n') +
+			#scale_color_brewer(name='data sets', palette='Paired') +
+			scale_color_manual(values=c("#A6CEE3","#1F78B4","#FB9A99","#E31A1C")) +
+			scale_x_continuous(expand=c(0,0)) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(SC))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(outdir, '150715_V_GeneticDistanceSequencedRecByACSC.pdf')
+	ggsave(file=file, w=7, h=7)
+}
+##--------------------------------------------------------------------------------------------------------
+##	check simulated sequences: create ExaML tree and estimate R2
+##	olli 03.02.15
+##--------------------------------------------------------------------------------------------------------
+project.PANGEA.TEST.PropAcute.Regional<- function()
 {	
 	#check time to coalescence in true dated tree
 	label.sep		<- '|'
 	label.idx.date	<- 4
 	label.idx.idpop	<- 1
-	indir			<- '/Users/Oliver/duke/2014_Gates/methods_comparison_pipeline/150205'
-	dfi				<- data.table(FILE=list.files(indir, '.*DATEDTREE.newick$', full.names=FALSE))
-	dfi[, SC:= sapply(strsplit(FILE, '_'),'[[',3)]
-	dfi[, CONFIG:= sapply(strsplit(SC, '-'),'[[',2)]
+	
+	#	get blinding codes
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional_unblinded'
+	file			<- paste(indir, '/answers_Regional_Feb2015_rFormat.csv', sep='')
+	dfi.code		<- read.csv(file.path(indir, 'answers_Regional_Feb2015_rFormat.csv'))	
+	dfi.code		<- subset(dfi.code, select=c('SC','CONFIG','SC_RND','GSUB_FROM'))
+	setnames(dfi.code, c('SC','SC_RND'), c('SC_TRL','SC'))	
+	#	add dated tree files
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
+	dfi				<- data.table(FILE=list.files(indir, '.*DATEDTREE.newick$', full.names=FALSE, recursive=TRUE))
+	dfi[, SC:= regmatches(FILE,regexpr('sc[A-Z]', FILE))]
 	set(dfi, NULL, 'SC', dfi[, sapply(strsplit(SC, '-'),'[[',1)])	
-	scl		<- data.table(SC=c('scA','scB','scC','scD','scE','scF'),SCL=c('Intervention=fast, Acute=low','Intervention=fast, Acute=high','Intervention=slow, Acute=low','Intervention=slow, Acute=high','Intervention=none, Acute=low','Intervention=none, Acute=high'))
-	coal	<- dfi[, {
-						file			<- paste(indir, FILE, sep='/' )
+	set(dfi, NULL, 'SC', dfi[, substring(SC,3)])
+	dfi				<- merge(dfi, dfi.code, by='SC')
+	tmp				<- data.table(SC_TRL=c('scA','scB','scC','scD','scE','scF'),SCL=c('Intervention=fast, Acute=low','Intervention=fast, Acute=high','Intervention=slow, Acute=low','Intervention=slow, Acute=high','Intervention=none, Acute=low','Intervention=none, Acute=high'))
+	dfi				<- merge(dfi, tmp, by='SC_TRL')
+	#	add INTERNAL files
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional_unblinded'
+	dfi.internal	<- data.table(FILE_INTRNL=list.files(indir, '.*SIMULATED_INTERNAL.R$', full.names=TRUE, recursive=TRUE))
+	dfi.internal[, GSUB_FROM:= regmatches(FILE_INTRNL, regexpr('sc[A-Z]-[a-zA-Z0-9]+',FILE_INTRNL))]
+	dfi				<- merge(dfi, dfi.internal, by='GSUB_FROM')
+	#	add metadata files
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
+	dfi.meta		<- data.table(FILE_META=list.files(indir, '.*metadata.csv$', full.names=TRUE, recursive=TRUE))
+	dfi.meta[, SC:= gsub('sc','',regmatches(FILE_META,regexpr('sc[A-Z]', FILE_META)))]
+	dfi				<- merge(dfi, dfi.meta, by='SC')
+	dfi[, INT:= regmatches(SCL,regexpr('Intervention=[a-z]+',SCL))]
+	set(dfi, NULL, 'INT', dfi[, factor(INT, labels=c('Intervention\nScale Up\nfast','Intervention\nScale Up\nslow','Intervention\nScale Up\nnone'), levels=c('Intervention=fast','Intervention=slow','Intervention=none'))])
+	dfi[, AC:= regmatches(SCL,regexpr('Acute=[a-z]+',SCL))]		
+	#
+	#	get generation time **TO** new infected
+	#
+	trms	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
+					{
+						tmp			<- dfi[i, FILE_INTRNL]
+						load(tmp)
+						df.trms	<- subset(df.trms, IDTR>0)
+						df.trms[, T2REC:= TIME_TR-IDTR_TIME_INFECTED]	
+						ans		<- subset(df.trms, select=c('IDREC','T2REC','TIME_TR','TR_ACUTE','SAMPLED_REC','SAMPLED_TR'))
+						ans[, SC:= dfi[i, SC]]
+						ans[, SCL:= dfi[i, SCL]]
+						ans[, CONFIG:= dfi[i, CONFIG]]
+						ans[, INT:= dfi[i, INT]]
+						ans[, AC:= dfi[i, AC]]
+						ans						
+					}))
+	trms[, PERIOD_TR:= trms[, cut(TIME_TR, breaks=c(1980,2004,2014,Inf), labels=c('<=2004','2005-2014','>=2015'))]]
+	#	
+	#	get genetic distance between sampled individuals
+	#
+	gds	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
+					{
+						tmp				<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
+						#FILE	<- '150129_PANGEAsim_Regional_SecondObj_scH_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scH_DATEDTREE.newick'
+						file			<- paste(tmp, dfi[i, FILE], sep='/' )
 						cat(paste('\nprocess',file))
-						phd				<- read.tree(file)						
-						load( gsub('DATEDTREE.newick','SIMULATED_INTERNAL.R',file) )
+						phd				<- read.tree(file)										
 						singletons.n	<- length(which(sapply(phd, Ntip)==1))
 						phd				<- phd[ which(sapply(phd, Ntip)>1) ]
 						#	sampling times of tips and node.depth of tips for every tree
 						tmp				<- lapply(seq_along(phd), function(k)
 								{
-									ph	<- phd[[k]]
-									tmp	<- data.table(	LABEL=ph$tip.label, CLU_IDX=k, 
-														IDPOP= as.integer(substring(sapply(strsplit(ph$tip.label,label.sep,fixed=T),'[[',label.idx.idpop),7)),
-														TIME_SEQ=as.numeric(sapply(strsplit(ph$tip.label,label.sep,fixed=T),'[[',label.idx.date)))
-									tmp[, BRL:=ph$edge.length[ sort(ph$edge[,2],index.return=T)$ix ][ seq_len(Ntip(ph)) ] ]
-									tmp
+									ph	<- phd[[k]]							
+									tmp			<- cophenetic.phylo(ph)
+									diag(tmp)	<- Inf
+									ans			<- data.table(LABEL=rownames(tmp), LABEL_CL=colnames(tmp)[apply(tmp, 1, which.min)])
+									ans			<- merge(ans, ans[,  list(BRL=tmp[LABEL, LABEL_CL]), by='LABEL'], by='LABEL')
+									ans[, CLU_IDX:=k]
+									ans[, IDPOP:= as.integer(substring(sapply(strsplit(LABEL,label.sep,fixed=T),'[[',label.idx.idpop),7)),]
+									ans[, TIME_SEQ:=as.numeric(sapply(strsplit(LABEL,label.sep,fixed=T),'[[',label.idx.date))]
+									ans
 								})
-						coal			<- do.call('rbind',tmp)
-						coal			<- merge(coal, subset(df.inds, !is.na(DIAG_T), select=c(IDPOP, DIAG_T)), by='IDPOP')
+						gds			<- do.call('rbind',tmp)				
+						gds[, SC:= dfi[i, SC]]
+						gds[, SCL:= dfi[i, SCL]]
+						gds[, CONFIG:= dfi[i, CONFIG]]
+						gds[, INT:= dfi[i, INT]]
+						gds[, AC:= dfi[i, AC]]
+						gds
+					}))
+	setnames(gds, 'IDPOP', 'IDREC')	
+	tmp		<- subset(trms, !is.na(SAMPLED_REC), select=c(SC, IDREC, TR_ACUTE, TIME_TR, SAMPLED_REC, SAMPLED_TR))	
+	gds		<- merge(gds, tmp, by=c('SC','IDREC')) 	# loose some that have a transmitter from outside
+	gds[, PERIOD_TR:= gds[, cut(TIME_TR, breaks=c(1980,2004,2014,Inf), labels=c('<=2004','2005-2014','>=2015'))]]
+	gds[, PERIOD_SEQ:= gds[, cut(TIME_SEQ, breaks=c(1980,2004,2014,Inf), labels=c('<=2004','2005-2014','>=2015'))]]
+	#
+	#	get coalescent times of sampled individuals	
+	#
+	coal	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
+					{
+						tmp				<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
+						#FILE	<- '150129_PANGEAsim_Regional_SecondObj_scH_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scH_DATEDTREE.newick'
+						file			<- paste(tmp, dfi[i, FILE], sep='/' )
+						cat(paste('\nprocess',file))
+						phd				<- read.tree(file)										
+						singletons.n	<- length(which(sapply(phd, Ntip)==1))
+						phd				<- phd[ which(sapply(phd, Ntip)>1) ]
+						#	sampling times of tips and node.depth of tips for every tree
+						tmp				<- lapply(seq_along(phd), function(k)
+								{
+									ph	<- phd[[k]]							
+									ans	<- data.table(	LABEL=ph$tip.label, CLU_IDX=k, 
+											IDPOP= as.integer(substring(sapply(strsplit(ph$tip.label,label.sep,fixed=T),'[[',label.idx.idpop),7)),
+											TIME_SEQ=as.numeric(sapply(strsplit(ph$tip.label,label.sep,fixed=T),'[[',label.idx.date)))
+									ans[, BRL:=ph$edge.length[ sort(ph$edge[,2],index.return=T)$ix ][ seq_len(Ntip(ph)) ] ]														
+								})
+						coal			<- do.call('rbind',tmp)							
+						coal[, SC:= dfi[i, SC]]
+						coal[, SCL:= dfi[i, SCL]]
+						coal[, CONFIG:= dfi[i, CONFIG]]
+						coal[, INT:= dfi[i, INT]]
+						coal[, AC:= dfi[i, AC]]						
 						coal
-					}, by=c('SC','CONFIG')]
-	coal	<- merge(coal, scl, by='SC')
+					}))
+	setnames(coal, 'IDPOP', 'IDREC')	
+	tmp		<- subset(trms, !is.na(SAMPLED_REC), select=c(SC, IDREC, TR_ACUTE, TIME_TR, SAMPLED_REC, SAMPLED_TR))	
+	coal	<- merge(coal, tmp, by=c('SC','IDREC')) 	# loose some that have a transmitter from outside	
+	coal[, PERIOD_TR:= coal[, cut(TIME_TR, breaks=c(1980,2004,2014,Inf), labels=c('<=2004','2005-2014','>=2015'))]]
 	coal[, PERIOD_SEQ:= coal[, cut(TIME_SEQ, breaks=c(1980,2004,2014,Inf), labels=c('<=2004','2005-2014','>=2015'))]]
-	coal[, PERIOD_DIAG:= coal[, cut(DIAG_T, breaks=c(1980,2004,2014,Inf), labels=c('<=2004','2005-2014','>=2015'))]]
-	#ggplot(coalb, aes(x=BRL)) + geom_histogram(binwidth=.5) + facet_grid(SC~CONFIG) + theme_bw()
-	ggplot(coal, aes(x=BRL, colour=SCL)) + stat_ecdf() + facet_grid(CONFIG~PERIOD_DIAG) + theme_bw() + labs(x='time to coalescence of tips',y='empirical CDF') +
-			scale_color_brewer(name='scenarios', palette='Paired')	
-	file	<- paste(indir, '150205_TEST_Time2CoalescenceOfTips.pdf')
-	ggsave(file=file, w=12, h=15)
+	#
+	#	plot CDF among all infected by acute / non-acute infection
+	#
+	ggplot(subset(trms, TIME_TR>2005), aes(x=T2REC, colour=TR_ACUTE)) + stat_ecdf() + 
+			facet_grid(INT+AC+SC~PERIOD_TR) +  
+			labs(x='\ntime to transmission\n(years)',y='empirical CDF\n') +
+			scale_color_brewer(name='transmission from acute', palette='Paired') +
+			scale_x_continuous(expand=c(0,0)) +
+			scale_y_continuous(expand=c(0,0)) +	
+			coord_cartesian(xlim=c(0,20)) +
+			theme_bw() + theme(legend.position='bottom')
+	outdir	<- '~/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures'
+	file	<- file.path(outdir, '150715_R_Time2TransmissionByAcute.pdf')
+	ggsave(file=file, w=5, h=12)
+	#	plot CDF among all infected by data set
+	ggplot(subset(trms, TIME_TR>2005), aes(x=T2REC, colour=SCL, alpha=CONFIG)) + stat_ecdf() + 
+			facet_grid(PERIOD_TR~INT) +  
+			labs(x='\ntime to transmission\nto all infected individuals\n(years)',y='empirical CDF\n') +
+			scale_color_brewer(name='simulation data sets', palette='Paired') +
+			scale_x_continuous(expand=c(0,0)) +
+			scale_y_continuous(expand=c(0,0)) +	
+			coord_cartesian(xlim=c(0,20)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(CONFIG))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(outdir, '150715_R_Time2TransmissionByACSC.pdf')
+	ggsave(file=file, w=10, h=7)
+	#	plot CDF among all sequenced infected by data set
+	ggplot(subset(trms, !is.na(SAMPLED_REC) & TIME_TR>2005), aes(x=T2REC, colour=SCL, alpha=CONFIG)) + stat_ecdf() + 
+			facet_grid(PERIOD_TR~INT) +  
+			labs(x='\ntime to transmission\nto all sampled individuals\n(years)',y='empirical CDF\n') +
+			scale_color_brewer(name='simulation data sets', palette='Paired') +
+			scale_x_continuous(expand=c(0,0)) +
+			scale_y_continuous(expand=c(0,0)) +
+			coord_cartesian(xlim=c(0,20)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(CONFIG))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(outdir, '150715_R_Time2TransmissionSequencedByACSC.pdf')
+	ggsave(file=file, w=10, h=7)
+	#	
+	#	gds
+	#
+	ggplot(subset(gds, TIME_TR>2005), aes(x=BRL*0.0022, colour=SCL, alpha=CONFIG)) + stat_ecdf() + 
+			facet_grid(PERIOD_TR~INT) +  
+			#labs(x='\ntime spent diverging\nbetween phylogenetically closest individuals',y='empirical CDF') +
+			labs(x='\ngenetic distance\nbetween phylogenetically closest individuals\n(subst/site/year)',y='empirical CDF\n') +
+			scale_color_brewer(name='data sets', palette='Paired') +
+			scale_x_continuous(expand=c(0,0)) +
+			coord_cartesian(xlim=c(0,0.15)) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(CONFIG))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(outdir, '150715_R_GeneticDistanceSequencedRecByACSC.pdf')
+	ggsave(file=file, w=10, h=7)
+	#
+	#	coal
+	#	
+	ggplot(subset(coal, TIME_TR>2005), aes(x=BRL, colour=SCL, alpha=CONFIG)) + stat_ecdf() + 
+			facet_grid(PERIOD_TR~INT) +  
+			#labs(x='\ntime spent diverging\nbetween phylogenetically closest individuals',y='empirical CDF') +
+			labs(x='\ntime to coalescence\nof all individuals\n(years)',y='empirical CDF\n') +
+			scale_color_brewer(name='data sets', palette='Paired') +
+			scale_x_continuous(expand=c(0,0)) +			
+			scale_y_continuous(expand=c(0,0)) +
+			coord_cartesian(xlim=c(0,35)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(CONFIG))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(outdir, '150715_R_Time2CoalescenceSequencedRecByACSC.pdf')
+	ggsave(file=file, w=10, h=7)	
+	#
+	#	proportion recent infections
+	#
+	meta	<- dfi[, {
+				#FILE_META<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional/150129_PANGEAsim_Regional_SecondObj_scT_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scT_SIMULATED_metadata.csv'
+				subset(as.data.table(read.csv(FILE_META)), select=c(IDPOP, RECENT_TR))
+			}, by=c('SC','SCL', 'CONFIG', 'FILE_META')]
+	setnames(meta, 'IDPOP', 'IDREC')
+	tmp		<- subset(trms, select=c(SC, IDREC, TR_ACUTE, TIME_TR, SAMPLED_REC, SAMPLED_TR))	
+	meta	<- merge(meta, tmp, by=c('SC','IDREC')) 	# loose some that have a transmitter from outside
+	meta[, INT:= regmatches(SCL,regexpr('Intervention=[a-z]+',SCL))]
+	set(meta, NULL, 'INT', meta[, factor(INT, labels=c('Intervention\nScale Up\nfast','Intervention\nScale Up\nslow','Intervention\nScale Up\nnone'), levels=c('Intervention=fast','Intervention=slow','Intervention=none'))])
+	meta[, AC:= regmatches(SCL,regexpr('Acute=[a-z]+',SCL))]
+	meta[, PERIOD_TR:= meta[, cut(TIME_TR, breaks=c(1980,2004,2014,Inf), labels=c('<=2004','2005-2014','>=2015'))]]	
+	meta	<- subset(meta, !is.na(RECENT_TR))[, list(RECENT_TR=mean(RECENT_TR=='Y')), by=c('SC','SCL', 'CONFIG', 'INT','AC','PERIOD_TR')]
 	
-	coal[, PERIOD_SEQ:= coal[, cut(TIME_SEQ, breaks=c(1980,2004,2012,2016, Inf), labels=c('<=2004','2005-2012','2013-2016','>=2017'))]]
-	coal[, PERIOD_DIAG:= coal[, cut(DIAG_T, breaks=c(1980,2004,2012,2016, Inf), labels=c('<=2004','2005-2012','2013-2016','>=2017'))]]
-	#ggplot(coalb, aes(x=BRL)) + geom_histogram(binwidth=.5) + facet_grid(SC~CONFIG) + theme_bw()
-	ggplot(coal, aes(x=BRL, colour=SCL)) + stat_ecdf() + facet_grid(CONFIG~PERIOD_DIAG) + theme_bw() + labs(x='time to coalescence of tips',y='empirical CDF') +
-			scale_color_brewer(name='scenarios', palette='Paired')	
-	file	<- paste(indir, '150205_TEST_Time2CoalescenceOfTips2.pdf')
-	ggsave(file=file, w=12, h=15)
+	ggplot(subset(meta, PERIOD_TR!='<=2004'), aes(x=AC, y=RECENT_TR, colour=SCL, alpha=CONFIG)) + geom_point() + 
+			facet_grid(PERIOD_TR~INT) +  
+			labs(x='\nsampled individuals in recent infection at diagnosis\nof those with information on recent infection',y='') +
+			scale_color_brewer(name='simulation data sets', palette='Paired') +
+			#scale_x_continuous(expand=c(0,0)) +
+			scale_y_continuous(labels = scales::percent) +		
+			scale_alpha_manual(values=rep(1,meta[, length(unique(CONFIG))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(outdir, '150715_TEST_PropRecentAtDiagByACSC.pdf')
+	ggsave(file=file, w=10, h=5)	
 	
-	coal[, PERIOD_SEQ:= coal[, cut(TIME_SEQ, breaks=c(1980,2004,2009, Inf), labels=c('<=2004','2005-2009','>=2010'))]]
-	coal[, PERIOD_DIAG:= coal[, cut(DIAG_T, breaks=c(1980,2004,2009, Inf), labels=c('<=2004','2005-2009','>=2010'))]]
-	#ggplot(coalb, aes(x=BRL)) + geom_histogram(binwidth=.5) + facet_grid(SC~CONFIG) + theme_bw()
-	ggplot(coal, aes(x=BRL, colour=SCL)) + stat_ecdf() + facet_grid(CONFIG~PERIOD_DIAG) + theme_bw() + labs(x='time to coalescence of tips',y='empirical CDF') +
-			scale_color_brewer(name='scenarios', palette='Paired')	
-	file	<- paste(indir, '150204_TEST_Time2CoalescenceOfTips3.pdf')
-	ggsave(file=file, w=12, h=15)
+	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	check simulated sequences: create ExaML tree and estimate R2
