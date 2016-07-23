@@ -56,7 +56,7 @@ require(PANGEA.HIV.sim)
 #
 #	read sequences
 #
-seq		<- read.dna(file.path(indir, infile), format='fa')
+seq		<- read.dna(file.path(indir, infile.fa), format='fa')
 #
 #	read gene limits in this alignment
 #		for this first analysis, to see if the resulting trees are meaningful at all, 
