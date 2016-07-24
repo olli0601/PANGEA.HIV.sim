@@ -195,15 +195,15 @@ pipeline.various<- function()
 		infile.fa	<- '150701_Regional_TRAIN4_SIMULATED.fa'
 		infile.ge	<- '150701_Regional_TRAIN4_SIMULATED_gene.txt'
 		outdir		<- indir
-		for(batch.i in 2:400)
+		for(batch.i in 3:400)
 		{
 			outfile	<- paste(gsub('.fa','',infile.fa),'_GDS_BATCH',batch.i,'.rda',sep='')
 			cmd		<- cmd.gendist(indir, infile.fa, infile.ge, outdir, outfile, batch.i)		
 			cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=48, hpc.mem="4000mb")
 			cat(cmd)		
-			cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
-			quit("no")	
+			cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)				
 		}			
+		quit("no")
 	}	
 	if(0)
 	{
