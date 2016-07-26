@@ -1069,7 +1069,443 @@ treecomparison.submissions.151119<- function()
 	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151119_SRFQD.rda'
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
 }
+##--------------------------------------------------------------------------------------------------------
+##	olli 25.07.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.explaingaps.evaluate.160725<- function()
+{
+	require(ape)
+	require(data.table)
+	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
+	#
+	#	deal with repeats in global alignment
+	#
+	load(file.path(wdir, wfile))
+	#
+	#	re-plot alignment with primers highlighted and all gap columns included too
+	#
+	min.coverage	<- 600
+	min.depth		<- 10	
+	if(0)
+	{
+		tmp			<- apply( as.character(sq), 2, function(x) !all(x%in%c('?','-','n')) ) 
+		sq			<- sq[, tmp]		
+	}
+	#	convert into chunks
+	ch				<- lapply(seq_len(nrow(sq)), function(i)
+			{
+				z	<- gregexpr('1+', paste(as.numeric( !as.character( sq[i,] )%in%c('-','?','n') ), collapse='') )[[1]]
+				data.table(PANGEA_ID= rownames(sq)[i], POS=as.integer(z), DEPTH=min.depth, REP=attr(z,"match.length"))
+			})
+	ch				<- do.call('rbind',ch)	
+	#	define SITE
+	ch[, SITE:=NA_character_]
+	tmp				<- ch[, which(grepl('^R[0-9]+_',PANGEA_ID))]
+	set(ch, tmp, 'SITE', 'ZA')
+	tmp				<- ch[, which(is.na(SITE) & grepl('PG[0-9]+-[A-Z]+',PANGEA_ID))]	
+	set(ch, tmp, 'SITE', ch[tmp, regmatches(PANGEA_ID, regexpr('PG[0-9]+-[A-Z]+',PANGEA_ID))])
+	set(ch, NULL, 'SITE', ch[, gsub('PG[0-9]+-','',SITE)])
+	ch				<- subset(ch, !is.na(SITE))	
+	ch				<- merge(ch, ch[, list(COV=sum(REP)), by='PANGEA_ID'], by='PANGEA_ID')
+	#	select min.coverage, select min.depth
+	ch			<- subset(ch, COV>=min.coverage & DEPTH>=min.depth)
+	#	define chunks
+	ch[, POS_NEXT:= POS+REP]	
+	ch		<- ch[, list(SITE=SITE, POS=POS, DEPTH=DEPTH, REP=REP, CHUNK=cumsum(as.numeric(c(TRUE, POS[-1]!=POS_NEXT[-length(POS_NEXT)])))), by='PANGEA_ID']
+	ch		<- ch[, list(SITE=SITE[1], POS_CH=min(POS), REP_CH=sum(REP), DEPTH_CH= sum(DEPTH*REP)/sum(REP) ), by=c('PANGEA_ID','CHUNK')]
+	ch[, DEPTH_MIN:=min.depth]
+	set(ch, NULL, 'SITE', ch[, factor(SITE, levels=c('BW', 'ZA', 'UG'), labels=c('Botswana', 'South Africa', 'Uganda'))])
+	ch				<- merge(ch, ch[, list(COV=sum(REP_CH)), by='PANGEA_ID'], by='PANGEA_ID')
+	ch[, COVP:= COV/ncol(sq)]	
+	#	
+	require(ggplot2)
+	require(viridis)
+	ch		<- merge(ch, ch[, list(POS_CHF=min(POS_CH)), by='PANGEA_ID'], by='PANGEA_ID')	
+	setkey(ch, SITE, PANGEA_ID)	
+	tmp		<- unique(ch)
+	setkey(tmp, POS_CHF)	
+	tmp[, PLOT:=ceiling(seq_len(nrow(tmp))/1070)]
+	ch		<- merge(ch, subset(tmp, select=c(PANGEA_ID, PLOT)), by='PANGEA_ID')
+	set(ch, NULL, 'PLOT', ch[, factor(PLOT, levels=c(4,3,2,1), labels=c(4,3,2,1))])
+	setkey(ch, POS_CH, SITE)
+	set(ch, NULL, 'PANGEA_ID', ch[, factor(PANGEA_ID, levels=unique(PANGEA_ID), labels=unique(PANGEA_ID))])	
+	dpani	<- subset(dpan, !is.na(START))[, list(START=START[1], END=START[1]+max(IDX)-1L), by='PR']
+	
+	ggplot(ch) +
+			geom_segment(aes(y=PANGEA_ID, yend=PANGEA_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=SITE)) +  
+			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="#3690C0") +
+			geom_text(data=dpani, aes(x=START, y=seq_len(length(START))*10+10, label=PR), colour="#3690C0", hjust=-.2, size=2) +
+			facet_wrap(~PLOT, scales='free_y', ncol=4) +
+			scale_x_continuous(expand=c(0,0), breaks=seq(0,10e3,1e3), minor_breaks=seq(0,10e3,100)) +
+			scale_colour_manual(values=c('Botswana'="#1B0C42FF", 'South Africa'="#CF4446FF", 'Uganda'="#781C6DFF")) +						
+			labs(x='\nalignment position', y='PANGEA-HIV sequences\n', colour='sampling\nlocation') +
+			theme_bw() +
+			theme(	axis.text.y=element_blank(), axis.ticks.y=element_blank(), axis.line.y=element_blank(), legend.position='bottom',
+					strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))	
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers.pdf',wfile)), w=15, h=15, limitsize = FALSE)
+	#
+	#	plot Rakai samples by subtype
+	#
+	setnames(ch, 'PANGEA_ID', 'TAXA')
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, REGA_GAG_A, REGA_GAG_AS, REGA_GAG_PURE, REGA_GAG_PURES)))
+	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
+	set(chr, chr[, which(is.na(REGA_GAG_A))], 'REGA_GAG_A', 'No matched ID')	
+	chr		<- subset(chr, !is.na(RCCS_studyid))
+	#	redefine ordering
+	chr[, PLOT:=NULL]	
+	setkey(chr, REGA_GAG_A, TAXA)	
+	tmp		<- unique(chr)
+	setkey(tmp, REGA_GAG_A, COVP, TAXA)	
+	tmp		<- tmp[, list(TAXA=TAXA, PLOT=REGA_GAG_A, PLOT_ID=seq_along(TAXA)), by='REGA_GAG_A']
+	chr		<- merge(chr, subset(tmp, select=c(TAXA, PLOT_ID)), by='TAXA')	
+	set(chr, NULL, 'REGA_GAG_A', chr[, factor(REGA_GAG_A, levels=c("A (A1)", "D", "C", "Check bootscan", "D (10_CD)", "CRF 21_A2D", "G", "Sequence error", "Unassigned"))])
+	
+	ggplot(subset(chr, REGA_GAG_A%in%c("A (A1)", "D", "C", "Check bootscan"))) +
+			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=REGA_GAG_A)) +  
+			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="black") +			
+			facet_wrap(~REGA_GAG_A, scales='free_y', ncol=4) +
+			scale_x_continuous(expand=c(0,0), breaks=dpani$START, labels=dpani$PR) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_colour_brewer(palette='Set1') +						
+			labs(x='\nalignment position', y='Rakai PANGEA-HIV sequences\n', colour='Rega subtype assignment on gag') +
+			theme_bw() +
+			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_subtypes.pdf',wfile)), w=15, h=15, limitsize = FALSE)		
+	#
+	#	plot Rakai samples by ART
+	#
+	#	redefine ordering	
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, date, arvStartDate, selfReportArt, everSelfReportArt, recentVL)))
+	tmp[, ART:= as.integer(arvStartDate<date)]
+	set(tmp, tmp[, which(is.na(ART))], 'ART', 0L)
+	set(tmp, tmp[, which(ART==0 & everSelfReportArt==1)], 'ART', 2L)
+	set(tmp, tmp[, which(ART==0 & recentVL<1e4)], 'ART', 3L)
+	set(tmp, NULL, 'ART', tmp[, factor(ART, levels=c(0L,1L,2L,3L), labels=c('no ART', 'ART started', 'ART self reported','no ART but VL<1e4'))])
+	
+	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
+	set(chr, chr[, which(is.na(ART))], 'ART', 'No matched ID')	
+	chr		<- subset(chr, !is.na(RCCS_studyid))
+	#	redefine ordering
+	chr[, PLOT:=NULL]	
+	setkey(chr, TAXA)	
+	tmp		<- unique(chr)
+	setkey(tmp, ART, COVP, TAXA)	
+	tmp		<- tmp[, list(TAXA=TAXA, PLOT=ART, PLOT_ID=seq_along(TAXA)), by='ART']
+	chr		<- merge(chr, subset(tmp, select=c(TAXA, PLOT_ID)), by='TAXA')	
+	#set(chr, NULL, 'REGA_GAG_A', chr[, factor(REGA_GAG_A, levels=c("A (A1)", "D", "C", "Check bootscan", "D (10_CD)", "CRF 21_A2D", "G", "Sequence error", "Unassigned"))])	
+	ggplot(chr) +
+			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=ART)) +  
+			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="black") +			
+			facet_wrap(~ART, scales='free_y', ncol=4) +
+			scale_x_continuous(expand=c(0,0), breaks=dpani$START, labels=dpani$PR) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_colour_brewer(palette='Set2') +						
+			labs(x='\nalignment position', y='Rakai PANGEA-HIV sequences\n', colour='ART status') +
+			theme_bw() +
+			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_ARTstatus.pdf',wfile)), w=15, h=15, limitsize = FALSE)		
+	#
+	#	plot Rakai samples by ART
+	#
+	#	redefine ordering	
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, date, arvStartDate, selfReportArt, everSelfReportArt, recentVL)))
+	tmp[, VL:= cut(recentVL, breaks=c(0, 1e4, 2e4, 4e4, 1e5, Inf), labels=c('<1e4','1e4-2e4','2e4-4e4','4e4-1e5','>1e5'))]	
+	set(tmp, tmp[, which(is.na(VL))], 'VL', 'No VL measured')
+	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
+	set(chr, chr[, which(is.na(VL))], 'VL', 'No matched ID')	
+	chr		<- subset(chr, !is.na(RCCS_studyid))	
+	chr[, PLOT:=NULL]	
+	setkey(chr, TAXA)	
+	tmp		<- unique(chr)
+	setkey(tmp, VL, COVP, TAXA)	
+	tmp		<- tmp[, list(TAXA=TAXA, PLOT=VL, PLOT_ID=seq_along(TAXA)), by='VL']
+	chr		<- merge(chr, subset(tmp, select=c(TAXA, PLOT_ID)), by='TAXA')	
+	ggplot(chr) +
+			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=VL)) +  
+			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="black") +			
+			facet_wrap(~VL, scales='free_y', ncol=6) +
+			scale_x_continuous(expand=c(0,0), breaks=dpani$START, labels=dpani$PR) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_colour_brewer(palette='Dark2') +						
+			labs(x='\nalignment position', y='Rakai PANGEA-HIV sequences\n', colour='Viral load status') +
+			theme_bw() +
+			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_VLstatus.pdf',wfile)), h=7, w=20, limitsize = FALSE)		
+	#
+	#	plot Rakai samples by region
+	#
+	#	redefine ordering	
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, REGION)))
+	set(tmp, NULL, 'REGION', tmp[, factor(REGION)])
+	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
+	chr		<- subset(chr, !is.na(RCCS_studyid))	
+	chr[, PLOT:=NULL]	
+	setkey(chr, TAXA)	
+	tmp		<- unique(chr)
+	setkey(tmp, REGION, COVP, TAXA)	
+	tmp		<- tmp[, list(TAXA=TAXA, PLOT=REGION, PLOT_ID=seq_along(TAXA)), by='REGION']
+	chr		<- merge(chr, subset(tmp, select=c(TAXA, PLOT_ID)), by='TAXA')	
+	ggplot(chr) +
+			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=REGION)) +  
+			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="black") +			
+			facet_wrap(~REGION, scales='free_y', ncol=6) +
+			scale_x_continuous(expand=c(0,0), breaks=dpani$START, labels=dpani$PR) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_colour_brewer(palette='Dark2') +						
+			labs(x='\nalignment position', y='Rakai PANGEA-HIV sequences\n', colour='region') +
+			theme_bw() +
+			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_REGION.pdf',wfile)), h=7, w=20, limitsize = FALSE)		
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 25.07.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.explaingaps.collect.data<- function()
+{
+	require(ape)
+	require(data.table)
+	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	#
+	#	deal with repeats in global alignment
+	#
+	if(0)
+	{
+		sq				<- read.dna("~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.fasta", format='fasta')		
+		sqi				<- data.table(TAXA=rownames(sq), DUMMY=seq_len(nrow(sq)))
+		tmp				<- sqi[, which(duplicated(TAXA))]
+		set(sqi, tmp, 'TAXA', sqi[tmp, paste(TAXA,'-R2',sep='')])
+		setkey(sqi, DUMMY)
+		rownames(sq)	<- sqi[,TAXA]	
+		tmp				<- sapply(seq_len(nrow(sq)), function(i) base.freq(sq[i,], all=TRUE, freq=TRUE))
+		sqi[, COV:=ncol(sq)-apply( tmp[c('-','?'),], 2, sum	)]	
+		sqi[, PNG:= sqi[, factor(grepl('PG',TAXA),levels=c(TRUE,FALSE),labels=c('Y','N'))]]		
+		sqi[, SITE:= NA_character_]
+		tmp				<- sqi[, which(PNG=='Y')]
+		set(sqi, tmp, 'SITE', sqi[tmp, substring(sapply(strsplit(TAXA,'-'),'[[',2),1,2)])
+		sqi[, PANGEA_ID:= gsub('-R[0-9]+','',TAXA)]
+		#	save
+		write.dna(sq, file=file.path(wdir,'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.fasta'), format='fa')
+		wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
+		save(sq, sqi, file=file.path(wdir,wfile))
+	}	
+	#
+	#	find primer coordinates
+	#	
+	if(0)
+	{
+		pan1f	<- 'agcc.gggagctctctg'
+		pan1r	<- 'cctccaattcc.cctatcatttt'
+		pan2f	<- 'gggaagtga.atagc.ggaac'
+		pan2r	<- 'ctgccatctgttttccata.tc'	
+		pan3f	<- 'ttaaaagaaaaggggggattggg'
+		pan3r	<- 'tggc.ytgtaccgtcagcg'
+		pan4f	<- 'cctatggcaggaagaagcg'
+		pan4r	<- 'ctt.tatgcag..tctgaggg'		#I had to remove one nucleotide here it is: CW ( c. ) instead of (..)
+		#	get the forward code of the reverse primers
+		dpan	<- rbind( 	data.table(PR='1R', SEQR=strsplit(pan1r,'')[[1]], IDXR=seq_len(nchar(pan1r)), IDX=rev(seq_len(nchar(pan1r))) ),
+				data.table(PR='2R', SEQR=strsplit(pan2r,'')[[1]], IDXR=seq_len(nchar(pan2r)), IDX=rev(seq_len(nchar(pan2r)))),
+				data.table(PR='3R', SEQR=strsplit(pan3r,'')[[1]], IDXR=seq_len(nchar(pan3r)), IDX=rev(seq_len(nchar(pan3r)))),
+				data.table(PR='4R', SEQR=strsplit(pan4r,'')[[1]], IDXR=seq_len(nchar(pan4r)), IDX=rev(seq_len(nchar(pan4r))))	)
+		dpan	<- merge(dpan, data.table(SEQR=c('a','t','c','g','.'), SEQ=c('t','a','g','c','.')), by='SEQR')
+		setkey(dpan, PR, IDX)		
+		#	add the forward primers
+		tmp		<- rbind( 	data.table(PR='1F', SEQ=strsplit(pan1f,'')[[1]], IDX=seq_len(nchar(pan1f)) ),
+				data.table(PR='2F', SEQ=strsplit(pan2f,'')[[1]], IDX=seq_len(nchar(pan2f)) ),
+				data.table(PR='3F', SEQ=strsplit(pan3f,'')[[1]], IDX=seq_len(nchar(pan3f)) ),
+				data.table(PR='4F', SEQ=strsplit(pan4f,'')[[1]], IDX=seq_len(nchar(pan4f)) )	)
+		dpan	<- rbind( tmp, dpan, use.names=TRUE, fill=TRUE)
+		#	check primers exist in HXB2
+		tmp		<- dpan[, list(START=unlist(gregexpr(paste(SEQ, collapse=''),hxb2))), by='PR']
+		stopifnot( tmp[, all(START>1)] )
+		#	find primers in global alignment
+		sqhxb2i	<- which(grepl('HXB2',rownames(sq)))
+		sqhxb2	<- paste(as.character(sq[sqhxb2i,]), collapse='')
+		tmp		<- dpan[, list(START=unlist(gregexpr(paste(SEQ, collapse='-*'),sqhxb2))), by='PR']
+		#	1F and 4R are not part of PANGEA alignment
+		tmp		<- subset(tmp, START>1)
+		dpan	<- merge(dpan, tmp, by='PR', all.x=1)
+		save(sq, sqi, dpan, file=file.path(wdir,wfile))
+	}
+	#
+	#	evaluate primer alignments and add meta data (rccs VL, AGE, SUBTYPE)
+	#
+	if(0)
+	{
+		load(file.path(wdir,wfile))
+		#	extract primer alignments and write to file
+		subset(dpan, !is.na(START))[, {
+					write.dna(sq[, seq.int(START[1], len=length(START))], file=file.path(wdir, paste(gsub('.rda','',wfile),'_primer_',PR[1],'_start_',START[1],'.fasta', sep='')), format='fa')
+				}, by='PR']	
+		#	get differences relative to HXB2 on primer by primer position (IDX)
+		dpand		<- subset(dpan, !is.na(START))[, {
+					#START	<- rep(1936, 23)
+					psq		<- as.character( sq[, seq.int(START[1], len=length(START))] )
+					sqhxb2i	<- which(grepl('HXB2',rownames(psq)))				
+					tmp		<- as.data.table( melt( t( t(psq)==psq[sqhxb2i,] ) ) )
+					setnames(tmp, c('Var1','Var2','value'), c('TAXA','POS','NT_DIFF'))
+					tmp2	<- as.data.table( melt( psq=='?' ) )
+					setnames(tmp2, c('Var1','Var2','value'), c('TAXA','POS','MISS'))
+					tmp		<- merge(tmp, tmp2, by=c('TAXA','POS'))				
+					set(tmp, NULL, 'NT_DIFF', tmp[, as.integer(!NT_DIFF)])
+					set(tmp, NULL, 'POS', tmp[, paste('PR_',POS,sep='')])
+					set(tmp, NULL, 'POS', tmp[, factor(POS, levels=paste('PR_',1:tmp[, length(unique(POS))],sep=''))])
+					set(tmp, tmp[, which(MISS)], 'NT_DIFF', NA_integer_)
+					tmp[, MISS:=NULL]
+					tmp
+				}, by='PR' ]
+		#	calculate number of '?' until next primer start and for the next 100 sites
+		tmp			<- rbind( 	data.table(PR='1F', END_B4NXT=subset(dpan, PR=='2F')[1, START-1L]),
+				data.table(PR='2F', END_B4NXT=subset(dpan, PR=='3F')[1, START-1L]),
+				data.table(PR='3F', END_B4NXT=subset(dpan, PR=='4F')[1, START-1L]),	
+				data.table(PR='3R', END_B4NXT=subset(dpan, PR=='2R')[, START[1]+max(IDX)]),
+				data.table(PR='2R', END_B4NXT=subset(dpan, PR=='1R')[, START[1]+max(IDX)])	)	
+		dpan		<- merge(dpan, tmp, by='PR', all.x=1)
+		dun			<- subset(dpan, !is.na(START) & !is.na(END_B4NXT) & IDX==1)[, {
+					#START<- 812; END_B4NXT<- 4341
+					tmp			<- as.character( sq[, seq.int(START, END_B4NXT)] )
+					tmp			<- apply(tmp=='?',1,sum)
+					if(START<END_B4NXT)
+					{
+						tmp2	<- as.character( sq[, seq.int(START-20, START-1)] )
+						tmp2	<- apply(tmp2=='?',1,sum)
+					}
+					if(START>END_B4NXT)
+					{
+						tmp2	<- as.character( sq[, seq.int(START+1, START+20)] )
+						tmp2	<- apply(tmp2=='?',1,sum)
+					}	
+					if(START<END_B4NXT)
+					{
+						tmp3	<- as.character( sq[, seq.int(START, START+100)] )
+						tmp3	<- apply(tmp3=='?',1,sum)
+					}
+					if(START>END_B4NXT)
+					{
+						tmp3	<- as.character( sq[, seq.int(START-100, START)] )
+						tmp3	<- apply(tmp3=='?',1,sum)
+					}	
+					list(TAXA= names(tmp), UNASS_TO_NEXTAMPLIC_P= tmp/length(seq.int(START, END_B4NXT)), UNASS_FOR_NEXT100_P= tmp3/100, DROPPED_B4_P=tmp2/20  )
+				}, by='PR']
+		dpand		<- merge(dpand, dun, by=c('PR','TAXA'), all.x=1)
+		dpand[, PANGEA_ID:= NA_character_]
+		tmp			<- dpand[, which(grepl('^PG[0-9]+',TAXA))]
+		set(dpand, tmp, 'PANGEA_ID', dpand[tmp, regmatches(TAXA,regexpr('PG[0-9]+-[A-Za-z0-9]+', TAXA))])	
+		#	add RCCS data
+		load("~/Dropbox (Infectious Disease)/Rakai Pangea Meta Data/Data for Fish Analysis Working Group/RakaiPangeaMetaData.rda")
+		rccsData			<- as.data.table(rccsData)
+		subtypeSummaryData	<- as.data.table(subtypeSummaryData)
+		rccsData	<- subset(rccsData, select=c('Pangea.id', 'RCCS_studyid', 'date', 'batch', 'birthyr', 'REGION', 'COMM_NUM', 'HH_NUM', 'SEX', 'AGEYRS','firstPosDate', 'arvStartDate', 'selfReportArt', 'everSelfReportArt', 'FirstSelfReportArt', 'recentVL', 'recentVLdate'))
+		setnames(rccsData, 'Pangea.id', 'PANGEA_ID')
+		rccsData	<- subset(rccsData, !is.na(PANGEA_ID))
+		setkey(rccsData, PANGEA_ID)
+		rccsData	<- unique(rccsData)	#remove 4 duplicates "K104085" "E106462" "F030186" "F101874"	
+		dpand		<- merge(dpand, rccsData, by='PANGEA_ID', all.x=1)
+		#	add subtype data
+		dst			<- subset(subtypeSummaryData, select=c(RCCS_studyid, gp.class, gag.class, pol.class, vpu.class, env.class, comp.class))
+		setkey(dst, RCCS_studyid)
+		dst			<- unique(dst)	#no duplicates here
+		dst			<- melt(dst, id.var='RCCS_studyid')
+		set(dst, NULL, 'value', dst[, gsub('\\s','',gsub('Complex','',gsub('Subtype', '',value)))])
+		set(dst, NULL, 'variable', dst[, paste('SUBTYPE_',toupper(gsub('\\.class','',variable)),sep='')])	
+		dst			<- dcast.data.table(dst, RCCS_studyid~variable)
+		dpand		<- merge(dpand, dst, by='RCCS_studyid',all.x=1)
+		#	add even more subtype data
+		load("~/Dropbox (Infectious Disease)/PANGEA_alignments/Rega Subtype Analysis/Gag REGA results/regaGag.rda")
+		regaGag	<- as.data.table(regaGag)
+		regaGag	<- subset(regaGag, select=c(TAXA, assignment, support, pure, pure_support))
+		set(regaGag, NULL, 'assignment', regaGag[, gsub('Check the Report|Check the report|Check the bootscan','Check bootscan', gsub('Subtype ','', gsub('HIV-1 ','', assignment)))])
+		setnames(regaGag, c('assignment','support','pure','pure_support'),c('REGA_GAG_A','REGA_GAG_AS','REGA_GAG_PURE','REGA_GAG_PURES'))
+		dpand	<- merge(dpand, regaGag, by='TAXA',all.x=1)		
+		#	save
+		save(sq, sqi, dpan, dpand, file=file.path(wdir,wfile))
+	}
+	#
+	#
+	#
+	dcast.data.table(tmp, TAXA~POS, value.var='NT_DIFF')
 
+	subset(dpand, PR=='1R')
+	dcast.data.table(subset(dpand, PR=='1R'), TAXA~POS, value.var='NT_DIFF')
+}
+
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.11
+treecomparison.bootstrap.sd.vs.coverage<- function(indir=NULL, wdir=NULL)
+{
+	require(ape)
+	require(data.table)	
+	bsn		<- 1e3
+	batch.n	<- 3200
+	if(is.null(indir) | is.null(wdir))
+	{
+		indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+		
+	}
+	
+	infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'		
+	seq		<- read.dna(file.path(indir, infile), format='fa')
+	seqi	<- as.data.table(read.csv(file.path(indir, gsub('\\.fa','_gene.txt',infile)), header=0))
+	seqi[, GENE:= regmatches(V2, regexpr('[a-z]+', V2))]
+	seqi[, START:= as.integer(gsub('-','',regmatches(V2, regexpr('[0-9]+-', V2))))]
+	seqi[, END:= as.integer(gsub('-','',regmatches(V2, regexpr('-[0-9]+', V2))))]
+	seqi	<- subset(seqi, select=c(GENE,START,END))
+	tp		<- as.data.table( t(combn(rownames(seq),2)) )
+	setnames(tp, c('V1','V2'), c('TAXA1','TAXA2'))
+	tp[, IDX:= seq_len(nrow(tp))]
+	#	subset by batch
+	tp[, BATCH:= ceiling(IDX/batch.n)]
+	#
+	#	calculate overlap in genomic coverage for each taxon pair
+	#
+	seqi	<- rbind(seqi, data.table(GENE='full', START=1L, END= seqi[, max(END)]))
+	tmp		<- tp[, 	{
+				#cat('IDX',IDX, round(IDX/nrow(tp),d=3))
+				#TAXA1	<- 'IDPOP_13649|M|DOB_1906.66|2011.23'; TAXA2<- 'IDPOP_27993|F|DOB_1961.29|1991.587'
+				#START<- 1; END<- 1473				
+				df.gd	<- seqi[, {
+							spc		<- as.character(seq[c(TAXA1,TAXA2), START:END])
+							do		<- sum(apply( spc!='?', 2, prod))
+							list(DO=do, GENE_LEN=END-START+1L)								
+						}, by='GENE']
+				list(GENE= df.gd$GENE, DO= df.gd$DO, GENE_LEN= df.gd$GENE_LEN)
+			}, by=c('TAXA1','TAXA2')]
+	tp		<- merge(tp, tmp, by=c('TAXA1','TAXA2'))
+	#	save
+	save(tp, seqi, seq, file=file.path(wdir, gsub('.fa','_save160726.rda',infile)))
+	
+	stop()
+	#
+	#	read genetic distances between taxon pairs
+	#	
+	infiles	<- data.table(FILE=list.files(wdir, pattern='BATCH[0-9]+.rda$', full.names=TRUE))
+	infiles[, BATCH:= as.integer(gsub('BATCH','',regmatches(FILE, regexpr('BATCH[0-9]+', FILE))))]
+	setkey(infiles, BATCH)
+	tmp		<- infiles[, {
+				load(FILE)
+				tpi
+			}, by='FILE']
+	tmp[, FILE:=NULL]
+	tp		<- merge(tp, tmp, by=c('TAXA1','TAXA2'))
+	
+	setkey(tp, TAXA1, TAXA2)
+	tmp		<- unique(tp)[, 	{
+				#TAXA1	<- 'IDPOP_13649|M|DOB_1906.66|2011.23'; TAXA2<- 'IDPOP_27993|F|DOB_1961.29|1991.587'
+				#START<- 1; END<- 1473				
+				df.gd	<- seqi[, {
+							spc		<- as.character(seq[c(TAXA1,TAXA2), START:END])
+							do		<- sum(apply( spc!='?', 2, prod))
+							list(DO=do, GENE_LEN=END-START+1L)								
+						}, by='GENE']
+				list(GENE= df.gd$GENE, DO= df.gd$DO, GENE_LEN= df.gd$GENE_LEN)
+			}, by=c('TAXA1','TAXA2')]
+}
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
 treecomparison.bootstrap.gd.dev<- function()

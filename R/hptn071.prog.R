@@ -178,17 +178,17 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(0)	#align sequences in fasta file with Clustalo
+	if(1)	#submit various
 	{
 		cmd			<- cmd.various()
-		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=771, hpc.mem="5000mb")
+		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeph', hpc.walltime=71, hpc.mem="3500mb")
 		cat(cmd)		
 		outdir		<- paste(HOME,"tmp",sep='/')
 		outfile		<- paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
-	if(1)	#calculate genetic distances in alignment + get bootstrap variance
+	if(0)	#calculate genetic distances in alignment + get bootstrap variance
 	{
 		#batch.i		<- 1
 		indir		<- file.path(DATA, 'gds')	
@@ -228,13 +228,21 @@ pipeline.various<- function()
 ##--------------------------------------------------------------------------------------------------------
 ##	olli originally written 07-11-2015
 ##--------------------------------------------------------------------------------------------------------
-prog.treecomparison.metrics<- function()
+prog.treecomparison<- function()
 {
-	#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
-	#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
-	file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'	
-	treedist.quartets.add(file=file, with.save=1)
-	#treedist.billera.add(file=file, with.save=1)
+	if(0)
+	{
+		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
+		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
+		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'	
+		treedist.quartets.add(file=file, with.save=1)
+		#treedist.billera.add(file=file, with.save=1)		
+	}
+	if(1)
+	{
+		indir	<- wdir	<- file.path(DATA,'gds')
+		treecomparison.bootstrap.sd.vs.coverage(indir, wdir)
+	}
 	quit("no")
 }
 ##--------------------------------------------------------------------------------------------------------
