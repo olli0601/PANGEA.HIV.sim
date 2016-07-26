@@ -4,7 +4,8 @@ if(!any(args=='--args'))
 if(any(args=='--args'))
 	args<- args[-(1:match("--args", args)) ]
 #	default args
-bsn			<- 1e3
+repn		<- 10
+bsn			<- 1e2
 batch.n		<- 3200
 batch.i		<- 1
 indir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
@@ -80,7 +81,7 @@ if(!is.na(batch.i))
 #
 #	get distances and save
 #
-tpi		<- seq.bootstrap.gd(seq, seqi, tp, bsn=1e3, bs.seed=42)
+tpi		<- seq.bootstrap.gd(seq, seqi, tp, repn=repn, bsn=bsn, bs.seed=42)
 #
 save(tpi, file=file.path(outdir, outfile))
 	

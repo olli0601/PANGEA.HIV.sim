@@ -1439,7 +1439,8 @@ treecomparison.explaingaps.collect.data<- function()
 treecomparison.bootstrap.sd.vs.coverage<- function(indir=NULL, wdir=NULL)
 {
 	require(ape)
-	require(data.table)	
+	require(data.table)
+	require(ggplot2)
 	bsn		<- 1e3
 	batch.n	<- 3200
 	if(is.null(indir) | is.null(wdir))
@@ -1494,6 +1495,7 @@ treecomparison.bootstrap.sd.vs.coverage<- function(indir=NULL, wdir=NULL)
 	tmp[, FILE:=NULL]
 	tp		<- merge(tp, tmp, by=c('TAXA1','TAXA2'))
 	
+	#	dev code
 	setkey(tp, TAXA1, TAXA2)
 	tmp		<- unique(tp)[, 	{
 				#TAXA1	<- 'IDPOP_13649|M|DOB_1906.66|2011.23'; TAXA2<- 'IDPOP_27993|F|DOB_1961.29|1991.587'
@@ -1505,6 +1507,16 @@ treecomparison.bootstrap.sd.vs.coverage<- function(indir=NULL, wdir=NULL)
 						}, by='GENE']
 				list(GENE= df.gd$GENE, DO= df.gd$DO, GENE_LEN= df.gd$GENE_LEN)
 			}, by=c('TAXA1','TAXA2')]
+	set(tmp, tmp[, which(GENE=='full')], 'GENE', 'gag+pol+env')
+	tp		<- merge(tp, tmp, by=c('TAXA1','TAXA2','GENE'))
+	save(tp, seqi, seq, file=file.path(wdir, gsub('.fa','_save160726beta.rda',infile)))
+	#
+	#	do we have higher bootstrap variance if there are more gaps by gene?
+	#
+
+	subset(tp, GENE=='gag+pol+env')	
+	ggplot( tp, aes(x=DO/GENE_LEN, y=GD_SD) ) + geom_point(size=0.5) + facet_grid(~GENE) + theme_bw() +
+			labs(x='\noverlap between taxon pairs\n(% of sequence length)', y='std deviation in genetic distance')
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
@@ -1513,7 +1525,8 @@ treecomparison.bootstrap.gd.dev<- function()
 	require(ape)
 	require(data.table)
 	
-	bsn		<- 1e3
+	bsn		<- 1e2
+	repn	<- 10
 	batch.n	<- 3200
 	batch.i	<- 1
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
@@ -1544,26 +1557,26 @@ treecomparison.bootstrap.gd.dev<- function()
 	tpi	<- tp[, 	{
 				cat('IDX',IDX, round(IDX/nrow(tp),d=3))
 				#TAXA1	<- 'IDPOP_13649|M|DOB_1906.66|2011.23'; TAXA2<- 'IDPOP_27993|F|DOB_1961.29|1991.587'
-				#START	<- 5467; END<- 8139
+				#START	<- 1; END<- 1473
 				#system.time({
 				df.gd	<- seqi[, {
 										spc		<- as.character(seq[c(TAXA1,TAXA2), START:END])
 										#	use same seed across all bootstrap runs, ie running for every gene is the same as running for the full genome
 										#		and running for every taxon pair is the same as running for the whole alignment
 										set.seed(42)
-										tmp		<- sapply( seq_len(1+bsn), function(bsi)
-												{
+										tmp		<- as.data.table(expand.grid(REP=seq_len(repn), BS=seq_len(bsn+1)))
+										tmp		<- tmp[, {
 													#	take bootstrap sample (except if bsi==1)
 													#	the bootstrap is relative to the gene region!											
 													spcb	<- copy(spc)
-													if(bsi>1)
+													if(BS>1)
 													{
 														#	note: bootstrap includes ? columns, which adds uncertainty when genetic distances are evaluated over the overlap columns
 														spcb<- spcb[, sample(ncol(spcb), replace=TRUE)]	
 													}
 													spb		<- as.DNAbin(spcb)
 													#	overlap that is not '?'
-												 	do		<- sum(apply( spcb!='?', 2, prod))
+													do		<- sum(apply( spcb!='?', 2, prod))
 													#	count genetic distance on overlap region, ie count gaps '-' as well, on anything that is not '?'
 													dn		<- as.numeric( dist.dna(spb, model='N', pairwise.deletion=TRUE) )
 													#	add indels to differences, but not when the other sequence is '?'
@@ -1571,17 +1584,17 @@ treecomparison.bootstrap.gd.dev<- function()
 													if(length(tmp))
 														dn	<- dn + as.numeric(dist.dna(spb[, tmp], model='indel'))
 													#	DN can be > 0 if DO is 0, because of indels
-													c(dn, do)		
-												})	
-										list(IDX=seq_len(ncol(tmp)), DN=tmp[1,], DO=tmp[2,])		
-									}, by='GENE']	
+													list(DN=dn, DO=do)	
+												}, by=c('REP','BS')]
+										tmp												
+									}, by='GENE']
 				#	collect distances for genes
-				ans		<- subset(df.gd, IDX>1)[, list( GD_MEAN=mean(DN/DO), GD_SD=sd(DN/DO) ), by='GENE']				
-				tmp		<- subset(df.gd, IDX==1)[, list( GD=ifelse(DO==0, NA_real_, DN/DO) ), by='GENE']
-				ans		<- merge(tmp, ans, by='GENE')
+				ans		<- subset(df.gd, BS>1)[, list( GD_MEAN=mean(DN/DO), GD_SD=sd(DN/DO) ), by=c('GENE','REP')]				
+				tmp		<- subset(df.gd, BS==1)[, list( GD=ifelse(DO==0, NA_real_, DN/DO), DO=DO ), by=c('GENE','REP')]
+				ans		<- merge(tmp, ans, by=c('GENE','REP'))
 				#	calculate distances for full genome
-				tmp		<- subset(df.gd, GENE%in%c('gag','pol','env'))[, list(GENE='gag+pol+env', GD=sum(DN)/sum(DO)), by='IDX']
-				tmp		<- tmp[, list(GD= GD[IDX==1], GD_MEAN=mean(GD[IDX>1]), GD_SD=sd(IDX>1)), by='GENE']
+				tmp		<- subset(df.gd, GENE%in%c('gag','pol','env'))[, list(GENE='gag+pol+env', GD=sum(DN)/sum(DO), DO=sum(DO)), by=c('REP','BS')]
+				tmp		<- tmp[, list(GD= GD[BS==1], DO=DO[BS==1], GD_MEAN=mean(GD[BS>1]), GD_SD=sd(GD[BS>1])), by=c('GENE','REP')]
 				ans		<- rbind(ans, tmp)
 				#})
 				ans				

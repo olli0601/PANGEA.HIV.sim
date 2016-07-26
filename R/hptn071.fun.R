@@ -77,7 +77,7 @@ seq.singleton2bifurcatingtree<- function(ph.s, dummy.label=NA)
 ##--------------------------------------------------------------------------------------------------------
 #' @import data.table ape
 #' @export 
-seq.bootstrap.gd<- function(seq, seqi, tp, bsn=1e3, bs.seed=42)
+seq.bootstrap.gd<- function(seq, seqi, tp, repn=10, bsn=1e2, bs.seed=42)
 {
 	#for each pair, estimate: actual distance, mean distance, variance in distance:
 	#	(do this pairwise because otherwise too computationally expensive
@@ -85,19 +85,19 @@ seq.bootstrap.gd<- function(seq, seqi, tp, bsn=1e3, bs.seed=42)
 	tpi	<- tp[, 	{
 				cat('IDX',IDX, round(IDX/nrow(tp),d=3))
 				#TAXA1	<- 'IDPOP_13649|M|DOB_1906.66|2011.23'; TAXA2<- 'IDPOP_27993|F|DOB_1961.29|1991.587'
-				#START	<- 5467; END<- 8139
+				#START	<- 1; END<- 1473
 				#system.time({
 				df.gd	<- seqi[, {
 							spc		<- as.character(seq[c(TAXA1,TAXA2), START:END])
 							#	use same seed across all bootstrap runs, ie running for every gene is the same as running for the full genome
 							#		and running for every taxon pair is the same as running for the whole alignment
-							set.seed(bs.seed)
-							tmp		<- sapply( seq_len(1+bsn), function(bsi)
-									{
+							set.seed(42)
+							tmp		<- as.data.table(expand.grid(REP=seq_len(repn), BS=seq_len(bsn+1)))
+							tmp		<- tmp[, {
 										#	take bootstrap sample (except if bsi==1)
 										#	the bootstrap is relative to the gene region!											
 										spcb	<- copy(spc)
-										if(bsi>1)
+										if(BS>1)
 										{
 											#	note: bootstrap includes ? columns, which adds uncertainty when genetic distances are evaluated over the overlap columns
 											spcb<- spcb[, sample(ncol(spcb), replace=TRUE)]	
@@ -112,17 +112,17 @@ seq.bootstrap.gd<- function(seq, seqi, tp, bsn=1e3, bs.seed=42)
 										if(length(tmp))
 											dn	<- dn + as.numeric(dist.dna(spb[, tmp], model='indel'))
 										#	DN can be > 0 if DO is 0, because of indels
-										c(dn, do)		
-									})	
-							list(IDX=seq_len(ncol(tmp)), DN=tmp[1,], DO=tmp[2,])		
-						}, by='GENE']	
+										list(DN=dn, DO=do)	
+									}, by=c('REP','BS')]
+							tmp												
+						}, by='GENE']
 				#	collect distances for genes
-				ans		<- subset(df.gd, IDX>1)[, list( GD_MEAN=mean(DN/DO), GD_SD=sd(DN/DO) ), by='GENE']				
-				tmp		<- subset(df.gd, IDX==1)[, list( GD=ifelse(DO==0, NA_real_, DN/DO) ), by='GENE']
-				ans		<- merge(tmp, ans, by='GENE')
+				ans		<- subset(df.gd, BS>1)[, list( GD_MEAN=mean(DN/DO), GD_SD=sd(DN/DO) ), by=c('GENE','REP')]				
+				tmp		<- subset(df.gd, BS==1)[, list( GD=ifelse(DO==0, NA_real_, DN/DO), DO=DO ), by=c('GENE','REP')]
+				ans		<- merge(tmp, ans, by=c('GENE','REP'))
 				#	calculate distances for full genome
-				tmp		<- subset(df.gd, GENE%in%c('gag','pol','env'))[, list(GENE='gag+pol+env', GD=sum(DN)/sum(DO)), by='IDX']
-				tmp		<- tmp[, list(GD= GD[IDX==1], GD_MEAN=mean(GD[IDX>1]), GD_SD=sd(IDX>1)), by='GENE']
+				tmp		<- subset(df.gd, GENE%in%c('gag','pol','env'))[, list(GENE='gag+pol+env', GD=sum(DN)/sum(DO), DO=sum(DO)), by=c('REP','BS')]
+				tmp		<- tmp[, list(GD= GD[BS==1], DO=DO[BS==1], GD_MEAN=mean(GD[BS>1]), GD_SD=sd(GD[BS>1])), by=c('GENE','REP')]
 				ans		<- rbind(ans, tmp)
 				#})
 				ans				

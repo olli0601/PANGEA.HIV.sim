@@ -178,7 +178,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)	#submit various
+	if(0)	#submit various
 	{
 		cmd			<- cmd.various()
 		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeph', hpc.walltime=71, hpc.mem="3500mb")
@@ -188,18 +188,18 @@ pipeline.various<- function()
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
-	if(0)	#calculate genetic distances in alignment + get bootstrap variance
+	if(1)	#calculate genetic distances in alignment + get bootstrap variance
 	{
 		#batch.i		<- 1
 		indir		<- file.path(DATA, 'gds')	
 		infile.fa	<- '150701_Regional_TRAIN4_SIMULATED.fa'
 		infile.ge	<- '150701_Regional_TRAIN4_SIMULATED_gene.txt'
 		outdir		<- indir
-		for(batch.i in 3:400)
+		for(batch.i in 1:1)
 		{
 			outfile	<- paste(gsub('.fa','',infile.fa),'_GDS_BATCH',batch.i,'.rda',sep='')
 			cmd		<- cmd.gendist(indir, infile.fa, infile.ge, outdir, outfile, batch.i)		
-			cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=48, hpc.mem="4000mb")
+			cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=48, hpc.mem="5000mb")
 			cat(cmd)		
 			cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)				
 		}			
