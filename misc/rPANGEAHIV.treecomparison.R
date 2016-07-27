@@ -1075,7 +1075,10 @@ treecomparison.submissions.151119<- function()
 treecomparison.explaingaps.evaluate.160725<- function()
 {
 	require(ape)
+	require(scales)
 	require(data.table)
+	require(Hmisc)
+	
 	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	#
@@ -1087,11 +1090,6 @@ treecomparison.explaingaps.evaluate.160725<- function()
 	#
 	min.coverage	<- 600
 	min.depth		<- 10	
-	if(0)
-	{
-		tmp			<- apply( as.character(sq), 2, function(x) !all(x%in%c('?','-','n')) ) 
-		sq			<- sq[, tmp]		
-	}
 	#	convert into chunks
 	ch				<- lapply(seq_len(nrow(sq)), function(i)
 			{
@@ -1146,7 +1144,7 @@ treecomparison.explaingaps.evaluate.160725<- function()
 			guides(colour=guide_legend(override.aes=list(size=5)))	
 	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers.pdf',wfile)), w=15, h=15, limitsize = FALSE)
 	#
-	#	plot Rakai samples by subtype
+	#	plot Rakai samples by REGA subtype
 	#
 	setnames(ch, 'PANGEA_ID', 'TAXA')
 	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, REGA_GAG_A, REGA_GAG_AS, REGA_GAG_PURE, REGA_GAG_PURES)))
@@ -1173,7 +1171,43 @@ treecomparison.explaingaps.evaluate.160725<- function()
 			theme_bw() +
 			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
 			guides(colour=guide_legend(override.aes=list(size=5)))
-	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_subtypes.pdf',wfile)), w=15, h=15, limitsize = FALSE)		
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_REGAsubtypes.pdf',wfile)), w=15, h=15, limitsize = FALSE)
+	#
+	#	plot Rakai samples by COMET subtype
+	#
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, COMET_Region1, COMET_Region2, COMET_Region3)))
+	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
+	chr		<- subset(chr, !is.na(RCCS_studyid))
+	set(chr, chr[, which(is.na(COMET_Region1))], 'COMET_Region1', 'unassigned')
+	set(chr, chr[, which(is.na(COMET_Region2))], 'COMET_Region2', 'unassigned')
+	set(chr, chr[, which(is.na(COMET_Region3))], 'COMET_Region3', 'unassigned')
+	chr[, COMET_Region123:= paste(COMET_Region1,COMET_Region2,COMET_Region3,sep='-')]
+	set(chr, chr[, which(!COMET_Region123%in%c('A1-A1-A1','A2-A2-A2','B-B-B','C-C-C','D-D-D','other-other-other','unassigned-unassigned-unassigned'))], 'COMET_Region123', 'mixed')
+	#	Region123 mixes cause and effect: must have good representation of all regions in order to call subtypes well
+	chr[, COMET_Region13:= paste(COMET_Region1,COMET_Region3,sep='-')]
+	set(chr, chr[, which(!COMET_Region13%in%c('A1-A1','A2-A2','B-B','C-C','D-D','other-other','unassigned-unassigned'))], 'COMET_Region13', 'mixed')
+	#	not sure if this should be used..
+	#	redefine ordering
+	chr[, PLOT:=NULL]	
+	setkey(chr, COMET_Region1, TAXA)	
+	tmp		<- unique(chr)
+	setkey(tmp, COMET_Region1, COVP, TAXA)	
+	tmp		<- tmp[, list(TAXA=TAXA, PLOT=COMET_Region1, PLOT_ID=seq_along(TAXA)), by='COMET_Region1']
+	chr		<- merge(chr, subset(tmp, select=c(TAXA, PLOT_ID)), by='TAXA')		
+	
+	ggplot(subset(chr, !COMET_Region1%in%c('check','other'))) +
+			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=COMET_Region1)) +  
+			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="black") +
+			geom_vline(xintercept=c(2200,3000)) +
+			facet_wrap(~COMET_Region1, scales='free_y', ncol=4) +
+			scale_x_continuous(expand=c(0,0), breaks=dpani$START, labels=dpani$PR) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_colour_brewer(palette='Set1') +						
+			labs(x='\nalignment position', y='Rakai PANGEA-HIV sequences\n', colour='COMET subtype assignment\non region 1') +
+			theme_bw() +
+			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_COMETsubtypes.pdf',wfile)), w=15, h=10, limitsize = FALSE)		
 	#
 	#	plot Rakai samples by ART
 	#
@@ -1261,7 +1295,114 @@ treecomparison.explaingaps.evaluate.160725<- function()
 			theme_bw() +
 			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
 			guides(colour=guide_legend(override.aes=list(size=5)))
-	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_REGION.pdf',wfile)), h=7, w=20, limitsize = FALSE)		
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_REGION.pdf',wfile)), h=7, w=20, limitsize = FALSE)
+	#
+	#	select taxa that failed after 1R despite high viral load + not on ART
+	#	select taxa that were successful after 1R despite low viral load + not on ART
+	#
+	set(dpand, NULL, 'date', dpand[,hivc.db.Date2numeric(date)])	
+	set(dpand, NULL, 'firstPosDate', dpand[,hivc.db.Date2numeric(firstPosDate)])
+	set(dpand, NULL, 'arvStartDate', dpand[,hivc.db.Date2numeric(arvStartDate)])
+	set(dpand, NULL, 'FirstSelfReportArt', dpand[,hivc.db.Date2numeric(FirstSelfReportArt)])
+	set(dpand, NULL, 'recentVLdate', dpand[,hivc.db.Date2numeric(recentVLdate)])
+	#	viral load and coverage
+	dsmut	<- subset(dpand,	PR=='1R' & POS=='PR_1' &	
+								UNASS_TO_NEXTPRIMER_P<0.2 &
+								recentVL<2e4 & abs(date-recentVLdate)<.5, select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	dsmut[, TYPE:= 'Rakai_VL_low_Coverage_high']		
+	tmp		<- subset(dpand,	PR=='1R' & 	POS=='PR_1' &
+					UNASS_TO_NEXTPRIMER_P>0.95 &
+					(is.na(arvStartDate) | date<arvStartDate) &
+					(!everSelfReportArt | everSelfReportArt & date<FirstSelfReportArt) &
+					recentVL>4e4 & abs(date-recentVLdate)<.5, select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	tmp[, TYPE:= 'Rakai_VL_high_Coverage_none']			
+	dsmut	<- rbind(dsmut, tmp)
+	#	coverage
+	tmp		<- subset(dpand,	PR=='1R' & POS=='PR_1' & !is.na(RCCS_studyid) &
+					UNASS_TO_NEXTPRIMER_P<0.2, select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	tmp[, TYPE:= 'Rakai_Coverage_high']			
+	dsmut	<- rbind(dsmut, tmp)
+	tmp		<- subset(dpand,	PR=='1R' & 	POS=='PR_1' &
+					UNASS_TO_NEXTPRIMER_P>0.95, select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	tmp[, TYPE:= 'Rakai_Coverage_none']			
+	dsmut	<- rbind(dsmut, tmp)
+	#	population
+	tmp		<- subset(dpand,	PR=='1R' & 	POS=='PR_1' & !is.na(PANGEA_ID), select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	tmp[, TYPE:= 'PANGEA_All']
+	dsmut	<- rbind(dsmut, tmp)
+	tmp		<- subset(dpand,	PR=='1R' & 	POS=='PR_1' & !is.na(RCCS_studyid), select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	tmp[, TYPE:= 'Rakai_All']
+	dsmut	<- rbind(dsmut, tmp)
+	#	subtypes
+	tmp		<- subset(dpand,	PR=='1R' & POS=='PR_1' & COMET_Region1=='A1' &
+					UNASS_TO_NEXTPRIMER_P>0.95, select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	tmp[, TYPE:= 'Rakai_A1_Coverage_none']			
+	dsmut	<- rbind(dsmut, tmp)
+	tmp		<- subset(dpand,	PR=='1R' & POS=='PR_1' & COMET_Region1=='C' &
+					UNASS_TO_NEXTPRIMER_P>0.95, select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	tmp[, TYPE:= 'Rakai_C_Coverage_none']			
+	dsmut	<- rbind(dsmut, tmp)
+	tmp		<- subset(dpand,	PR=='1R' & POS=='PR_1' & COMET_Region1=='D' &
+					UNASS_TO_NEXTPRIMER_P>0.95, select=c(TAXA, UNASS_TO_NEXTPRIMER_P))
+	tmp[, TYPE:= 'Rakai_D_Coverage_none']			
+	dsmut	<- rbind(dsmut, tmp)
+	
+	dsmut	<- merge(subset(dpand, PR=='2R' | PR=='2F', select=c(TAXA, PR, POS, NT_DIFF, REGION, COMM_NUM, HH_NUM, SEX, AGEYRS, COMET_Region1)), dsmut, by=c('TAXA'), allow.cartesian=TRUE)	
+	set(dsmut, NULL, 'POS', dsmut[,gsub('PR_','',POS)])
+	set(dsmut, NULL, 'PR', dsmut[, paste('PR_',PR, sep='')])
+	setnames(dsmut, 'UNASS_TO_NEXTPRIMER_P', 'PR1R_UNASS_TO_NEXTPRIMER_P')
+	#dcast.data.table(dsmut, TYPE+TAXA+PR1R_UNASS_TO_NEXTPRIMER_P+REGION+COMM_NUM+HH_NUM+SEX+AGEYRS+COMET_Region1  ~  PR+POS, value.var='NT_DIFF')
+	
+	tmp		<- dsmut[,{
+				z	<- round(as.numeric(binconf(length(which(NT_DIFF==1)), length(which(!is.na(NT_DIFF))))), d=3)
+				list(EST=c('central','l95','u95'), VAL= z)				
+			}, by=c('TYPE','PR','POS')]
+	tmp		<- dcast.data.table(tmp, PR+POS+TYPE~EST, value.var='VAL')
+	set(tmp, NULL, 'POS', tmp[, as.integer(POS)])
+	set(tmp, NULL, 'TYPE', tmp[, factor(TYPE, levels=c("PANGEA_All", "Rakai_All", "Rakai_Coverage_high", "Rakai_Coverage_none", "Rakai_VL_high_Coverage_none", "Rakai_VL_low_Coverage_high", 'Rakai_A1_Coverage_none', 'Rakai_C_Coverage_none', 'Rakai_D_Coverage_none'))])
+	
+	
+	ggplot(subset(tmp, TYPE%in%c('PANGEA_All','Rakai_Coverage_high','Rakai_A1_Coverage_none','Rakai_C_Coverage_none','Rakai_D_Coverage_none')), aes(x=POS, fill=TYPE)) + 
+			geom_bar(aes(y=central), stat='identity', width=0.7, position=position_dodge(0.8)) + 
+			facet_grid(PR~.) + 
+			geom_linerange(aes(ymin= l95, ymax=u95), position=position_dodge(0.8)) +
+			theme_bw() + theme(legend.position='bottom') +
+			scale_x_continuous(breaks=tmp[, seq_len(max(POS))]) +
+			scale_y_continuous(labels=percent, expand=c(0,0), limits=c(0,1)) +
+			labs(x='\nNucleotide position in primer', y='PANGEA sequences with mutation from HXB2\n', fill='selected sequences') 
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_2F2R_eval1.pdf',wfile)), h=10, w=15, limitsize = FALSE)
+	
+	
+	ggplot(subset(tmp, TYPE%in%c('PANGEA_All','Rakai_Coverage_none','Rakai_VL_high_Coverage_none','Rakai_VL_low_Coverage_high')), aes(x=POS, fill=TYPE)) + 
+			geom_bar(aes(y=central), stat='identity', width=0.7, position=position_dodge(0.8)) + 
+			facet_grid(PR~.) + 
+			geom_linerange(aes(ymin= l95, ymax=u95), position=position_dodge(0.8)) +
+			theme_bw() + theme(legend.position='bottom') +
+			scale_x_continuous(breaks=tmp[, seq_len(max(POS))]) +
+			scale_y_continuous(labels=percent, expand=c(0,0), limits=c(0,1)) +
+			labs(x='\nNucleotide position in primer', y='PANGEA sequences with mutation from HXB2\n', fill='selected sequences') 
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_2F2R_eval2.pdf',wfile)), h=10, w=12, limitsize = FALSE)
+	#
+	#	plot selected data sets just to make sure I selected correctly
+	#	
+	tmp		<- unique(subset(dsmut, TYPE%in%c('Rakai_VL_high_Coverage_none','Rakai_VL_low_Coverage_high'), select=c(TAXA, TYPE)))
+	chr		<- merge(ch, tmp, by='TAXA', all.x=1)			
+	setkey(chr, TAXA)	
+	tmp		<- unique(chr)
+	setkey(tmp, TYPE, COVP, TAXA)	
+	tmp		<- tmp[, list(TAXA=TAXA, PLOT=TYPE, PLOT_ID=seq_along(TAXA)), by='TYPE']
+	chr		<- merge(chr, subset(tmp, select=c(TAXA, PLOT_ID)), by='TAXA')	
+	ggplot(chr) +
+			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=TYPE)) +  
+			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="black") +			
+			facet_wrap(~TYPE, scales='free_y', ncol=6) +
+			scale_x_continuous(expand=c(0,0), breaks=dpani$START, labels=dpani$PR) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_colour_brewer(palette='Dark2') +						
+			labs(x='\nalignment position', y='Rakai PANGEA-HIV sequences\n', colour='region') +
+			theme_bw() +
+			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
+			guides(colour=guide_legend(override.aes=list(size=5)))		
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 25.07.16
@@ -1359,12 +1500,13 @@ treecomparison.explaingaps.collect.data<- function()
 					tmp[, MISS:=NULL]
 					tmp
 				}, by='PR' ]
-		#	calculate number of '?' until next primer start and for the next 100 sites
+		#	calculate number of '?' until next primer start and for the next 250 sites
 		tmp			<- rbind( 	data.table(PR='1F', END_B4NXT=subset(dpan, PR=='2F')[1, START-1L]),
-				data.table(PR='2F', END_B4NXT=subset(dpan, PR=='3F')[1, START-1L]),
-				data.table(PR='3F', END_B4NXT=subset(dpan, PR=='4F')[1, START-1L]),	
-				data.table(PR='3R', END_B4NXT=subset(dpan, PR=='2R')[, START[1]+max(IDX)]),
-				data.table(PR='2R', END_B4NXT=subset(dpan, PR=='1R')[, START[1]+max(IDX)])	)	
+								data.table(PR='2F', END_B4NXT=subset(dpan, PR=='1R')[ , START[1]+max(IDX)]),								
+								data.table(PR='1R', END_B4NXT=subset(dpan, PR=='3F')[1, START-1L]),
+								data.table(PR='3F', END_B4NXT=subset(dpan, PR=='2R')[, START[1]+max(IDX)]),
+								data.table(PR='2R', END_B4NXT=subset(dpan, PR=='4F')[1, START[1]-1L]),
+								data.table(PR='4F', END_B4NXT=subset(dpan, PR=='3R')[, START[1]+max(IDX)])		)	
 		dpan		<- merge(dpan, tmp, by='PR', all.x=1)
 		dun			<- subset(dpan, !is.na(START) & !is.na(END_B4NXT) & IDX==1)[, {
 					#START<- 812; END_B4NXT<- 4341
@@ -1382,15 +1524,15 @@ treecomparison.explaingaps.collect.data<- function()
 					}	
 					if(START<END_B4NXT)
 					{
-						tmp3	<- as.character( sq[, seq.int(START, START+100)] )
+						tmp3	<- as.character( sq[, seq.int(START, START+250)] )
 						tmp3	<- apply(tmp3=='?',1,sum)
 					}
 					if(START>END_B4NXT)
 					{
-						tmp3	<- as.character( sq[, seq.int(START-100, START)] )
+						tmp3	<- as.character( sq[, seq.int(START-250, START)] )
 						tmp3	<- apply(tmp3=='?',1,sum)
 					}	
-					list(TAXA= names(tmp), UNASS_TO_NEXTAMPLIC_P= tmp/length(seq.int(START, END_B4NXT)), UNASS_FOR_NEXT100_P= tmp3/100, DROPPED_B4_P=tmp2/20  )
+					list(TAXA= names(tmp), UNASS_TO_NEXTPRIMER_P= tmp/length(seq.int(START, END_B4NXT)), UNASS_INDIR_250_P= tmp3/250, DROPPED_B4_P=tmp2/20  )
 				}, by='PR']
 		dpand		<- merge(dpand, dun, by=c('PR','TAXA'), all.x=1)
 		dpand[, PANGEA_ID:= NA_character_]
@@ -1406,7 +1548,7 @@ treecomparison.explaingaps.collect.data<- function()
 		setkey(rccsData, PANGEA_ID)
 		rccsData	<- unique(rccsData)	#remove 4 duplicates "K104085" "E106462" "F030186" "F101874"	
 		dpand		<- merge(dpand, rccsData, by='PANGEA_ID', all.x=1)
-		#	add subtype data
+		#	add CLASS subtype data
 		dst			<- subset(subtypeSummaryData, select=c(RCCS_studyid, gp.class, gag.class, pol.class, vpu.class, env.class, comp.class))
 		setkey(dst, RCCS_studyid)
 		dst			<- unique(dst)	#no duplicates here
@@ -1415,13 +1557,36 @@ treecomparison.explaingaps.collect.data<- function()
 		set(dst, NULL, 'variable', dst[, paste('SUBTYPE_',toupper(gsub('\\.class','',variable)),sep='')])	
 		dst			<- dcast.data.table(dst, RCCS_studyid~variable)
 		dpand		<- merge(dpand, dst, by='RCCS_studyid',all.x=1)
-		#	add even more subtype data
+		#	add REGA subtype data
 		load("~/Dropbox (Infectious Disease)/PANGEA_alignments/Rega Subtype Analysis/Gag REGA results/regaGag.rda")
-		regaGag	<- as.data.table(regaGag)
-		regaGag	<- subset(regaGag, select=c(TAXA, assignment, support, pure, pure_support))
+		regaGag		<- as.data.table(regaGag)
+		regaGag		<- subset(regaGag, select=c(TAXA, assignment, support, pure, pure_support))
 		set(regaGag, NULL, 'assignment', regaGag[, gsub('Check the Report|Check the report|Check the bootscan','Check bootscan', gsub('Subtype ','', gsub('HIV-1 ','', assignment)))])
 		setnames(regaGag, c('assignment','support','pure','pure_support'),c('REGA_GAG_A','REGA_GAG_AS','REGA_GAG_PURE','REGA_GAG_PURES'))
-		dpand	<- merge(dpand, regaGag, by='TAXA',all.x=1)		
+		dpand		<- merge(dpand, regaGag, by='TAXA',all.x=1)
+		#	add COMET subtype data
+		indir		<- '~/Dropbox (Infectious Disease)/PANGEA_alignments/Rakai Data for IqTree'
+		infiles		<- data.table(FILE=list.files(indir, full.names=1, pattern='.rda$', recursive=1))	
+		infiles[, GENE:= regmatches(FILE,regexpr('Region[0-9]',FILE))]
+		dc			<- infiles[, {
+					load(FILE)
+					dc			<- as.data.table(summaryData)
+					setnames(dc, 'seqid', 'TAXA')
+					tmp			<- dc[, which(grepl('PG[0-9]+-[A-Z]+', TAXA))]
+					dc[, SITE:= NA_character_]
+					set(dc, tmp, 'SITE', dc[tmp,regmatches(TAXA,regexpr('PG[0-9]+-[A-Z]+', TAXA))])					
+					dc			<- subset(dc, dataSource=='Pangea')
+					set(dc, NULL, 'TAXA', dc[, regmatches(TAXA,regexpr('PG[0-9]+.*', TAXA))])
+					dc			<- subset(dc, select=c(TAXA, CometSubtype))
+					set(dc, NULL, 'CometSubtype', dc[, as.character(CometSubtype)])
+					dc
+				}, by='GENE']
+		set(dc, dc[, which(grepl('unassigned', CometSubtype))], 'CometSubtype', 'unassigned')
+		set(dc, dc[, which(grepl('check', CometSubtype))], 'CometSubtype', 'check')
+		set(dc, dc[, which(!CometSubtype%in%c('A1','A2','B','C','D','unassigned','check'))], 'CometSubtype', 'other')
+		set(dc, NULL, 'GENE', dc[, paste('COMET_',GENE,sep='')])
+		dc			<- dcast.data.table(dc, TAXA~GENE, value.var='CometSubtype')
+		dpand		<- merge(dpand, dc, by='TAXA',all.x=1)		
 		#	save
 		save(sq, sqi, dpan, dpand, file=file.path(wdir,wfile))
 	}
@@ -1429,7 +1594,6 @@ treecomparison.explaingaps.collect.data<- function()
 	#
 	#
 	dcast.data.table(tmp, TAXA~POS, value.var='NT_DIFF')
-
 	subset(dpand, PR=='1R')
 	dcast.data.table(subset(dpand, PR=='1R'), TAXA~POS, value.var='NT_DIFF')
 }
@@ -1513,10 +1677,22 @@ treecomparison.bootstrap.sd.vs.coverage<- function(indir=NULL, wdir=NULL)
 	#
 	#	do we have higher bootstrap variance if there are more gaps by gene?
 	#
-
-	subset(tp, GENE=='gag+pol+env')	
-	ggplot( tp, aes(x=DO/GENE_LEN, y=GD_SD) ) + geom_point(size=0.5) + facet_grid(~GENE) + theme_bw() +
-			labs(x='\noverlap between taxon pairs\n(% of sequence length)', y='std deviation in genetic distance')
+	set(tp, NULL, 'GENE', tp[, factor(GENE, levels=c('gag','pol','env','gag+pol+env'), labels=c('gag','pol','env','gag+pol+env'))])	
+	ggplot( subset(tp, GENE!='gag+pol+env' & GD_MEAN>0), aes(x=cut(DO/GENE_LEN, breaks=seq(0,1,0.01)), y=GD_SD) ) + 	
+			geom_boxplot(outlier.shape=NA) +
+			coord_cartesian(ylim=c(0,0.18)) +
+			scale_y_continuous(expand=c(0,0)) +
+			facet_grid(~GENE) + theme_bw() +
+			labs(x='\noverlap between taxon pairs\n(% of sequence length)', y='std deviation in genetic distance\n')
+	ggsave(file=file.path(wdir, gsub('.fa','_GDSD_by_overlap.pdf',infile)), w=10, h=5)
+	
+	ggplot( subset(tp, GENE!='gag+pol+env' & GD_MEAN>0), aes(x=cut(DO/GENE_LEN, breaks=seq(0,1,0.01)), y=GD_SD/GD_MEAN) ) + 	
+			geom_boxplot(outlier.shape=NA) +
+			coord_cartesian(ylim=c(0,0.6)) +
+			scale_y_continuous(expand=c(0,0)) +
+			facet_grid(~GENE) + theme_bw() +
+			labs(x='\noverlap between taxon pairs\n(% of sequence length)', y='coefficient of variation in genetic distance\nacross bootstrap alignments\n')
+	ggsave(file=file.path(wdir, gsub('.fa','_GDCOV_by_overlap.pdf',infile)), w=10, h=5)
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
