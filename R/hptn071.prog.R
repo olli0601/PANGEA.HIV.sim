@@ -188,7 +188,7 @@ pipeline.various<- function()
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
-	if(1)	#calculate genetic distances in alignment + get bootstrap variance
+	if(0)	#calculate genetic distances in alignment + get bootstrap variance
 	{
 		#batch.i		<- 1
 		indir		<- file.path(DATA, 'gds')	
@@ -205,6 +205,37 @@ pipeline.various<- function()
 		}			
 		quit("no")
 	}	
+	if(1)	#submit ExaML runs
+	{
+		require(ape)
+		require(big.phylo)	
+		
+		indir		<- '~/git/HPTN071sim/treecomparison/withgaps_160729'
+		infile		<- data.table(FILE=list.files(indir, pattern='\\.R'))
+		infile[, SC:= gsub('\\..*','',FILE)]
+		tmp			<- data.table(PARTITION=list.files(indir, pattern='\\.txt'))
+		tmp[, SC:= gsub('_gene.txt','',PARTITION)]
+		infile		<- merge(infile, tmp, by='SC', all.x=1)
+		#	
+		invisible(infile[, {
+					#SC<- '150701_Regional_TRAIN202_FULL_SIMULATED'; PARTITION<- '150701_Regional_TRAIN202_FULL_SIMULATED_gene.txt'
+					args.parser			<- paste("-m DNA")
+					args.examl			<- "-f d -D -m GAMMA"
+					args.starttree.type	<- 'parsimony'
+					if(!is.na(PARTITION))						
+						args.parser			<- paste("-m DNA -q",PARTITION)
+					if(!grepl('FULL', SC))
+						args.starttree.type	<- 'random'
+					
+					cmd		<- cmd.examl.single(indir, SC, outdir=indir, args.starttree.type=args.starttree.type, args.parser=args.parser, args.examl=args.examl, bs.seed=42)
+					cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=129, hpc.q="pqeelab", hpc.mem="5800mb", hpc.nproc=1)
+					signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
+					cat(cmd)
+					cmd.hpccaller(indir, paste("exa",signat,sep='.'), cmd)
+					Sys.sleep(1)
+				}, by='SC'])
+		
+	}
 	if(0)
 	{
 		mfile		<- paste(DATA,'model_150816a.R',sep='/')

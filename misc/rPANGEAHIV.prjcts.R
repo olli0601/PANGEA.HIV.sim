@@ -2195,10 +2195,191 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 	indir.simu		<- '/Users/Oliver/git/HPTN071sim/treecomparison/nogaps'
 	indir.gap		<-	'~/git/HPTN071sim/treecomparison/PANGEAcov'
 	infile.gap		<- '150623_PANGEAGlobal2681_C5.fa'
-	outdir			<- '/Users/Oliver/git/HPTN071sim/treecomparison/withgaps_150701'					
+	outdir			<- '/Users/Oliver/git/HPTN071sim/treecomparison/withgaps_160729'					
 	gap.symbol		<- '?'
 	gap.seed		<- 42
 	
+	if(1)
+	{	
+		gap.country		<- 'BW'
+		infile.gap		<- '151113_PANGEAGlobal4562_C10.fa'
+		
+		outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
+		infile.simu		<- '150701_Regional_TRAIN2_SIMULATED'				
+		#	align and rbind simulated and real sequences, rm gap rows and trailing gap cols too: 
+		ms				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, verbose=1)
+		write.dna(ms, file=paste(indir.simu,'/',gsub('\\.fa','_RMGPS\\.fa',outfile),sep=''),format='fasta', colsep='', nbcol=-1)
+		#	this now includes HXB2 --> easy to define start + end of gag pol env (or any other restriction that I want to specify)
+		
+		#
+		#	process full genome runs
+		#
+		
+		#	make allocations reproducible	
+		set.seed(gap.seed)
+		#	read chunks from selected gap country sequence (is NA, then read from all PANGEA seqs)		
+		sq				<- ms[ grepl('PG[0-9]+', rownames(ms)), ]
+		ch				<- seq.get.gap.chunks(sq, gap.symbol=c('?','n'))
+		setnames(ch, 'TAXON', 'PANGEA_ID')
+		ch[, SITE:= gsub('PG[0-9]+-','',regmatches(PANGEA_ID, regexpr('PG[0-9]+-[A-Z]+',PANGEA_ID))) ]
+		
+		for(gap.p in seq(0.02, 0.6, 0.01))
+		{
+			cat('FULL',gap.p)
+			#	gap coverage per PANGEA id
+			chs				<- PANGEA.add.gaps.allocate.chunks.to.sequences(ch, ms)
+			#	select chunks that give actual coverage closest to requested coverage 
+			tmp				<- chs[which.min(abs(GAP_P-gap.p)), IDX_COARSE]
+			chs				<- subset(chs, IDX_COARSE<=tmp)
+			#	copy gaps into alignment
+			gs				<- as.character(ms)
+			for(i in seq_len(nrow(chs)))
+				gs[ chs[i,COPY_TO],  chs[i, seq.int(POS, len=REP)] ]	<- gap.symbol		
+			#	select simulated sequences 
+			gs				<- gs[which(grepl('IDPOP|HOUSE|HXB2',rownames(gs))), ]		
+			tmp				<- apply(gs[which(grepl('IDPOP|HOUSE',rownames(gs))), ],2,function(x) !all(x%in%c('?','n','-')))
+			gs				<- gs[,tmp]		
+			gap.p.sim		<- round( sum(gs=='?') / (nrow(gs)*ncol(gs)), d=2 )
+			#	determine gene start and end positions
+			tmp				<- c(	regexpr('agataggggggcaac', paste(gs[which(grepl('HXB2',rownames(gs))), ], collapse='') ),
+									regexpr('atgagagtgaaggagaa', paste(gs[which(grepl('HXB2',rownames(gs))), ], collapse='') )	)
+			gene.pos		<- data.table(GENE=c('gag','pol','env'), START=c(1,tmp[1],tmp[2]), END=c(tmp[1]-1L,tmp[2]-1L,ncol(gs)))
+			#	write to file	
+			gs				<- as.DNAbin(gs)
+			outfile			<- paste(gsub('_SIMULATED','',infile.simu), sprintf('%02g',gap.p*100), '_FULL_SIMULATED.fa', sep='')
+			write.dna(gs, file=file.path(outdir, outfile), format='fasta', colsep='', nbcol=-1)			
+			tmp				<- gene.pos[, list(STR=paste('DNA, ',GENE,' = ',START,'-',END,sep='')), by='GENE']
+			cat(paste( tmp[, STR], collapse='\n'), file=file.path(outdir, gsub('.fa','_gene.txt',outfile)))
+		}
+		
+		#
+		#	process p17 genome runs
+		#
+		
+		#	determine p24 start, and use only gag p17
+		hxb2	<- as.character(ms[which(grepl('HXB2',rownames(ms))), ])
+		tmp		<- regexpr('c-*c-*t-*a-*t-*a-*g-*t-*g-*c-*a-*g-*a-*a-*c-*a-*t-*c-*c-*a-*g-*g-*g', paste(hxb2, collapse='') )
+		msp		<- ms[,1:(tmp-1L)]
+		
+		#	make allocations reproducible	
+		set.seed(gap.seed)
+		#	read chunks from selected gap country sequence (is NA, then read from all PANGEA seqs)		
+		sq				<- msp[ grepl('PG[0-9]+', rownames(msp)), ]
+		ch				<- seq.get.gap.chunks(sq, gap.symbol=c('?','n'))
+		setnames(ch, 'TAXON', 'PANGEA_ID')
+		ch[, SITE:= gsub('PG[0-9]+-','',regmatches(PANGEA_ID, regexpr('PG[0-9]+-[A-Z]+',PANGEA_ID))) ]		
+		for(gap.p in seq(0.02, 0.3, 0.01))
+		{
+			cat('P17',gap.p)
+			#	gap coverage per PANGEA id -- this is the random bit so should be in the loop
+			chs				<- PANGEA.add.gaps.allocate.chunks.to.sequences(ch, msp)
+			#	select chunks that give actual coverage closest to requested coverage 
+			tmp				<- chs[which.min(abs(GAP_P-gap.p)), IDX_COARSE]
+			chs				<- subset(chs, IDX_COARSE<=tmp)
+			#	copy gaps into alignment
+			gs				<- as.character(msp)
+			for(i in seq_len(nrow(chs)))
+				gs[ chs[i,COPY_TO],  chs[i, seq.int(POS, len=REP)] ]	<- gap.symbol		
+			#	select simulated sequences 
+			gs				<- gs[which(grepl('IDPOP|HOUSE|HXB2',rownames(gs))), ]		
+			tmp				<- apply(gs[which(grepl('IDPOP|HOUSE',rownames(gs))), ],2,function(x) !all(x%in%c('?','n','-')))
+			gs				<- gs[,tmp]		
+			gap.p.sim		<- round( sum(gs=='?') / (nrow(gs)*ncol(gs)), d=2 )
+			#	write to file	
+			gs				<- as.DNAbin(gs)
+			outfile			<- paste(gsub('_SIMULATED','',infile.simu), sprintf('%02g',gap.p*100), '_P17_SIMULATED.fa', sep='')
+			write.dna(gs, file=file.path(outdir, outfile), format='fasta', colsep='', nbcol=-1)						
+		}
+		
+		#
+		#	process gag genome runs
+		#
+
+		#	determine pol start, and use only gag 
+		hxb2	<- as.character(ms[which(grepl('HXB2',rownames(ms))), ])
+		tmp		<- regexpr('a-*g-*a-*t-*a-*g-*g-*g-*g-*g-*g-*c-*a-*a-*c', paste(hxb2, collapse='') )
+		msg		<- ms[,1:(tmp-1L)]
+
+		#	make allocations reproducible	
+		set.seed(gap.seed)
+		#	read chunks from selected gap country sequence (is NA, then read from all PANGEA seqs)		
+		sq				<- msg[ grepl('PG[0-9]+', rownames(msg)), ]
+		ch				<- seq.get.gap.chunks(sq, gap.symbol=c('?','n'))
+		setnames(ch, 'TAXON', 'PANGEA_ID')
+		ch[, SITE:= gsub('PG[0-9]+-','',regmatches(PANGEA_ID, regexpr('PG[0-9]+-[A-Z]+',PANGEA_ID))) ]		
+		for(gap.p in seq(0.02, 0.3, 0.01))
+		{
+			cat('GAG',gap.p)
+			#	gap coverage per PANGEA id -- this is the random bit so should be in the loop
+			chs				<- PANGEA.add.gaps.allocate.chunks.to.sequences(ch, msg)
+			#	select chunks that give actual coverage closest to requested coverage 
+			tmp				<- chs[which.min(abs(GAP_P-gap.p)), IDX_COARSE]
+			chs				<- subset(chs, IDX_COARSE<=tmp)
+			#	copy gaps into alignment
+			gs				<- as.character(msg)
+			for(i in seq_len(nrow(chs)))
+				gs[ chs[i,COPY_TO],  chs[i, seq.int(POS, len=REP)] ]	<- gap.symbol		
+			#	select simulated sequences 
+			gs				<- gs[which(grepl('IDPOP|HOUSE|HXB2',rownames(gs))), ]		
+			tmp				<- apply(gs[which(grepl('IDPOP|HOUSE',rownames(gs))), ],2,function(x) !all(x%in%c('?','n','-')))
+			gs				<- gs[,tmp]		
+			gap.p.sim		<- round( sum(gs=='?') / (nrow(gs)*ncol(gs)), d=2 )
+			#	write to file	
+			gs				<- as.DNAbin(gs)
+			outfile			<- paste(gsub('_SIMULATED','',infile.simu), sprintf('%02g',gap.p*100), '_GAG_SIMULATED.fa', sep='')
+			write.dna(gs, file=file.path(outdir, outfile), format='fasta', colsep='', nbcol=-1)						
+		}
+		
+		#
+		#	process gag+pol prot rt genome runs
+		#
+		
+		#	determine pol start, and use only gag 
+		hxb2	<- as.character(ms[which(grepl('HXB2',rownames(ms))), ])
+		tmp		<- regexpr('t-*a-*t-*g-*t-*a-*g-*a-*t-*g-*g-*g-*g-*c-*a-*g-*c-*t-*a-*a-*c-*a-*g-*g-*g-*a-*g', paste(hxb2, collapse='') )
+		msgp	<- ms[,1:(tmp-1L)]		
+		#	make allocations reproducible	
+		set.seed(gap.seed)
+		#	read chunks from selected gap country sequence (is NA, then read from all PANGEA seqs)		
+		sq				<- msg[ grepl('PG[0-9]+', rownames(msgp)), ]
+		ch				<- seq.get.gap.chunks(sq, gap.symbol=c('?','n'))
+		setnames(ch, 'TAXON', 'PANGEA_ID')
+		ch[, SITE:= gsub('PG[0-9]+-','',regmatches(PANGEA_ID, regexpr('PG[0-9]+-[A-Z]+',PANGEA_ID))) ]
+		
+		for(gap.p in seq(0.02, 0.45, 0.01))
+		{
+			cat('GAG POL',gap.p)
+			#	gap coverage per PANGEA id -- this is the random bit so should be in the loop
+			chs				<- PANGEA.add.gaps.allocate.chunks.to.sequences(ch, msgp)
+			#	select chunks that give actual coverage closest to requested coverage 
+			tmp				<- chs[which.min(abs(GAP_P-gap.p)), IDX_COARSE]
+			chs				<- subset(chs, IDX_COARSE<=tmp)
+			#	copy gaps into alignment
+			gs				<- as.character(msgp)
+			for(i in seq_len(nrow(chs)))
+				gs[ chs[i,COPY_TO],  chs[i, seq.int(POS, len=REP)] ]	<- gap.symbol		
+			#	select simulated sequences 
+			gs				<- gs[which(grepl('IDPOP|HOUSE|HXB2',rownames(gs))), ]		
+			tmp				<- apply(gs[which(grepl('IDPOP|HOUSE',rownames(gs))), ],2,function(x) !all(x%in%c('?','n','-')))
+			gs				<- gs[,tmp]		
+			gap.p.sim		<- round( sum(gs=='?') / (nrow(gs)*ncol(gs)), d=2 )
+			#	write to file	
+			gs				<- as.DNAbin(gs)
+			outfile			<- paste(gsub('_SIMULATED','',infile.simu), sprintf('%02g',gap.p*100), '_GAGPP_SIMULATED.fa', sep='')
+			write.dna(gs, file=file.path(outdir, outfile), format='fasta', colsep='', nbcol=-1)						
+		}
+		#
+		#	save all fasta files as R files without HXB2
+		#
+		infile		<- data.table(FILE=list.files(outdir, pattern='\\.fa'))
+		infile[, SC:= gsub('\\..*','',FILE)]		
+		invisible( infile[, {
+							#FILE<- '150701_Regional_TRAIN202_FULL_SIMULATED.fa'
+							sq	<- read.dna(file.path(outdir,FILE), format='fa')
+							sq	<- sq[!grepl('HXB2', rownames(sq)), ]
+							save(sq, file=file.path(outdir, gsub('.fa','.R',FILE)))					
+						}, by='SC'] )
+	}
 	if(0)
 	{
 		gap.country		<- 'BW'
@@ -2208,15 +2389,15 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 							outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
 							infile.simu		<- '150701_Regional_TRAIN1_SIMULATED'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')	
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)					
 							infile.simu		<- '150701_Regional_TRAIN2_SIMULATED'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
 							infile.simu		<- '150701_Regional_TRAIN3_SIMULATED'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)					
 						}))	
 	}
@@ -2229,15 +2410,15 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 							outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
 							infile.simu		<- '150701_Regional_TRAIN1_SIMULATED'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')	
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)					
 							infile.simu		<- '150701_Regional_TRAIN2_SIMULATED'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
 							infile.simu		<- '150701_Regional_TRAIN3_SIMULATED'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
 						}))	
 	}
@@ -2250,7 +2431,7 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 							outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
 							infile.simu		<- 'Vill_99_Apr15'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')	
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)																		
 						}))						
 		gap.country		<- 'UG'
@@ -2260,7 +2441,7 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 							outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
 							infile.simu		<- 'Vill_99_Apr15'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')	
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)																		
 						}))		
 	}
@@ -2273,7 +2454,7 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 							outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
 							infile.simu		<- 'Vill_98_Jul15'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')	
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)																		
 						}))						
 		gap.country		<- 'UG'
@@ -2283,7 +2464,7 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 							outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
 							infile.simu		<- 'Vill_98_Jul15'
 							outfile			<- paste(infile.simu, '_', gap.country, outfile.cov, '.fa', sep='')	
-							ans				<- PANGEA.add.gaps.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
+							ans				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=outfile, verbose=1)
 							write.dna(ans, file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)																		
 						}))		
 	}
@@ -2305,7 +2486,7 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 					write.dna( tmp, file=paste(outdir, '/', gsub('gag','BWC0',FILE[1]), sep=''), format='fasta', colsep='', nbcol=-1)
 					NULL
 				}, by='SIMU']				
-	}
+	}	
 }	
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 03.07.15

@@ -130,6 +130,23 @@ seq.bootstrap.gd<- function(seq, seqi, tp, repn=10, bsn=1e2, bs.seed=42)
 	tpi
 }
 ##--------------------------------------------------------------------------------------------------------
+#	olli
+##--------------------------------------------------------------------------------------------------------
+seq.get.gap.chunks<- function(sq, gap.symbol=c('?','n'))
+{
+	ch				<- lapply(seq_len(nrow(sq)), function(i)
+			{
+				z	<- gregexpr('1+', paste(as.numeric( as.character( sq[i,] )%in%gap.symbol ), collapse='') )[[1]]
+				data.table(TAXON= rownames(sq)[i], POS=as.integer(z), REP=attr(z,"match.length"))
+			})
+	ch				<- do.call('rbind',ch)	
+	ch				<- subset(ch, POS>0)	
+	ch				<- merge(ch, ch[, list(COV=sum(REP)), by='TAXON'], by='TAXON')
+	ch[, COVP:= COV/ncol(sq)]	
+	ch[, POS_NEXT:= POS+REP]	
+	return( ch )
+}
+##--------------------------------------------------------------------------------------------------------
 #	olli copied from hivclust
 ##--------------------------------------------------------------------------------------------------------
 seq.addrootnode<- function(ph, dummy.label)
@@ -1568,7 +1585,7 @@ PANGEA.add.gaps<- function(indir.simu, indir.gap, infile.simu, infile.gap, gap.c
 #	Function to add gaps into sequences  	
 #	olli originally written 01-07-2015
 ##--------------------------------------------------------------------------------------------------------
-PANGEA.add.gaps.maintain.triplets<- function(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, outfile=NA, verbose=1)
+PANGEA.add.gaps.merge.and.maintain.triplets<- function(indir.simu, indir.gap, infile.simu, infile.gap, verbose=1)
 {			
 	#	find files 		
 	files			<- data.table(FILE=list.files(indir.simu, pattern='\\.fa.*$'))
@@ -1632,7 +1649,8 @@ PANGEA.add.gaps.maintain.triplets<- function(indir.simu, indir.gap, infile.simu,
 	#	(should not be in PANGEA alignment)
 	tmp			<- which(apply(x, 2, function(z) all(z%in%c('-','?','n'))))
 	cat(paste('\nrm common gap columns, n=',length(tmp)))
-	x			<- x[,-tmp]		 
+	if(length(tmp))
+		x		<- x[,-tmp]		 
 	#	check that gaps are only added in triples of 3
 	#	not true. curating alignment manually: can explain all 0110 discrepancies. 
 	#	remove columns that break the codon structure
@@ -1656,14 +1674,12 @@ PANGEA.add.gaps.maintain.triplets<- function(indir.simu, indir.gap, infile.simu,
 		cat(paste('\npositions of large non-triplet gaps that are removed',paste(tmp, collapse=', ')))
 		x		<- x[,-tmp]
 	}
-	if(!is.na(outfile))		
-	{
-		#	keep merged alignment for back-compatibility
-		write.dna(as.DNAbin(x),file=paste(indir.simu,'/',gsub('\\.fa','_RMGPS\\.fa',outfile),sep=''),format='fasta', colsep='', nbcol=-1)	
-	}
-	#	check that total no of gaps is now divisible by 3
-	tmp			<- apply( x[ grepl('IDPOP|HOUSE', rownames(x)), ], 1, function(z)	sum(z=='-')	)	
-	#stopifnot( all(tmp%%3==0) )
+	x			<- as.DNAbin(x)
+	x
+}
+
+PANGEA.add.gaps.simulate<- function(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, verbose=1)
+{			
 	#
 	#	randomly select gaps from sequences in infile.gap from non-missing sequences
 	#
@@ -1682,6 +1698,49 @@ PANGEA.add.gaps.maintain.triplets<- function(indir.simu, indir.gap, infile.simu,
 	tmp			<- list.files(indir.simu, pattern='^TMP', full.names=TRUE)
 	file.remove(tmp)	
 	sgp		
+}
+##--------------------------------------------------------------------------------------------------------	
+#	olli originally written 29-07-2016
+##--------------------------------------------------------------------------------------------------------
+PANGEA.add.gaps.allocate.chunks.to.sequences<- function(ch, ms)
+{
+	chs			<- copy(ch)
+	chs[, IDX:= sample(nrow(chs))]
+	setkey(chs, IDX)
+	dfg			<- data.table(IDXSIM= which(grepl('IDPOP|HOUSE',rownames(ms))))
+	#	preallocate: sample gap chunks at random onto simulated sequences
+	chs[, COPY_TO:= sample(dfg[, IDXSIM], nrow(chs), replace=TRUE)]
+	#	for every new added chunk that could be added, calculate the resulting proportion of gaps in the alignment
+	chs[, IDX_COARSE:= ceiling(IDX/1e2)]
+	tmp			<- chs[, {
+				#IDX<- 2000
+				z	<- IDX_COARSE
+				z	<- subset(chs, IDX_COARSE<=z)
+				setkey(z, COPY_TO, POS)
+				# merge overlapping gaps
+				ans	<- z[, {
+							tmp	<- which( POS_NEXT[-length(POS_NEXT)]>POS[-1] )[1]
+							#print(COPY_TO); print(POS_NEXT[-length(POS_NEXT)]); print(POS[-1]); print(tmp)								
+							while(!is.na(tmp))
+							{									
+								POS_NEXT[tmp]	<- apply(rbind(POS_NEXT[tmp],POS_NEXT[tmp+1L]), 2, max)
+								POS_NEXT[tmp+1L]<- POS_NEXT[tmp]
+								POS[tmp+1L]		<- POS[tmp]
+								#print(POS); print(POS_NEXT)
+								POS			<- POS[-tmp]
+								POS_NEXT	<- POS_NEXT[-tmp]
+								tmp			<- which( POS_NEXT[-length(POS_NEXT)]>POS[-1] )[1]
+							}	
+							#print(POS); print(POS_NEXT)
+							stopifnot(length(POS)==length(POS_NEXT))
+							list(POS_START=POS, POS_END=POS_NEXT-1L)								
+						}, by='COPY_TO']					
+				ans	<- ans[, sum(POS_END-POS_START)] / (nrow(dfg) * ncol(ms))
+				list(GAP_P=ans)
+			}, by='IDX_COARSE']
+	tmp
+	chs			<- merge(chs, tmp, by='IDX_COARSE')
+	chs
 }
 ##--------------------------------------------------------------------------------------------------------
 #	return evolutionary rate modifier sampler for transmission edges	
