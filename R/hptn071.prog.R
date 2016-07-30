@@ -210,7 +210,8 @@ pipeline.various<- function()
 		require(ape)
 		require(big.phylo)	
 		
-		indir		<- '~/git/HPTN071sim/treecomparison/withgaps_160729'
+		indir		<- '~/git/HPTN071sim/treecomparison/withgaps_160729'		
+		indir		<- file.path(DATA, 'gpsi')
 		infile		<- data.table(FILE=list.files(indir, pattern='\\.R'))
 		infile[, SC:= gsub('\\..*','',FILE)]
 		tmp			<- data.table(PARTITION=list.files(indir, pattern='\\.txt'))
