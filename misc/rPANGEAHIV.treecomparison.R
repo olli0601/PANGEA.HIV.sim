@@ -2510,16 +2510,6 @@ treecomparison.submissions.160627<- function()
 	#	RAxML gag_1606 are old
 	set(submitted.info, submitted.info[, which(TEAM=='RAXML' & grepl('gag_gene_1606',FILE))], 'OTHER', 'Y')
 	#
-	#	number taxa in tree
-	#
-	setkey(submitted.info, IDX)
-	submitted.info[, TAXAN:= sapply(strs, Ntip)]
-	#
-	#	are trees rooted?
-	#
-	setkey(submitted.info, IDX)
-	submitted.info[, ROOTED:=factor(sapply(strs, is.rooted),levels=c(TRUE,FALSE),labels=c('Y','N'))]
-	#
 	#	add BRL_UNITS
 	#
 	submitted.info[, BRL:='subst']
@@ -2548,8 +2538,7 @@ treecomparison.submissions.160627<- function()
 	for(i in seq_along(ttrs))
 	{
 		ttrs[[i]]$tip.label	<- toupper(ttrs[[i]]$tip.label)
-	}	
-	### error here?
+	}		
 	tmp2	<- subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA))
 	setkey(tmp2, IDPOP,SC,TAXA)
 	tmp2	<- unique(tmp2)
@@ -2573,6 +2562,36 @@ treecomparison.submissions.160627<- function()
 		setkey(z, IDX)
 		strs[[i]]$tip.label	<- z[, TAXA]		
 	}
+	#
+	#	check labels and remove labels that do not appear in the observed tree
+	#
+	tmp	<- submitted.info[, {				
+				stree		<- unroot(strs[[IDX]])
+				otree		<- unroot(ttrs[[TIME_IDX_T]])				
+				z			<- setdiff(otree$tip.label, stree$tip.label)
+				list(CHECK= length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+			}, by='IDX']
+	tmp	<- merge(subset(tmp, !CHECK), submitted.info, by='IDX')
+	for(i in seq_len(nrow(tmp)))
+	{
+		j			<- tmp[i, IDX]
+		otree		<- tmp[i, TIME_IDX_T]
+		stree		<- unroot(strs[[j]])
+		otree		<- unroot(ttrs[[otree]])					
+		z			<- merge( data.table(TAXA=stree$tip.label, TYPE='s'), data.table(TAXA=otree$tip.label, TYPE='o'), by='TAXA', all=1)
+		z[, IDPOP:= gsub('IDPOP_','',regmatches(TAXA, regexpr('IDPOP_[0-9]+',TAXA)))]	
+		strs[[j]]	<- drop.tip(stree, subset( z, is.na(TYPE.y))[, TAXA])		
+	}
+	#
+	#	number taxa in tree
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, TAXAN:= sapply(strs, Ntip)]
+	#
+	#	are trees rooted?
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, ROOTED:=factor(sapply(strs, is.rooted),levels=c(TRUE,FALSE),labels=c('Y','N'))]	
 	#
 	#	SAVE so far
 	#
