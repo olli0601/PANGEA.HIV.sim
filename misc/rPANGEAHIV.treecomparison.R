@@ -4,7 +4,7 @@
 #
 #	compute path differences on complete trees
 #
-treedist.pathdifference.wrapper<- function(submitted.info, ttrs, strs)
+treedist.pathdifference.wrapper<- function(submitted.info, ttrs, strs_rtt)
 {
 	#tmp			<- subset(submitted.info, IDX==463)[1,]
 	#IDX<- 463
@@ -26,7 +26,7 @@ treedist.pathdifference.wrapper<- function(submitted.info, ttrs, strs)
 #--------------------------------------------------------------------------------------------------------
 #
 #--------------------------------------------------------------------------------------------------------
-treedist.pathdifference.clusters.wrapper<- function(submitted.info, ttrs, strs, tinfo)
+treedist.pathdifference.clusters.wrapper<- function(submitted.info, ttrs, strs_rtt, tinfo)
 {
 	#
 	setkey(tinfo, IDX_T)
@@ -64,7 +64,7 @@ treedist.pathdifference.clusters.wrapper<- function(submitted.info, ttrs, strs, 
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 01.08.16	compute quartet differences on complete trees
 ##--------------------------------------------------------------------------------------------------------
-treedist.quartetdifference.wrapper<- function(submitted.info, ttrs, strs)
+treedist.quartetdifference.wrapper<- function(submitted.info, ttrs, strs_rtt)
 {
 	tmp				<- submitted.info[, {
 				cat('\nAt IDX', IDX)
@@ -85,7 +85,7 @@ treedist.quartetdifference.wrapper<- function(submitted.info, ttrs, strs)
 #--------------------------------------------------------------------------------------------------------
 #	olli 01.08.16	compute quartet differences on sub trees
 #--------------------------------------------------------------------------------------------------------
-treedist.quartetdifference.clusters.wrapper<- function(submitted.info, ttrs, strs, tinfo)
+treedist.quartetdifference.clusters.wrapper<- function(submitted.info, ttrs, strs_rtt, tinfo)
 {
 	setkey(tinfo, IDX_T)
 	tmp		<- subset(submitted.info, MODEL=='R')[, {
@@ -2713,7 +2713,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs_rtt)
 		submitted.info	<- merge(submitted.info, tmp, by='IDX')
 		#	compute Robinson Fould of clusters, then take sum
-		tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
+		tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs_rtt, tinfo)
 		sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')	
 		#	save intermediate	
 		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_03RF.rda',file))
@@ -2727,10 +2727,10 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#
 		#	path distance of complete trees
 		#
-		tmp				<- treedist.pathdifference.wrapper(submitted.info, ttrs, strs)
+		tmp				<- treedist.pathdifference.wrapper(submitted.info, ttrs, strs_rtt)
 		submitted.info	<- merge(submitted.info, tmp, by='IDX')
 		#	path distance of clusters		
-		tmp				<- treedist.pathdifference.clusters.wrapper(submitted.info, ttrs, strs, tinfo)	
+		tmp				<- treedist.pathdifference.clusters.wrapper(submitted.info, ttrs, strs_rtt, tinfo)	
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))
 		#	save intermediate	
 		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_04PD.rda',file))
@@ -2744,10 +2744,10 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#
 		#	quartet distances of complete trees
 		#
-		tmp				<- treedist.quartetdifference.wrapper(submitted.info, ttrs, strs)
+		tmp				<- treedist.quartetdifference.wrapper(submitted.info, ttrs, strs_rtt)
 		submitted.info	<- merge(submitted.info, tmp, by='IDX')
 		#	quartet distance of clusters		
-		tmp				<- treedist.quartetdifference.clusters.wrapper(submitted.info, ttrs, strs, tinfo)	
+		tmp				<- treedist.quartetdifference.clusters.wrapper(submitted.info, ttrs, strs_rtt, tinfo)	
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))
 		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_05QD.rda',file))
 	}
