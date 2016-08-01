@@ -6,9 +6,6 @@
 #
 treedist.pathdifference.wrapper<- function(submitted.info, ttrs, strs)
 {
-	require(ape)
-	require(phangorn)
-	require(data.table)	
 	#tmp			<- subset(submitted.info, IDX==463)[1,]
 	#IDX<- 463
 	#IDX_T<-7
@@ -63,6 +60,64 @@ treedist.pathdifference.clusters.wrapper<- function(submitted.info, ttrs, strs, 
 				ans			
 			}, by='IDX']	
 	tmp	
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 01.08.16	compute quartet differences on complete trees
+##--------------------------------------------------------------------------------------------------------
+treedist.quartetdifference.wrapper<- function(submitted.info, ttrs, strs)
+{
+	tmp				<- submitted.info[, {
+				cat('\nAt IDX', IDX)
+				#IDX<- 241; TIME_IDX_T<- 6
+				stree		<- unroot(strs_rtt[[IDX]])
+				otree		<- unroot(ttrs[[TIME_IDX_T]])								
+				#print(stree)
+				#print(otree)
+				z			<- setdiff(otree$tip.label, stree$tip.label)
+				stopifnot( length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+				if(length(z))
+					otree	<- unroot(drop.tip(otree, z))				
+				z			<- quartets.distance.cmd(otree, stree)
+				list(TAXA_NJ=z['TAXA_NJ'], NQD=z['NQD'])
+			}, by='IDX']
+	tmp
+}
+#--------------------------------------------------------------------------------------------------------
+#	olli 01.08.16	compute quartet differences on sub trees
+#--------------------------------------------------------------------------------------------------------
+treedist.quartetdifference.clusters.wrapper<- function(submitted.info, ttrs, strs, tinfo)
+{
+	setkey(tinfo, IDX_T)
+	tmp		<- subset(submitted.info, MODEL=='R')[, {
+				cat('\nAt IDX', IDX)
+				#	IDX<- 1; SUB_IDX_T<- 1
+				stree		<- strs_rtt[[IDX]]
+				otree		<- ttrs[[SUB_IDX_T]]				
+				#	get all clusters of this true tree (with IDX_T) that are of size>=3 (use "tinfo" for that)
+				z			<- subset(tinfo, CLU_N>3 & IDX_T==SUB_IDX_T)	
+				setkey(z, TAXA)
+				z			<- unique(z)				
+				z			<- merge(z, data.table(TAXA=stree$tip.label, IN_STREE=1), by='TAXA', all.x=1)
+				#	calculate the size of these clusters in the simulated tree
+				z			<- merge(z, z[, list(CLU_NS= length(which(IN_STREE==1))), by='IDCLU'], by='IDCLU')
+				#	get all clusters of size >= 3 in both the simulated and true tree
+				z			<- subset(z, CLU_NS>3)
+				#	if there any such clusters, calculate the quartet distance
+				if(nrow(z))
+				{
+					#IDCLU	<- 6; TAXA	<- subset(z, IDCLU==6)[, TAXA]
+					ans		<- z[, {								
+								sclu	<- unroot(drop.tip(stree, setdiff(stree$tip.label,TAXA)))
+								oclu	<- unroot(drop.tip(otree, union( setdiff(otree$tip.label, stree$tip.label), setdiff(otree$tip.label,TAXA))))
+								z		<- quartets.distance.cmd(oclu, sclu)
+								list(NQDC=z['NQD'])
+							}, by='IDCLU']	
+				}
+				if(!nrow(z))
+					ans		<- data.table(IDCLU=NA_integer_, NQDC=NA_real_)
+				ans			
+			}, by='IDX']	
+	tmp			
 }
 #--------------------------------------------------------------------------------------------------------
 #
@@ -621,8 +676,7 @@ treedist.closest.ind<- function(ph, model.reg)
 ##	olli 03.12.15
 ##--------------------------------------------------------------------------------------------------------
 treedist.robinsonfould.wrapper<- function(submitted.info, ttrs, strs, check.binary.sim=TRUE)
-{
-	require(phangorn)
+{	
 	setkey(submitted.info, IDX)
 	#tmp				<- subset(submitted.info, IDX==321)[1,]
 	#IDX<- 321;	TIME_IDX_T<-1
@@ -653,7 +707,6 @@ treedist.robinsonfould.wrapper<- function(submitted.info, ttrs, strs, check.bina
 ##--------------------------------------------------------------------------------------------------------
 treedist.robinsonfouldclusters.wrapper<- function(submitted.info, ttrs, strs, tinfo)
 {
-	require(phangorn)
 	#tmp		<- subset(submitted.info, MODEL=='Model: Regional')[1,]	
 	#IDX<- 1; TIME_IDX_T<-12		
 	setkey(tinfo, IDX_T)
@@ -1610,7 +1663,16 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	require(data.table)
 	require(ggplot2)
 	
-	wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+	wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
+	infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'	
+	#	create tp with IDs -- need this to complete to matrix	
+	seq		<- read.dna(file.path(indir, infile), format='fa')
+	tp		<- as.data.table( t(combn(rownames(seq),2)) )		
+	setnames(tp, c('V1','V2'), c('TAXA1','TAXA2'))
+	tmp		<- as.data.table( t(combn(seq_len(nrow(seq)),2)) )
+	setnames(tmp, c('V1','V2'), c('ID1','ID2'))
+	tp		<- cbind(tp, tmp)
 	#
 	#	read genetic distances between taxon pairs
 	#		
@@ -1618,14 +1680,115 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	infiles[, BATCH:= as.integer(gsub('BATCH','',regmatches(FILE, regexpr('BATCH[0-9]+', FILE))))]
 	setkey(infiles, BATCH)
 	#	not yet completed
-	infiles[, setdiff(seq.int(1,400), BATCH)]
+	stopifnot( infiles[, length(setdiff(seq.int(1,400), BATCH))==0]	)
 	#	read files
-	tp		<- infiles[1,][, {
-				load(FILE)
-				tpi
-			}, by='FILE']
-	tp[, FILE:=NULL]	
-	set(tp, NULL, 'GENE', tp[, factor(GENE, levels=c('gag','pol','env','gag+pol+env'), labels=c('gag','pol','env','gag+pol+env'))])
+	tmp		<- lapply(infiles[, FILE], function(x)
+		{
+			load(x)
+			merge(tp, tpi, by=c('TAXA1','TAXA2'))
+		})
+	tp		<- do.call('rbind', tmp)	
+	setkey(tp, ID1, ID2)
+	tp[, GD_V:= GD_SD*GD_SD]
+	#	select (rep 1 gag+pol+env)
+	tps				<- subset(tp, REP==1 & GENE=='gag+pol+env')
+	#	get distance matrix
+	tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD')		
+	d				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
+	d				<- rbind(d, NA_real_)
+	colnames(d)[1]	<- setdiff( as.character(tmp[, ID1]), colnames(d) )
+	rownames(d)		<- colnames(d)
+	diag(d)			<- 0
+	#	complete lower triangular from upper triangular and vice versa
+	tmp				<- lower.tri(d) & is.na(d)	
+	d[tmp]			<- t(d)[tmp]
+	tmp				<- upper.tri(d) & is.na(d)
+	d[tmp]			<- t(d)[tmp]
+	#	reset names
+	tmp				<- subset( tps, select=c(TAXA1, ID1) )
+	setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
+	tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
+	setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )
+	setkey(tmp, ID)
+	rownames(d)		<- tmp[, TAXA]
+	colnames(d)		<- tmp[, TAXA]
+	#	checks	
+	stopifnot(ncol(d)==nrow(d))
+	stopifnot(length(which(is.na(d)))==2*nrow(subset(tps, is.na(GD))))
+	cat('D matrix: proportion of NA entries=',length(which(is.na(d))) / prod(dim(d)))
+	#
+	#	get variance matrix
+	#
+	tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD_V')		
+	v				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
+	v				<- rbind(v, NA_real_)
+	colnames(v)[1]	<- setdiff( as.character(tmp[, ID1]), colnames(v) )
+	rownames(v)		<- colnames(v)
+	diag(v)			<- 0
+	#	complete lower triangular from upper triangular and vice versa
+	tmp				<- lower.tri(v) & is.na(v)	
+	v[tmp]			<- t(v)[tmp]
+	tmp				<- upper.tri(v) & is.na(v)
+	v[tmp]			<- t(v)[tmp]
+	#	reset names
+	tmp				<- subset( tps, select=c(TAXA1, ID1) )
+	setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
+	tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
+	setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )
+	setkey(tmp, ID)
+	rownames(v)		<- tmp[, TAXA]
+	colnames(v)		<- tmp[, TAXA]
+	#	checks	
+	stopifnot(ncol(v)==nrow(v))	
+	cat('V matrix: proportion of NA entries=',length(which(is.na(v))) / prod(dim(v)))
+	#
+	#	
+	#
+	na.rm.p		<- 0.1
+	diag(d)		<- NA_real_
+	diag(v)		<- NA_real_
+	tmp			<- apply(d, 1, function(x) !all(is.na(x)))
+	cat('\nIn D: found',length(which(!tmp)),'columns / rows with NA only: remove in D and V. ', rownames(d)[!tmp])
+	ds			<- d[tmp,tmp]
+	vs			<- v[tmp,tmp]	
+	tmp			<- apply(vs, 1, function(x) !all(is.na(x)))
+	cat('\nIn V: found additional',length(which(!tmp)),'columns / rows with NA only: remove in D and V too. ', rownames(d)[!tmp])
+	ds			<- ds[tmp,tmp]
+	vs			<- vs[tmp,tmp]	
+	
+	tmp			<- apply(ds, 1, function(x) length(which(is.na(x))) ) / ncol(ds)
+	tmp			<- which(tmp>na.rm.p)
+	cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
+	ds			<- ds[-tmp,-tmp]
+	vs			<- vs[-tmp,-tmp]	
+	ph			<- mvrs(ds, vs, fs = 15)
+	
+	ds[, ]
+	
+	ds			<- as.dist(ds)
+	vs			<- as.dist(vs)
+	ph			<- mvrs(ds, vs, fs = 15)
+	
+	which(!tmp)
+	
+	which(apply(d, 1, function(x) all(is.na(x))))
+	
+	d[1:30, which(is.na(d[1, ]))]
+	tmp			<- which(apply(ds, 1, function(x) any(is.na(x))))
+	system.time({ ph	<- mvrs(d, v, fs = 100) })
+
+
+	tmp			<- dcast.data.table(tps, TAXA1~TAXA2, value.var='GD_V')
+	v			<- as.matrix(tmp[, -1, with=FALSE])
+	rownames(v)	<- tmp[, TAXA1]
+	stopifnot(ncol(v)==nrow(v))
+	#	run mvrs 
+	
+	TAXA1	<- tmp[, TAXA1]
+	TAXA2	<- tmp[, TAXA2]
+	GD		<- tmp[, GD]
+	
+	unique(TAXA1)
 	
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -1719,13 +1882,38 @@ treecomparison.bootstrap.gd.dev<- function()
 	seqi	<- subset(seqi, select=c(GENE,START,END))
 	#seqi	<- rbind(seqi, data.table(GENE='full', START=1L, END= seqi[, max(END)]))
 		
-	tp		<- as.data.table( t(combn(rownames(seq),2)) )
+	
+	tp		<- as.data.table( t(combn(rownames(seq),2)) )	
+	#tp		<- as.data.table( t(combn(sample(50, 10),2)) )	#this won t work. we need the specific ordering of the IDs that is used to create the combinations
 	setnames(tp, c('V1','V2'), c('TAXA1','TAXA2'))
+	tmp		<- as.data.table( t(combn(seq_len(nrow(seq)),2)) )
+	setnames(tmp, c('V1','V2'), c('ID1','ID2'))
+	tp		<- cbind(tp, tmp)
 	tp[, IDX:= seq_len(nrow(tp))]
 	#	subset by batch
 	tp[, BATCH:= ceiling(IDX/batch.n)]
 	if(!is.na(batch.i))
 		tp	<- subset(tp, BATCH==batch.i)
+	
+	tmp				<- dcast.data.table(tp, TAXA1~TAXA2, value.var='IDX')
+	d				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
+	d				<- rbind(d, NA_real_)
+	colnames(d)[1]	<- setdiff( as.character(tmp[, TAXA1]), colnames(d) )	
+	rownames(d)		<- colnames(d)
+	diag(d)			<- 0
+	#	complete lower triangular from upper triangular and vice versa
+	tmp		<- lower.tri(d) & is.na(d)	
+	d[tmp]	<- t(d)[tmp]
+	tmp		<- upper.tri(d) & is.na(d)
+	d[tmp]	<- t(d)[tmp]
+	#	
+	
+	subset(tps, is.na(GD))
+	
+	stopifnot(ncol(d)==nrow(d))
+	cat('proportion of NA entries=',length(which(is.na(d))) / prod(dim(d)))
+	
+	
 	#for each pair, estimate: actual distance, mean distance, variance in distance:
 	#	(do this pairwise because otherwise too computationally expensive
 	#	by gene
@@ -1983,6 +2171,33 @@ treecomparison.submissions.160627<- function()
 				list(TAXA=rownames(z), GPS=ans)				
 			}, by=c('SC','BRL_T')]
 	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all.x=1)
+	#	add % gaps by gene for regional
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	infiles	<- data.table(FILE=list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$'))
+	infiles[, SC:= toupper(gsub('_SIMULATED.fa','',basename(FILE)))]
+	tmp		<- infiles[, {
+				#FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN4_SIMULATED.fa"
+				sq	<- read.dna(FILE, format='fa')
+				seqi<- as.data.table(read.csv(gsub('.fa','_gene.txt',FILE), header=FALSE))
+				seqi[, GENE:= regmatches(V2, regexpr('[a-z]+', V2))]
+				seqi[, START:= as.integer(gsub('-','',regmatches(V2, regexpr('[0-9]+-', V2))))]
+				seqi[, END:= as.integer(gsub('-','',regmatches(V2, regexpr('-[0-9]+', V2))))]
+				seqi	<- subset(seqi, select=c(GENE,START,END))
+				seqi	<- rbind(seqi, data.table(GENE='full', START=1L, END= seqi[, max(END)]))				
+				ans		<- seqi[, {
+							#START<- 1474; END<- 5466
+							z	<- as.character(sq[,START:END])
+							tmp	<- apply(z, 2, function(x) all(x%in%c('-','?'))) 							
+							z	<- z[, !tmp]
+							tmp	<- apply(z, 1, function(x) length(which(x=='?'))) / ncol(z)
+							list(TAXA=names(tmp), GAPS_P=tmp)
+						}, by='GENE']
+				set(ans, NULL, 'GENE', ans[, paste(toupper(GENE),'_GAPS_P',sep='')])
+				ans		<- dcast.data.table(ans, TAXA~GENE, value.var='GAPS_P')
+				ans
+			}, by='SC']
+	tmp		<- tmp[, list(FULL_GAPS_P=mean(FULL_GAPS_P), GAG_GAPS_P=mean(GAG_GAPS_P), POL_GAPS_P=mean(POL_GAPS_P), ENV_GAPS_P=mean(ENV_GAPS_P)), by='SC']
+	tinfo	<- merge(tinfo, tmp, all.x=1, by='SC')	
 	#
 	# to tinfo add actual transmitters
 	#
@@ -2078,6 +2293,18 @@ treecomparison.submissions.160627<- function()
 								}, by='IDX_T']
 	tinfo			<- merge(tinfo, tmp, by=c('IDX_T','TAXA'), all.x=1)
 	#
+	# compute closest individual on true trees
+	#
+	tmp				<- unique(subset(tinfo, select=c(SC, BRL_T, IDX_T)))
+	tmp				<- tmp[, {
+				print(IDX_T)
+				ph			<- ttrs[[IDX_T]]
+				model.reg	<- grepl('REGIONAL',SC)
+				treedist.closest.ind(ph, model.reg)
+			}, by=c('SC','BRL_T','IDX_T')]
+	tinfo			<- merge(tinfo, tmp, by=c('SC','BRL_T','IDX_T','IDPOP'))
+	set(tinfo, NULL, 'IDPOP_CL', tinfo[, gsub('IDPOP_','',IDPOP_CL)])	
+	#
 	#	get submitted trees
 	#	
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
@@ -2090,7 +2317,9 @@ treecomparison.submissions.160627<- function()
 	infiles	<- c(infiles, list.files(indir, pattern='*tree*', recursive=1, full.names=1))
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
 	infiles	<- c(infiles, list.files(indir, pattern='*RAxML_bestTree*', recursive=1, full.names=1))
-	infiles	<- c(infiles, list.files(indir, pattern="best_tree", recursive=1, full.names=1))
+	infiles	<- c(infiles, list.files(indir, pattern="best_tree", recursive=1, full.names=1))	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps'
+	infiles	<- c(infiles, list.files(indir, pattern="newick", recursive=1, full.names=1))	
 	infiles	<- data.table(FILE=infiles)
 	strs	<- lapply(infiles[, FILE], function(x)
 			{
@@ -2108,29 +2337,26 @@ treecomparison.submissions.160627<- function()
 				cat(x)
 				read.tree(file=x)	
 			})	
-	MetaPIGA.trees			<- vector('list', sum(sapply(tmp.trees, length)))
-	for(i in seq_along(tmp.trees))				
-		for(j in seq_along(tmp.trees[[i]]))
-			MetaPIGA.trees[[j+(i-1)*length(tmp.trees[[1]])]]	<- tmp.trees[[i]][[j]]	
+	MetaPIGA.trees			<- c(tmp.trees[[1]],tmp.trees[[2]],tmp.trees[[3]],tmp.trees[[4]],tmp.trees[[5]],tmp.trees[[6]])
 	tmp						<- sapply( seq_along(tmp), function(i) paste(gsub('.txt','',tmp[i]), '_tree', seq_along(tmp.trees[[i]]), sep='') )
-	names(MetaPIGA.trees)	<- as.vector(tmp)
-	strs					<- c(strs, MetaPIGA.trees)
+	names(MetaPIGA.trees)	<- unlist(tmp)
+	strs					<- c(strs, unclass(MetaPIGA.trees))
 	#
-	#	add MetaPIGA full genome trees, version 150831. stored as nexus
+	#	add MetaPIGA trees, version 150831. stored as nexus
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_150831'
-	tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
-	tmp		<- data.table(FILE=tmp)	
-	tmp.trees			<- lapply(tmp[, FILE], function(x)
-			{
-				cat(x)
-				read.nexus(file=x)	
-			})
-	sapply(tmp.trees, length)
-	MetaPIGA.trees			<- c(lapply(tmp.trees, '[[', 1), lapply(tmp.trees, '[[', 2), lapply(tmp.trees, '[[', 3), lapply(tmp.trees, '[[', 4))
-	names(MetaPIGA.trees)	<- c(sapply(tmp.trees, function(x) paste(names(x)[1],'_use',sep='')), sapply(tmp.trees, function(x) names(x)[2]), sapply(tmp.trees, function(x) names(x)[3]), sapply(tmp.trees, function(x) names(x)[4]))	
-	names(MetaPIGA.trees)	<- gsub("'",'',names(MetaPIGA.trees), fixed=1)	
-	strs					<- c(strs, MetaPIGA.trees)
+	#indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_150831'
+	#tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
+	#tmp		<- data.table(FILE=tmp)	
+	#tmp.trees			<- lapply(tmp[, FILE], function(x)
+	#		{
+	#			cat(x)
+	#			read.nexus(file=x)	
+	#		})
+	#sapply(tmp.trees, length)
+	#MetaPIGA.trees			<- c(lapply(tmp.trees, '[[', 1), lapply(tmp.trees, '[[', 2), lapply(tmp.trees, '[[', 3), lapply(tmp.trees, '[[', 4))
+	#names(MetaPIGA.trees)	<- c(sapply(tmp.trees, function(x) paste(names(x)[1],'_use',sep='')), sapply(tmp.trees, function(x) names(x)[2]), sapply(tmp.trees, function(x) names(x)[3]), sapply(tmp.trees, function(x) names(x)[4]))	
+	#names(MetaPIGA.trees)	<- gsub("'",'',names(MetaPIGA.trees), fixed=1)	
+	#strs					<- c(strs, MetaPIGA.trees)
 	#
 	#
 	#
@@ -2143,7 +2369,8 @@ treecomparison.submissions.160627<- function()
 	set(submitted.info, submitted.info[, which(grepl('RAXML|RAxML',FILE))], 'TEAM', 'RAXML')
 	set(submitted.info, submitted.info[, which(grepl('IQTree',FILE))], 'TEAM', 'IQTree')
 	set(submitted.info, submitted.info[, which(grepl('MetaPIGA|Consensus pruning|Best individual of population',FILE))], 'TEAM', 'MetaPIGA')
-	set(submitted.info, submitted.info[, which(grepl('PhyML',FILE))], 'TEAM', 'PhyML')	
+	set(submitted.info, submitted.info[, which(grepl('PhyML',FILE))], 'TEAM', 'PhyML')
+	set(submitted.info, submitted.info[, which(grepl('running_gaps',FILE))], 'TEAM', 'RUNGAPS_ExaML')	
 	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )	
 	#
 	#	scenario
@@ -2168,6 +2395,12 @@ treecomparison.submissions.160627<- function()
 	set(submitted.info, tmp, 'SC', submitted.info[tmp, gsub('150701_VILL_SCENARIO','150701_VILL_SCENARIO-',SC)])
 	stopifnot( submitted.info[, length(which(is.na(SC)))==0] )
 	#
+	#	define running gaps for the running gaps analysis
+	#
+	submitted.info[, RUNGGAPS:=NA_real_]	
+	tmp		<- submitted.info[, which(TEAM=='RUNGAPS_ExaML')]
+	set(submitted.info, tmp, 'RUNGAPS', submitted.info[tmp, as.numeric(gsub('TRAIN[0-9]','',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
+	#
 	#	set covariates of scenarios
 	#
 	tmp		<- data.table(	SC=		c("150701_REGIONAL_TRAIN1","150701_REGIONAL_TRAIN2","150701_REGIONAL_TRAIN3","150701_REGIONAL_TRAIN4" ,"150701_REGIONAL_TRAIN5", "150701_VILL_SCENARIO-A", "150701_VILL_SCENARIO-B", "VILL_99_APR15","150701_VILL_SCENARIO-C", "150701_VILL_SCENARIO-D", "150701_VILL_SCENARIO-E"),
@@ -2189,12 +2422,19 @@ treecomparison.submissions.160627<- function()
 	set(submitted.info, submitted.info[, which(TEAM=='PhyML' & grepl('gag', FILE))], 'GENE', 'GAG')
 	set(submitted.info, submitted.info[, which(TEAM=='PhyML' & grepl('pol', FILE))], 'GENE', 'POL')
 	set(submitted.info, submitted.info[, which(TEAM=='PhyML' & grepl('gagpolenv', FILE))], 'GENE', 'GAG+POL+ENV')
-	stopifnot(nrow(subset(submitted.info, TEAM=='RAXML' & is.na(GENE)))==0)
-	set(submitted.info, submitted.info[, which(TEAM=='MetaPIGA')], 'GENE', 'GAG+POL+ENV')	
+	stopifnot(nrow(subset(submitted.info, TEAM=='RAXML' & is.na(GENE)))==0)	
+	set(submitted.info, submitted.info[, which(TEAM=='MetaPIGA' & grepl('gag', FILE))], 'GENE', 'GAG')
+	set(submitted.info, submitted.info[, which(TEAM=='MetaPIGA' & grepl('all', FILE))], 'GENE', 'GAG+POL+ENV')
+	stopifnot(nrow(subset(submitted.info, TEAM=='MetaPIGA' & is.na(GENE)))==0)
 	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & grepl('[0-9]_partition', FILE))], 'GENE', 'GAG+POL+ENV')
 	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & grepl('[0-9]_pol_partition', FILE))], 'GENE', 'POL')
 	set(submitted.info, submitted.info[, which(TEAM=='IQTree' & grepl('[0-9]_gag_partition', FILE))], 'GENE', 'GAG')
 	stopifnot(nrow(subset(submitted.info, TEAM=='IQTree' & is.na(GENE)))==0)	
+	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML' & grepl('FULL_SIMULATED', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML' & grepl('GAG_SIMULATED', FILE))], 'GENE', 'GAG')
+	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML' & grepl('GAGPP_SIMULATED', FILE))], 'GENE', 'GAG+PARTIALPOL')
+	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML' & grepl('P17_SIMULATED', FILE))], 'GENE', 'P17')
+	stopifnot(nrow(subset(submitted.info, TEAM=='RUNGAPS_ExaML' & is.na(GENE)))==0)
 	#
 	#	best tree for each scenario
 	#
@@ -2235,6 +2475,8 @@ treecomparison.submissions.160627<- function()
 				'150701_Regional_TRAIN4_IQTree160530_gag_partition_123_02')
 	tmp	<- sapply(tmp, function(x) submitted.info[, which((grepl('IQTREE_Update_gag', FILE, fixed=1)) & grepl(x, FILE, fixed=1))] )
 	set(submitted.info, tmp, 'BEST', 'Y')
+	#	for RUNGAPS_ExaML we only have one tree per gap coverage, so all are 'best'
+	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML')], 'BEST', 'Y')
 	#	PhyML: read log likelihood	 
 	lkl		<- data.table(FILE= list.files('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML', pattern='*phyml_stats*', recursive=1, full.names=1))
 	lkl		<- lkl[, {
@@ -2308,13 +2550,16 @@ treecomparison.submissions.160627<- function()
 	{
 		ttrs[[i]]$tip.label	<- toupper(ttrs[[i]]$tip.label)
 	}	
-	###
+	### error here?
+	tmp2	<- subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA))
+	setkey(tmp2, IDPOP,SC,TAXA)
+	tmp2	<- unique(tmp2)
 	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='R')[, IDX]
 	for(i in tmp)
 	{		
 		cat(i,'\n')
 		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('IDPOP_[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
-		z	<- merge(unique(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA))), z, by=c('IDPOP','SC'))
+		z	<- merge(tmp2, z, by=c('IDPOP','SC'))
 		setkey(z, IDX)
 		stopifnot(nrow(z)==Ntip(strs[[i]]))
 		strs[[i]]$tip.label	<- z[, TAXA]			
@@ -2322,13 +2567,29 @@ treecomparison.submissions.160627<- function()
 	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='V')[, IDX]
 	for(i in tmp)
 	{
-		
+		cat(i,'\n')
 		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
-		z	<- merge(unique(subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA))), z, by=c('IDPOP','SC'))
+		z	<- merge(tmp2, z, by=c('IDPOP','SC'))
 		stopifnot(nrow(z)==length(strs[[i]]$tip.label))
 		setkey(z, IDX)
 		strs[[i]]$tip.label	<- z[, TAXA]		
 	}
+	#
+	#	SAVE so far
+	#
+	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	save(strs, ttrs, tinfo, tfiles, submitted.info, file=file.path(outdir,'submitted_160713.rda'))	
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.submissions.160627.stuffoncluster<- function(file)	
+{
+	require(data.table)
+	require(ape)
+	require(phangorn)
+	
+	load(file)	
 	#
 	#	re-root simulated trees with rtt
 	#		
@@ -2345,41 +2606,44 @@ treecomparison.submissions.160627<- function()
 				phr
 			})
 	names(strs_rtt)	<- names(strs)
-	
-	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	#save(strs, strs_rtt, ttrs, tinfo, tfiles, file=file.path(outdir,'submitted_160713.rda'))
-	
+	options(warn=0)
 	#
 	#	ladderize all trees
 	#		
 	ttrs	<- lapply(ttrs, ladderize)
 	strs	<- lapply(strs, ladderize)
 	strs_rtt<- lapply(strs_rtt, ladderize)	
+	#	save intermediate	
+	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, file=gsub('.rda','_01rerooted.rda',file))
+	#
 	#
 	#	plot simulated trees versus true tree
 	#
-	require(ggtree)	
-	setkey(submitted.info, SC, TEAM, GENE)
-	invisible(subset(submitted.info, OTHER=='N')[, 
-			{
-				#IDX		<- c(531,532,533,534,535,536,537,538,539,540,748,749,750,751,752,753,754,755,756,757,870)
-				#TEAM	<- c(1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0 , 0  ,0  ,0  ,0 )
-				#GENE	<- rep('POL', length(IDX))
-				tmp		<- lapply(IDX, function(i) strs_rtt[[i]] )				
-				if(MODEL[1]!='R')
-					tmp[[length(tmp)+1]]	<- ttrs[[TIME_IDX_T[1]]]
-				if(MODEL[1]=='R')
-					tmp[[length(tmp)+1]]	<- ttrs[[SUB_IDX_T[1]]]
-				tmp		<- lapply( c(length(tmp), seq(1,length(tmp)-1)), function(i) tmp[[i]] )
-				class(tmp) 	<- "multiPhylo"
-				print(c('Simulated phylogeny',paste(TEAM, GENE, IDX, sep='-')))
-				names(tmp)	<- c('Simulated phylogeny',paste(TEAM, GENE, IDX, sep='-'))
-				p	<- ggtree(tmp, size=0.1) + facet_wrap(~.id, ncol=10, scales='free_x')				
-				pdf(file=file.path(outdir, paste('strs_rtt_160727_',SC,'.pdf',sep='')), w=40, h=length(IDX)/10*12)
-				print(p)
-				dev.off()	
-				NULL
-			}, by=c('SC')])
+	if(0)
+	{
+		require(ggtree)	
+		setkey(submitted.info, SC, TEAM, GENE)
+		invisible(subset(submitted.info, OTHER=='N')[, 
+						{
+							#IDX		<- c(531,532,533,534,535,536,537,538,539,540,748,749,750,751,752,753,754,755,756,757,870)
+							#TEAM	<- c(1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0 , 0  ,0  ,0  ,0 )
+							#GENE	<- rep('POL', length(IDX))
+							tmp		<- lapply(IDX, function(i) strs_rtt[[i]] )				
+							if(MODEL[1]!='R')
+								tmp[[length(tmp)+1]]	<- ttrs[[TIME_IDX_T[1]]]
+							if(MODEL[1]=='R')
+								tmp[[length(tmp)+1]]	<- ttrs[[SUB_IDX_T[1]]]
+							tmp		<- lapply( c(length(tmp), seq(1,length(tmp)-1)), function(i) tmp[[i]] )
+							class(tmp) 	<- "multiPhylo"
+							print(c('Simulated phylogeny',paste(TEAM, GENE, IDX, sep='-')))
+							names(tmp)	<- c('Simulated phylogeny',paste(TEAM, GENE, IDX, sep='-'))
+							p	<- ggtree(tmp, size=0.1) + facet_wrap(~.id, ncol=10, scales='free_x')				
+							pdf(file=file.path(outdir, paste('strs_rtt_160727_',SC,'.pdf',sep='')), w=40, h=length(IDX)/10*12)
+							print(p)
+							dev.off()	
+							NULL
+						}, by=c('SC')])	
+	}	
 	#
 	#	long branch attraction
 	#
@@ -2391,18 +2655,6 @@ treecomparison.submissions.160627<- function()
 				tmp	<- merge(tmp, unique(subset(tinfo, IDX_T==SUB_IDX_T, c(TAXA,DEPTH_T))), by='TAXA')
 				tmp
 			}, by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
-	#
-	# compute closest individual on true trees
-	#
-	tmp				<- unique(subset(tinfo, select=c(SC, BRL_T, IDX_T)))
-	tmp				<- tmp[, {
-				print(IDX_T)
-				ph			<- ttrs[[IDX_T]]
-				model.reg	<- grepl('REGIONAL',SC)
-				treedist.closest.ind(ph, model.reg)
-			}, by=c('SC','BRL_T','IDX_T')]
-	tinfo			<- merge(tinfo, tmp, by=c('SC','BRL_T','IDX_T','IDPOP'))
-	set(tinfo, NULL, 'IDPOP_CL', tinfo[, gsub('IDPOP_','',IDPOP_CL)])
 	#
 	# compute on true trees the proportion if either transmitter or among recipients
 	#
@@ -2425,42 +2677,52 @@ treecomparison.submissions.160627<- function()
 	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
 	tmp				<- treedist.closest.ind.reconstructed.oftruepairs(submitted.info, tinfo.pairs)
 	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
+	#	save intermediate	
+	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, lba, file=gsub('.rda','_02closest.rda',file))
 	#
-	#	compute Robinson Fould of complete tree 
+	#	compute Robinson Fould of complete tree
 	#
 	tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs_rtt)
 	submitted.info	<- merge(submitted.info, tmp, by='IDX')
 	#	compute Robinson Fould of clusters, then take sum
 	tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
-	sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')
+	sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')	
+	#	save intermediate	
+	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_03RF.rda',file))
 	#
-	#	path distance of complete trees SSS
+	#	path distance of complete trees
 	#
 	tmp				<- treedist.pathdifference.wrapper(submitted.info, ttrs, strs)
 	submitted.info	<- merge(submitted.info, tmp, by='IDX')
-	#set(submitted.info, NULL, c("SUB_IDX_T.y","SC.y","FILE.y","TEAM.y","MODEL.y","SEQCOV.y","ACUTE.y","GAPS.y","ART.y", "EXT.y", "GENE.y", "BEST.y","OTHER.y","TAXAN.y","ROOTED.y","BRL.y","TIME_IDX_T.y","TAXAN_T.y","TR_REC_perc_T_Inf.y","TR_REC_perc_T_45.y","TR_REC_perc_Inf.y","TR_REC_perc_45.y","RF.y","NRF.y"), NULL)	
-	#setnames(submitted.info, c("SUB_IDX_T.x", "SC.x", "FILE.x", "TEAM.x", "MODEL.x", "SEQCOV.x", "ACUTE.x", "GAPS.x", "ART.x", "EXT.x", "GENE.x", "BEST.x", "OTHER.x", "TAXAN.x", "ROOTED.x", "BRL.x", "TIME_IDX_T.x", "TAXAN_T.x", "TR_REC_perc_T_Inf.x", "TR_REC_perc_T_45.x", "TR_REC_perc_Inf.x", "TR_REC_perc_45.x", "RF.x", "NRF.x"),
-	#		c("SUB_IDX_T", "SC", "FILE", "TEAM", "MODEL", "SEQCOV", "ACUTE", "GAPS", "ART", "EXT", "GENE", "BEST", "OTHER", "TAXAN", "ROOTED", "BRL", "TIME_IDX_T", "TAXAN_T", "TR_REC_perc_T_Inf", "TR_REC_perc_T_45", "TR_REC_perc_Inf", "TR_REC_perc_45", "RF", "NRF"))
-	#
-	#	path distance of clusters
-	#	
+	#	path distance of clusters		
 	tmp				<- treedist.pathdifference.clusters.wrapper(submitted.info, ttrs, strs, tinfo)	
-	sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))	
+	sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))
+	#	save intermediate	
+	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_04PD.rda',file))	
+	#
+	#	quartet distances of complete trees
+	#
+	tmp				<- treedist.quartetdifference.wrapper(submitted.info, ttrs, strs)
+	submitted.info	<- merge(submitted.info, tmp, by='IDX')
+	#	quartet distance of clusters		
+	tmp				<- treedist.quartetdifference.clusters.wrapper(submitted.info, ttrs, strs, tinfo)	
+	sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))
 	#
 	#	SAVE
 	#
-	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	save(strs, strs_rtt, ttrs, tinfo, tfiles, tinfo.pairs, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160713.rda'))
+	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_05QD.rda',file))
 	#
 	#	ADD other summaries
 	#
-	load( file.path(outdir, 'submitted_160704_KC.rda') )
-	sclu.info.kc	<- copy(sclu.info)
-	load( file.path(outdir, 'submitted_160627_QDPD.rda') )
-	sclu.info		<- merge(sclu.info, subset(sclu.info.kc, select=c(IDX, TEAM, GENE, BRL, IDCLU, KC)), by=c('IDX','TEAM','GENE','BRL','IDCLU'))
-	save(strs, strs_rtt, ttrs, tinfo, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160627_QDPDKC.rda'))
+	#load( file.path(outdir, 'submitted_160704_KC.rda') )
+	#sclu.info.kc	<- copy(sclu.info)
+	#load( file.path(outdir, 'submitted_160627_QDPD.rda') )
+	#sclu.info		<- merge(sclu.info, subset(sclu.info.kc, select=c(IDX, TEAM, GENE, BRL, IDCLU, KC)), by=c('IDX','TEAM','GENE','BRL','IDCLU'))
+	#save(strs, strs_rtt, ttrs, tinfo, submitted.info, sclu.info, lba,  file=file.path(outdir,'submitted_160627_QDPDKC.rda'))
 }
-
+#
+#
+#
 treecomparison.submissions.151101<- function()	
 {
 	require(data.table)

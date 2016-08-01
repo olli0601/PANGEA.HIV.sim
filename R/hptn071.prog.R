@@ -178,10 +178,10 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(0)	#submit various
+	if(1)	#submit various
 	{
 		cmd			<- cmd.various()
-		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeph', hpc.walltime=71, hpc.mem="3500mb")
+		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="6000mb")
 		cat(cmd)		
 		outdir		<- paste(HOME,"tmp",sep='/')
 		outfile		<- paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
@@ -205,7 +205,7 @@ pipeline.various<- function()
 		}			
 		quit("no")
 	}	
-	if(1)	#submit ExaML runs
+	if(0)	#submit ExaML runs
 	{
 		require(ape)
 		require(big.phylo)	
@@ -262,15 +262,16 @@ pipeline.various<- function()
 ##--------------------------------------------------------------------------------------------------------
 prog.treecomparison<- function()
 {
-	if(0)
+	if(1)
 	{
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
 		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'	
-		treedist.quartets.add(file=file, with.save=1)
+		#treedist.quartets.add(file=file, with.save=1)
+		treecomparison.submissions.160627.stuffoncluster(file)
 		#treedist.billera.add(file=file, with.save=1)		
 	}
-	if(1)
+	if(0)
 	{
 		indir	<- wdir	<- file.path(DATA,'gds')
 		treecomparison.bootstrap.sd.vs.coverage(indir, wdir)
