@@ -569,7 +569,7 @@ treedist.closest.ind.obs<- function(tinfo, gd.thresh=Inf, rtn.pairs=FALSE)
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 13.07.16
 ##--------------------------------------------------------------------------------------------------------
-treedist.closest.ind.reconstructed<- function(submitted.info, tinfo, gd.thresh)
+treedist.closest.ind.reconstructed<- function(submitted.info, tinfo, strs, gd.thresh)
 {
 	sucl			<- subset(submitted.info, MODEL=='R')[, {
 				print(IDX)
@@ -622,7 +622,7 @@ treedist.closest.ind.reconstructed<- function(submitted.info, tinfo, gd.thresh)
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 13.07.16
 ##--------------------------------------------------------------------------------------------------------
-treedist.closest.ind.reconstructed.oftruepairs<- function(submitted.info, tinfo.pairs)
+treedist.closest.ind.reconstructed.oftruepairs<- function(submitted.info, tinfo.pairs, strs)
 {
 	tmp			<- subset(submitted.info, MODEL=='R')[, {
 				print(IDX)
@@ -1743,10 +1743,11 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	cat('V matrix: proportion of NA entries=',length(which(is.na(v))) / prod(dim(v)))
 	#
 	#	
-	#
+	#	
 	na.rm.p		<- 0.1
 	diag(d)		<- NA_real_
 	diag(v)		<- NA_real_
+	#	remove cols/rows that contain nothing else than NAs
 	tmp			<- apply(d, 1, function(x) !all(is.na(x)))
 	cat('\nIn D: found',length(which(!tmp)),'columns / rows with NA only: remove in D and V. ', rownames(d)[!tmp])
 	ds			<- d[tmp,tmp]
@@ -1755,19 +1756,17 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	cat('\nIn V: found additional',length(which(!tmp)),'columns / rows with NA only: remove in D and V too. ', rownames(d)[!tmp])
 	ds			<- ds[tmp,tmp]
 	vs			<- vs[tmp,tmp]	
-	
+	#	remove cols/rows that contain more than 10% NAs
 	tmp			<- apply(ds, 1, function(x) length(which(is.na(x))) ) / ncol(ds)
 	tmp			<- which(tmp>na.rm.p)
 	cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
 	ds			<- ds[-tmp,-tmp]
 	vs			<- vs[-tmp,-tmp]	
-	ph			<- mvrs(ds, vs, fs = 15)
+	#	in total, 9 columns out of 1600 cols deleted
+	save(d,v, ds, vs, file=file.path(wdir,'150701_Regional_TRAIN4_REP_1_GENE_GAGPOLENV.rda'))
 	
-	ds[, ]
-	
-	ds			<- as.dist(ds)
-	vs			<- as.dist(vs)
-	ph			<- mvrs(ds, vs, fs = 15)
+	# njs(ds, fs = 15) # runs fine
+	ph			<- mvrs(ds, vs, fs = 15)	
 	
 	which(!tmp)
 	
@@ -2593,28 +2592,34 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	#
 	#	re-root simulated trees with rtt
 	#		
-	options(warn=2)
-	strs_rtt	<- lapply(seq_along(strs), function(i)
-			{
-				cat('\n',i)
-				#i	<- 628 ; i<- 241; i<- 571
-				ph	<- strs[[i]]
-				tmp	<- data.table(TAXA=ph$tip.label)	
-				tmp[, T_SEQ:= tmp[, regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA)) ]]
-				#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
-				phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)], ncpu=4)
-				phr
-			})
-	names(strs_rtt)	<- names(strs)
-	options(warn=0)
-	#
-	#	ladderize all trees
-	#		
-	ttrs	<- lapply(ttrs, ladderize)
-	strs	<- lapply(strs, ladderize)
-	strs_rtt<- lapply(strs_rtt, ladderize)	
-	#	save intermediate	
-	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, file=gsub('.rda','_01rerooted.rda',file))
+	options(show.error.messages = FALSE)		
+	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_01rerooted.rda',file))))
+	options(show.error.messages = TRUE)			
+	if( inherits(readAttempt, "try-error") )
+	{
+		options(warn=2)
+		strs_rtt	<- lapply(seq_along(strs), function(i)
+				{
+					cat('\n',i)
+					#i	<- 628 ; i<- 241; i<- 571
+					ph	<- strs[[i]]
+					tmp	<- data.table(TAXA=ph$tip.label)	
+					tmp[, T_SEQ:= tmp[, regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA)) ]]
+					#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
+					phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)], ncpu=1)
+					phr
+				})
+		names(strs_rtt)	<- names(strs)
+		options(warn=0)
+		#
+		#	ladderize all trees
+		#		
+		ttrs	<- lapply(ttrs, ladderize)
+		strs	<- lapply(strs, ladderize)
+		strs_rtt<- lapply(strs_rtt, ladderize)	
+		#	save intermediate	
+		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, file=gsub('.rda','_01rerooted.rda',file))
+	}	
 	#
 	#
 	#	plot simulated trees versus true tree
@@ -2644,73 +2649,89 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 							NULL
 						}, by=c('SC')])	
 	}	
-	#
-	#	long branch attraction
-	#
-	lba		<- submitted.info[, {
-				#IDX<-638; SUB_IDX_T<- 1
-				cat(IDX,'\n')
-				ph	<- strs_rtt[[IDX]]
-				tmp	<- data.table(DEPTH=node.depth.edgelength(ph)[seq_len(Ntip(ph))], TAXA=ph$tip.label)
-				tmp	<- merge(tmp, unique(subset(tinfo, IDX_T==SUB_IDX_T, c(TAXA,DEPTH_T))), by='TAXA')
-				tmp
-			}, by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
-	#
-	# compute on true trees the proportion if either transmitter or among recipients
-	#
-	tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf)
-	setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_Inf')	
-	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
-	tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=0.045)
-	setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_45')	
-	submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)		
-	tinfo.pairs		<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf, rtn.pairs=TRUE)
-	setnames(tinfo.pairs, 'TRUE_PAIR','TRUE_PAIR_Inf')
-	#
-	# compute closest individual on simulated trees and determine proportion if either transmitter or among recipients
-	#	
-	tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, gd.thresh=Inf)
-	setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_Inf')		
-	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
-	tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, gd.thresh=0.045)
-	setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_45')		
-	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
-	tmp				<- treedist.closest.ind.reconstructed.oftruepairs(submitted.info, tinfo.pairs)
-	submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
-	#	save intermediate	
-	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, lba, file=gsub('.rda','_02closest.rda',file))
-	#
-	#	compute Robinson Fould of complete tree
-	#
-	tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs_rtt)
-	submitted.info	<- merge(submitted.info, tmp, by='IDX')
-	#	compute Robinson Fould of clusters, then take sum
-	tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
-	sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')	
-	#	save intermediate	
-	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_03RF.rda',file))
-	#
-	#	path distance of complete trees
-	#
-	tmp				<- treedist.pathdifference.wrapper(submitted.info, ttrs, strs)
-	submitted.info	<- merge(submitted.info, tmp, by='IDX')
-	#	path distance of clusters		
-	tmp				<- treedist.pathdifference.clusters.wrapper(submitted.info, ttrs, strs, tinfo)	
-	sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))
-	#	save intermediate	
-	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_04PD.rda',file))	
-	#
-	#	quartet distances of complete trees
-	#
-	tmp				<- treedist.quartetdifference.wrapper(submitted.info, ttrs, strs)
-	submitted.info	<- merge(submitted.info, tmp, by='IDX')
-	#	quartet distance of clusters		
-	tmp				<- treedist.quartetdifference.clusters.wrapper(submitted.info, ttrs, strs, tinfo)	
-	sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))
-	#
-	#	SAVE
-	#
-	save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_05QD.rda',file))
+	
+	options(show.error.messages = FALSE)		
+	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_03RF.rda',file))))
+	options(show.error.messages = TRUE)			
+	if( inherits(readAttempt, "try-error") )
+	{		
+		#
+		#	long branch attraction
+		#
+		lba		<- submitted.info[, {
+					#IDX<-638; SUB_IDX_T<- 1
+					cat(IDX,'\n')
+					ph	<- strs_rtt[[IDX]]
+					tmp	<- data.table(DEPTH=node.depth.edgelength(ph)[seq_len(Ntip(ph))], TAXA=ph$tip.label)
+					tmp	<- merge(tmp, unique(subset(tinfo, IDX_T==SUB_IDX_T, c(TAXA,DEPTH_T))), by='TAXA')
+					tmp
+				}, by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
+		#
+		# compute on true trees the proportion if either transmitter or among recipients
+		#
+		tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf)
+		setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_Inf')	
+		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
+		tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=0.045)
+		setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_45')	
+		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)		
+		tinfo.pairs		<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf, rtn.pairs=TRUE)
+		setnames(tinfo.pairs, 'TRUE_PAIR','TRUE_PAIR_Inf')
+		#
+		# compute closest individual on simulated trees and determine proportion if either transmitter or among recipients
+		#	
+		tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, strs, gd.thresh=Inf)
+		setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_Inf')		
+		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
+		tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, strs, gd.thresh=0.045)
+		setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_45')		
+		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
+		tmp				<- treedist.closest.ind.reconstructed.oftruepairs(submitted.info, tinfo.pairs, strs)
+		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
+		#
+		#	compute Robinson Fould of complete tree
+		#
+		tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs_rtt)
+		submitted.info	<- merge(submitted.info, tmp, by='IDX')
+		#	compute Robinson Fould of clusters, then take sum
+		tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
+		sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')	
+		#	save intermediate	
+		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_03RF.rda',file))
+	}
+	
+	options(show.error.messages = FALSE)		
+	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_04PD.rda',file))))
+	options(show.error.messages = TRUE)			
+	if( inherits(readAttempt, "try-error") )
+	{	
+		#
+		#	path distance of complete trees
+		#
+		tmp				<- treedist.pathdifference.wrapper(submitted.info, ttrs, strs)
+		submitted.info	<- merge(submitted.info, tmp, by='IDX')
+		#	path distance of clusters		
+		tmp				<- treedist.pathdifference.clusters.wrapper(submitted.info, ttrs, strs, tinfo)	
+		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))
+		#	save intermediate	
+		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_04PD.rda',file))
+	}
+	
+	options(show.error.messages = FALSE)		
+	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_05QD.rda',file))))
+	options(show.error.messages = TRUE)			
+	if( inherits(readAttempt, "try-error") )
+	{		
+		#
+		#	quartet distances of complete trees
+		#
+		tmp				<- treedist.quartetdifference.wrapper(submitted.info, ttrs, strs)
+		submitted.info	<- merge(submitted.info, tmp, by='IDX')
+		#	quartet distance of clusters		
+		tmp				<- treedist.quartetdifference.clusters.wrapper(submitted.info, ttrs, strs, tinfo)	
+		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'))
+		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_05QD.rda',file))
+	}
 	#
 	#	ADD other summaries
 	#
