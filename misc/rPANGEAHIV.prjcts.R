@@ -2290,6 +2290,11 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 			outfile			<- paste(gsub('_SIMULATED','',infile.simu), sprintf('%02g',gap.p*100), '_P17_SIMULATED.fa', sep='')
 			write.dna(gs, file=file.path(outdir, outfile), format='fasta', colsep='', nbcol=-1)						
 		}
+		#	%gaps in PANGEA seqs
+		tmp	<- sq[ grepl('PG[0-9]+-BW', rownames(sq)), ]
+		sum( as.character(tmp)=='?' ) / (nrow(tmp)*ncol(tmp))
+		tmp	<- sq[ grepl('PG[0-9]+-UG', rownames(sq)), ]
+		sum( as.character(tmp)=='?' ) / (nrow(tmp)*ncol(tmp))
 		
 		#
 		#	process gag genome runs
@@ -2341,7 +2346,7 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 		#	make allocations reproducible	
 		set.seed(gap.seed)
 		#	read chunks from selected gap country sequence (is NA, then read from all PANGEA seqs)		
-		sq				<- msg[ grepl('PG[0-9]+', rownames(msgp)), ]
+		sq				<- msgp[ grepl('PG[0-9]+', rownames(msgp)), ]
 		ch				<- seq.get.gap.chunks(sq, gap.symbol=c('?','n'))
 		setnames(ch, 'TAXON', 'PANGEA_ID')
 		ch[, SITE:= gsub('PG[0-9]+-','',regmatches(PANGEA_ID, regexpr('PG[0-9]+-[A-Z]+',PANGEA_ID))) ]
@@ -2368,6 +2373,12 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 			outfile			<- paste(gsub('_SIMULATED','',infile.simu), sprintf('%02g',gap.p*100), '_GAGPP_SIMULATED.fa', sep='')
 			write.dna(gs, file=file.path(outdir, outfile), format='fasta', colsep='', nbcol=-1)						
 		}
+		#	%gaps in PANGEA seqs
+		tmp	<- sq[ grepl('PG[0-9]+-BW', rownames(sq)), ]
+		sum( as.character(tmp)=='?' ) / (nrow(tmp)*ncol(tmp))
+		tmp	<- sq[ grepl('PG[0-9]+-UG', rownames(sq)), ]
+		sum( as.character(tmp)=='?' ) / (nrow(tmp)*ncol(tmp))
+		
 		#
 		#	save all fasta files as R files without HXB2
 		#

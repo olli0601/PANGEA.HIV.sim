@@ -1701,6 +1701,8 @@ PANGEA.add.gaps.simulate<- function(indir.simu, indir.gap, infile.simu, infile.g
 }
 ##--------------------------------------------------------------------------------------------------------	
 #	olli originally written 29-07-2016
+#' @useDynLib mvrs_standalone
+
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.add.gaps.allocate.chunks.to.sequences<- function(ch, ms)
 {

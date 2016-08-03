@@ -2,6 +2,7 @@ CWD= $$(pwd)
 
 all:	
 	echo "current directory is "$(CWD)
+	MAKEFLAGS="SHLIB_CXXLD=g++ CXX=g++" R CMD SHLIB -o mvrs_standalone.so *.cpp
 	@echo "*********************************************** "
 	@echo "********* BUILDING seq-gen ******************** "
 	@echo "*********************************************** "	
@@ -14,6 +15,7 @@ all:
 	@echo "********* BUILDING HPTN071/LowAcute *********** "
 	@echo "*********************************************** "	
 	make hptn-low	
+	
 		
 seq-gen:
 	echo $(CWD)	

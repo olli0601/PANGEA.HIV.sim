@@ -1541,6 +1541,10 @@ treecomparison.explaingaps.collect.data<- function()
 		subset(dpan, !is.na(START))[, {
 					write.dna(sq[, seq.int(START[1], len=length(START))], file=file.path(wdir, paste(gsub('.rda','',wfile),'_primer_',PR[1],'_start_',START[1],'.fasta', sep='')), format='fa')
 				}, by='PR']	
+		#	extract primer alignments and write to file +- 75 bp
+		subset(dpan, !is.na(START))[, {
+					write.dna(sq[, seq.int(START[1]-75L, len=length(START)+75L)], file=file.path(wdir, paste(gsub('.rda','',wfile),'_primerplusminus75bp_',PR[1],'_start_',START[1],'.fasta', sep='')), format='fa')
+				}, by='PR']	
 		#	get differences relative to HXB2 on primer by primer position (IDX)
 		dpand		<- subset(dpan, !is.na(START))[, {
 					#START	<- rep(1936, 23)
@@ -1655,6 +1659,43 @@ treecomparison.explaingaps.collect.data<- function()
 	subset(dpand, PR=='1R')
 	dcast.data.table(subset(dpand, PR=='1R'), TAXA~POS, value.var='NT_DIFF')
 }
+
+treecomparison.bootstrap.mvr.inC<- function(indir=NULL, wdir=NULL)
+{	
+	require(PANGEA.HIV.sim)		
+	dyn.load(system.file(package='PANGEA.HIV.sim','libs','mvrs_standalone.so'))
+	data(woodmouse)
+	
+	X 	<- dist.dna(woodmouse, variance = TRUE)
+	V 	<- attr(rt, "variance")
+	fs	<- 15L
+	
+	if (fs < 1) 
+		stop("argument 'fs' must be a non-zero positive integer")
+	if (is.matrix(X)) 
+		X <- as.dist(X)
+	if (is.matrix(V)) 
+		V <- as.dist(V)
+	X[is.na(X)] 	<- -1
+	X[X < 0] 		<- -1
+	X[is.nan(X)] 	<- -1
+	N 				<- attr(X, "Size")
+	labels 			<- attr(X, "Labels")
+	if (is.null(labels)) 
+		labels 		<- as.character(1:N)
+	ans <- .C(	'C_mvrs_OR', 
+				as.double(X), 
+				as.double(V), 
+				as.integer(N), 
+				integer(2 * N - 3), integer(2 * N - 3), 
+				double(2 * N - 3), 
+				as.integer(fs), 
+				NAOK = TRUE)
+	obj <- list(edge = cbind(ans[[4]], ans[[5]]), edge.length = ans[[6]], 
+			tip.label = labels, Nnode = N - 2L)
+	class(obj) <- "phylo"
+	reorder(obj)
+}
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
 treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
@@ -1762,6 +1803,11 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
 	ds			<- ds[-tmp,-tmp]
 	vs			<- vs[-tmp,-tmp]	
+	
+	tmp	<- 1:150
+	ds			<- ds[-tmp,-tmp]
+	vs			<- vs[-tmp,-tmp]	
+	
 	#	in total, 9 columns out of 1600 cols deleted
 	save(d,v, ds, vs, file=file.path(wdir,'150701_Regional_TRAIN4_REP_1_GENE_GAGPOLENV.rda'))
 	
@@ -2638,37 +2684,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		strs_rtt<- lapply(strs_rtt, ladderize)	
 		#	save intermediate	
 		save(strs, strs_rtt, ttrs, tinfo, tfiles, submitted.info, file=gsub('.rda','_01rerooted.rda',file))
-	}	
-	#
-	#
-	#	plot simulated trees versus true tree
-	#
-	if(0)
-	{
-		require(ggtree)	
-		setkey(submitted.info, SC, TEAM, GENE)
-		invisible(subset(submitted.info, OTHER=='N')[, 
-						{
-							#IDX		<- c(531,532,533,534,535,536,537,538,539,540,748,749,750,751,752,753,754,755,756,757,870)
-							#TEAM	<- c(1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0 , 0  ,0  ,0  ,0 )
-							#GENE	<- rep('POL', length(IDX))
-							tmp		<- lapply(IDX, function(i) strs_rtt[[i]] )				
-							if(MODEL[1]!='R')
-								tmp[[length(tmp)+1]]	<- ttrs[[TIME_IDX_T[1]]]
-							if(MODEL[1]=='R')
-								tmp[[length(tmp)+1]]	<- ttrs[[SUB_IDX_T[1]]]
-							tmp		<- lapply( c(length(tmp), seq(1,length(tmp)-1)), function(i) tmp[[i]] )
-							class(tmp) 	<- "multiPhylo"
-							print(c('Simulated phylogeny',paste(TEAM, GENE, IDX, sep='-')))
-							names(tmp)	<- c('Simulated phylogeny',paste(TEAM, GENE, IDX, sep='-'))
-							p	<- ggtree(tmp, size=0.1) + facet_wrap(~.id, ncol=10, scales='free_x')				
-							pdf(file=file.path(outdir, paste('strs_rtt_160727_',SC,'.pdf',sep='')), w=40, h=length(IDX)/10*12)
-							print(p)
-							dev.off()	
-							NULL
-						}, by=c('SC')])	
-	}	
-	
+	}	#			
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_03RF.rda',file))))
 	options(show.error.messages = TRUE)			
@@ -3512,14 +3528,18 @@ treecomparison.ana.160627.sclu<- function()
 	
 	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag			<- '160713'	
-	load(paste(edir,'/','submitted_160713_RFPDQDTP.rda',sep=''))
-	sc		<- copy(sclu.info)
-	sc		<- merge(sc, data.table(GENE=c('GAG','POL','GAG+POL+ENV'), GENE_L=c(1440, 2843, 6807)), by='GENE')	
+	load(paste(edir,'/','submitted_160713_05QD.rda',sep=''))
+	submitted.info[, RUNGGAPS:=NULL]
+	
+	sc		<- copy(sclu.info)		
+	tmp		<- subset(submitted.info, TEAM=='RUNGAPS_ExaML', c(IDX, RUNGAPS, GENE))
+	sc		<- merge(sc, tmp, by=c('IDX','GENE'), all.x=1)	
+	sc		<- merge(sc, data.table(GENE=c('P17','GAG','GAG+PARTIALPOL','POL','GAG+POL+ENV'), GENE_L=c(396, 1440, 3080, 2843, 6807)), by='GENE')	
 	tmp		<- unique( subset(tinfo, BRL_T=='subst' & grepl('REG',SC), select=c(SC, TAXA, ENV_GAPS_P, FULL_GAPS_P,  GAG_GAPS_P, POL_GAPS_P)) )
 	tmp		<- tmp[, list(FULL_GAPS_P=mean(FULL_GAPS_P), GAG_GAPS_P=mean(GAG_GAPS_P), POL_GAPS_P=mean(POL_GAPS_P), ENV_GAPS_P=mean(ENV_GAPS_P)), by='SC']
 	tmp		<- melt(tmp, id.vars=c('SC'), variable.name='GENE', value.name='GAPS_P')
 	set(tmp, NULL, 'GENE', tmp[, gsub('FULL','GAG+POL+ENV',gsub('_GAPS_P','',GENE))])	
-	sc		<- merge(sc, tmp, by=c('SC','GENE'))
+	sc		<- merge(sc, tmp, by=c('SC','GENE'), all.x=1)
 	#
 	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N=CLU_N[1], MXGPS_CLU= max(GPS), MDGPS_CLU=median(GPS)), by=c('SC','IDCLU')]
 	sc		<- merge(sc, tmp, by=c('SC','IDCLU'))	
@@ -3528,9 +3548,14 @@ treecomparison.ana.160627.sclu<- function()
 	set(sc, NULL, 'SC', sc[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
 							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
 	set(sc, NULL, 'GAPS', sc[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for\nBotswana\nsequences','as for\nUganda\nsequences'))])
-	set(sc, NULL, 'BEST', sc[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])									
-	set(sc, NULL, 'GENE', sc[, factor(GENE, levels=c('GAG','POL','GAG+POL+ENV'),labels=c('gag','pol','gag+pol+env'))])	
-	set(sc, NULL, 'TEAM', sc[, factor(TEAM, levels=c('IQTree','MetaPIGA','PhyML','RAXML'),labels=c('IQ-TREE','MetaPIGA','PhyML','RAxML'))])
+	set(sc, NULL, 'BEST', sc[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])
+	set(sc, sc[, which(GENE=='P17')], 'GENE', 'gag (p17)')
+	set(sc, sc[, which(GENE=='GAG')], 'GENE', 'gag')
+	set(sc, sc[, which(GENE=='GAG+PARTIALPOL')], 'GENE', 'gag + pol (prot,p51)')		
+	set(sc, sc[, which(GENE=='POL')], 'GENE', 'pol')
+	set(sc, sc[, which(GENE=='GAG+POL+ENV')], 'GENE', 'gag+pol+env')
+	set(sc, sc[, which(TEAM=='IQTree')], 'TEAM', 'IQ-TREE')
+	set(sc, sc[, which(TEAM=='RAXML')], 'TEAM', 'RAxML')
 	set(sc, NULL, 'EXT', sc[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
 	set(sc, NULL, 'ART', sc[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
 	sc		<- subset(sc, OTHER=='N')
@@ -3567,12 +3592,15 @@ treecomparison.ana.160627.sclu<- function()
 							NPDmd=median(NPD, na.rm=TRUE), 	
 							NPDSQmd=median(NPDSQ, na.rm=TRUE)#,	
 							#KCAmd=median(KCadj, na.rm=TRUE)
-							), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','GAPS_P','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
+							), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','GAPS_P','RUNGAPS','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
 	sc		<- subset(sc, MODEL=='Model: Regional')
 	#
 	#	quartett distance standardized by n choose 4 with TEAMS separated
 	#
-	ggplot(subset(sc, ACUTE=='low'), aes(x=GAPS)) +
+	tmp		<- subset(sc, ACUTE=='low' & TEAM!='RUNGAPS_ExaML')
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])
+	ggplot(tmp, aes(x=GAPS)) +
 			geom_jitter(aes(y=NQDme, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
 			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
 			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.4)) +
@@ -3585,9 +3613,9 @@ treecomparison.ana.160627.sclu<- function()
 	file	<- file.path(edir, paste(timetag,'_','QD_clumean_polvsall_by_gaps_taxan1600_Acute10pc_by_TEAM.pdf',sep=''))
 	ggsave(file=file, w=12, h=6)
 	#
-	#	quartett distance standardized by n choose 4 with TEAMS separated
+	#	quartett distance standardized by n choose 4 
 	#
-	ggplot(subset(sc, ACUTE=='low'), aes(x=GAPS)) +
+	ggplot(tmp, aes(x=GAPS)) +
 			geom_jitter(aes(y=NQDme, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +			
 			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
 			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.4)) +
@@ -3615,8 +3643,12 @@ treecomparison.ana.160627.sclu<- function()
 			theme_bw() + theme(legend.position='bottom') + facet_grid(~GAPS, scales='free_x', space='free_x')
 	file	<- file.path(edir, paste(timetag,'_','QD_clumean_polvsall_by_gapspc_taxan1600_Acute10pc.pdf',sep=''))
 	ggsave(file=file, w=6, h=5)
-	
-	tmp		<- subset(sc, ACUTE=='low')
+	#
+	#	all tree metrics
+	#
+	tmp		<- subset(sc, ACUTE=='low' & TEAM!='RUNGAPS_ExaML')
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])
 	set(tmp, NULL, 'NRFme', tmp[, 100*NRFme])
 	set(tmp, NULL, 'NQDme', tmp[, 100*NQDme])
 	tmp		<- melt(tmp, measure.vars=c('NRFme','NQDme','NPDSQme'))
@@ -3636,6 +3668,42 @@ treecomparison.ana.160627.sclu<- function()
 			theme_bw() + theme(legend.position='bottom') + facet_grid(variable~TEAM, scales='free_y')
 	file	<- file.path(edir, paste(timetag,'_','TOPOOTHER_clumean_polvsall_by_gaps_taxan1600_Acute10pc.pdf',sep=''))
 	ggsave(file=file, w=15, h=15)
+	#
+	#	increasing gap coverage with ExaML
+	#
+	tmp		<- subset(sc, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
+	setkey(tmp, GENE, RUNGAPS)	
+	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
+						NQDmeSM= predict(loess(NQDme~RUNGAPS, span=5))), 
+						by='GENE']
+	tmp		<- merge(tmp, tmp2, by=c('GENE','RUNGAPS'))		
+	tmp2	<- merge( rbind(data.table(GENE=c('gag (p17)','gag','gag+pol+env'), RUNGAPS=c(0.11, 0.08, 0.17), LOC='Botswana'), data.table(GENE=c('gag (p17)','gag','gag+pol+env'), RUNGAPS=c(0.21, 0.18, 0.47), LOC='Uganda')), tmp2,by=c('GENE','RUNGAPS')) 
+	#set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'))])
+	ggplot(tmp, aes(x=RUNGAPS)) +
+			geom_point(aes(y=NQDme, colour=GENE), size=2, pch=8) +
+			geom_line(aes(y=NQDmeSM, colour=GENE), size=0.5) +
+			geom_point(data=tmp2, aes(y=NQDmeSM, pch=LOC), size=2.5, fill='black') +			
+			scale_colour_manual(values=c('gag (p17)'="#8C510A", 'gag'='red','gag+pol+env'="#3F4788FF")) +
+			scale_shape_manual(values=c('Botswana'=23, 'Uganda'=24)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.61), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.4)) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='incorrectly estimated topologies of subtrees with 4 taxa\n(standardized Quartett distance)\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='sampling location'
+					) +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_p17full_by_rungaps_taxan1600_Acute10pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)		
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.11
+##--------------------------------------------------------------------------------------------------------
+cmd.lsd<- function(infile.tree, infile.dates, ali.nrow, outfile=infile.tree, pr.lsd='lsd', pr.args='-v 2 -c -b 10 -r as')
+{	
+	paste(pr.lsd,' -i ',infile.tree,' -d ',infile.dates,' -s ',ali.nrow, ' -o ', outfile, ' ', pr.args, sep='')	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
@@ -3652,16 +3720,24 @@ treecomparison.ana.160627.strs<- function()
 	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	#timetag		<- '160627'
 	timetag			<- '160713'	
-	load(paste(edir,'/','submitted_160713_RFPDQDTP.rda',sep=''))		
+	load(paste(edir,'/','submitted_160713_05QD.rda',sep=''))
+	submitted.info[, RUNGGAPS:=NULL]
+	
 	sa		<- copy(submitted.info)	
+	sa		<- merge(sa, data.table(GENE=c('P17','GAG','GAG+PARTIALPOL','POL','GAG+POL+ENV'), GENE_L=c(396, 1440, 3080, 2843, 6807)), by='GENE')
 	set(sa, NULL, 'MODEL', sa[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
 	set(sa, sa[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
 	set(sa, NULL, 'SC', sa[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
-							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+										labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
 	set(sa, NULL, 'GAPS', sa[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for\nBotswana\nsequences','as for\nUganda\nsequences'))])	
-	set(sa, NULL, 'BEST', sa[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])									
-	set(sa, NULL, 'GENE', sa[, factor(GENE, levels=c('GAG','POL','GAG+POL+ENV'),labels=c('gag','pol','gag+pol+env'))])
-	set(sa, NULL, 'TEAM', sa[, factor(TEAM, levels=c('IQTree','MetaPIGA','PhyML','RAXML'),labels=c('IQ-TREE','MetaPIGA','PhyML','RAxML'))])	
+	set(sa, NULL, 'BEST', sa[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])
+	set(sa, sa[, which(GENE=='P17')], 'GENE', 'gag (p17)')
+	set(sa, sa[, which(GENE=='GAG')], 'GENE', 'gag')
+	set(sa, sa[, which(GENE=='GAG+PARTIALPOL')], 'GENE', 'gag + pol (prot,p51)')		
+	set(sa, sa[, which(GENE=='POL')], 'GENE', 'pol')
+	set(sa, sa[, which(GENE=='GAG+POL+ENV')], 'GENE', 'gag+pol+env')
+	set(sa, sa[, which(TEAM=='IQTree')], 'TEAM', 'IQ-TREE')
+	set(sa, sa[, which(TEAM=='RAXML')], 'TEAM', 'RAxML')
 	set(sa, NULL, 'EXT', sa[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
 	set(sa, NULL, 'ACUTE', sa[, factor(ACUTE, levels=c('low','high'),labels=c('10%','40%'))])
 	set(sa, NULL, 'ART', sa[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
@@ -3671,7 +3747,9 @@ treecomparison.ana.160627.strs<- function()
 	#		
 	#	proportion of recovered transmission pairs 
 	#	
-	tmp		<- subset(sa, !is.na(TR_PAIR_rec) & ACUTE=='10%')
+	tmp		<- subset(sa, !is.na(TR_PAIR_rec) & ACUTE=='10%' & TEAM!='RUNGAPS_ExaML')
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])	
 	ggplot(tmp, aes(x=GAPS)) +
 			geom_jitter(aes(y=TR_PAIR_rec, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
 			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
@@ -3691,7 +3769,7 @@ treecomparison.ana.160627.strs<- function()
 			geom_jitter(aes(y=TR_PAIR_rec, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
 			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
 			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
-			scale_y_continuous(labels = scales::percent, limit=c(0.5,1)) +
+			scale_y_continuous(labels = scales::percent, limit=c(0.6,1)) +
 			labs(	x='\nUnassembled sites in full-genome sequences', 
 					y='phylogenetically closest pairs of individuals\nthat are transmission pairs, out of all such pairs\nthat can be identified in the true tree\n',					
 					colour='part of genome used\nfor tree reconstruction',
@@ -3699,8 +3777,188 @@ treecomparison.ana.160627.strs<- function()
 			theme_bw() + theme(legend.position='bottom') + facet_grid(~TEAM)
 	file	<- file.path(edir, paste(timetag,'_','pTransPairRecovered_by_gaps_by_TEAM.pdf',sep=''))
 	ggsave(file=file, w=12, h=6)
-
+	#
+	#	proportion of recovered transmission pairs by rungaps
+	#
+	tmp		<- subset(sa, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
+	setkey(tmp, GENE, RUNGAPS)	
+	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
+								TR_PAIR_recSM= predict(loess(TR_PAIR_rec~RUNGAPS, span=5))), 
+						by='GENE']
+	tmp		<- merge(tmp, tmp2, by=c('GENE','RUNGAPS'))		
+	tmp2	<- merge( rbind(data.table(GENE=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'), RUNGAPS=c(0.11, 0.08, 0.14, 0.17), LOC='Botswana'), data.table(GENE=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'), RUNGAPS=c(0.21, 0.18, 0.34, 0.47), LOC='Uganda')), tmp2,by=c('GENE','RUNGAPS')) 
+	#set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'))])
+	ggplot(tmp, aes(x=RUNGAPS)) +
+			geom_point(aes(y=TR_PAIR_rec, colour=GENE), size=2, pch=8) +
+			geom_line(aes(y=TR_PAIR_recSM, colour=GENE), size=0.5) +
+			geom_point(data=tmp2, aes(y=TR_PAIR_recSM, pch=LOC), size=2.5, fill='black') +			
+			scale_colour_manual(values=c('gag (p17)'="#8C510A", 'gag + pol (prot,p51)'='green','gag'='red','gag+pol+env'="#3F4788FF")) +
+			scale_shape_manual(values=c('Botswana'=23, 'Uganda'=24)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0)) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='phylogenetically closest pairs of individuals\nthat are transmission pairs, out of all such pairs\nthat can be identified in the true tree\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='sampling location') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','pTransPairRecovered_p17full_by_rungaps_taxan1600_Acute10pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
 	
+	#
+	#	long branches on regional
+	#
+
+	lba.su		<- merge(lba, subset(sa, select=c(IDX, TAXAN, RUNGAPS, OTHER)), by='IDX')
+	set(lba.su, NULL, 'GAPS', lba.su[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for\nBotswana\nsequences','as for\nUganda\nsequences'))])		
+	set(lba.su, lba.su[, which(GENE=='P17')], 'GENE', 'gag (p17)')
+	set(lba.su, lba.su[, which(GENE=='GAG')], 'GENE', 'gag')
+	set(lba.su, lba.su[, which(GENE=='GAG+PARTIALPOL')], 'GENE', 'gag + pol (prot,p51)')		
+	set(lba.su, lba.su[, which(GENE=='POL')], 'GENE', 'pol')
+	set(lba.su, lba.su[, which(GENE=='GAG+POL+ENV')], 'GENE', 'gag+pol+env')
+	set(lba.su, lba.su[, which(TEAM=='IQTree')], 'TEAM', 'IQ-TREE')
+	set(lba.su, lba.su[, which(TEAM=='RAXML')], 'TEAM', 'RAxML')	
+	#	get reference of error without long branches
+	lba.su[, ERR:= DEPTH_T-DEPTH]
+	#	these are the closest trees in terms of NRF
+	ref.box		<- subset(lba.su, IDX==858)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
+	ref.box		<- subset(lba.su, IDX==2)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
+	subset(lba.su, IDX==858)[, sd(ERR)*10]
+	#	this suggests the following Tukey criterion:
+	ref.box		<- c(-0.04,0.04)
+	ref.box		<- c(-0.1,0.1)
+	#
+	#	severe branch lengths errors by team
+	#
+	tmp			<- subset(lba.su, OTHER=='N' & TEAM!='RUNGAPS_ExaML')[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR<ref.box[1] | ERR>ref.box[2])), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
+	tmp[, OUTLIER_N:=TAXAN*OUTLIER_P]
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])		
+	ggplot(tmp, aes(x=GAPS, y=OUTLIER_P, colour=GENE)) + 
+			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) +
+			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 			
+			scale_y_continuous(labels = scales::percent) +
+			facet_grid(TEAM~GENE, scales='free_y')  + theme_bw() + theme(legend.position='bottom') +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='branch length to root\n50% too small or too large\n(% of all taxa in tree)\n')
+	file	<- file.path(edir, paste(timetag,'_','longbranches.pdf',sep=''))
+	ggsave(file=file, w=10, h=10)
+	#
+	tmp			<- subset(lba.su, OTHER=='N' & TEAM!='RUNGAPS_ExaML')[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR< -0.04 | ERR> 0.04)), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
+	tmp[, OUTLIER_N:=TAXAN*OUTLIER_P]
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])		
+	ggplot(tmp, aes(x=GAPS, y=OUTLIER_P, colour=GENE)) + 
+			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) +
+			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 			
+			scale_y_continuous(labels = scales::percent) +
+			facet_grid(TEAM~GENE, scales='free_y')  + theme_bw() + theme(legend.position='bottom') +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='branch length to root\n20% too small or too large\n(% of all taxa in tree)\n')
+	file	<- file.path(edir, paste(timetag,'_','longbranches20pc.pdf',sep=''))
+	ggsave(file=file, w=10, h=10)
+	#
+	#	severe branch lengths errors by rungaps
+	#
+	tmp		<- subset(lba.su, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+	tmp		<- tmp[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR< -0.04 | ERR>0.04)), by=c('MODEL','SC','TEAM','GAPS','GENE','RUNGAPS','IDX')]
+	tmp[, OUTLIER_N:=TAXAN*OUTLIER_P]	
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
+	setkey(tmp, GENE, RUNGAPS)	
+	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
+								OUTLIER_P_SM= predict(loess(OUTLIER_P~RUNGAPS, span=5))), 
+						by='GENE']
+	tmp		<- merge(tmp, tmp2, by=c('GENE','RUNGAPS'))		
+	tmp2	<- merge( rbind(data.table(GENE=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'), RUNGAPS=c(0.11, 0.08, 0.14, 0.17), LOC='Botswana'), data.table(GENE=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'), RUNGAPS=c(0.21, 0.18, 0.34, 0.47), LOC='Uganda')), tmp2,by=c('GENE','RUNGAPS')) 
+	#set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'))])
+	ggplot(tmp, aes(x=RUNGAPS)) +
+			geom_point(aes(y=OUTLIER_P, colour=GENE), size=2, pch=8) +
+			#geom_line(aes(y=OUTLIER_P_SM, colour=GENE), size=0.5) +
+			#geom_point(data=tmp2, aes(y=OUTLIER_P_SM, pch=LOC), size=2.5, fill='black') +			
+			scale_colour_manual(values=c('gag (p17)'="#8C510A", 'gag + pol (prot,p51)'='green','gag'='red','gag+pol+env'="#3F4788FF")) +
+			scale_shape_manual(values=c('Botswana'=23, 'Uganda'=24)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='branch length to root\n20% too small or too large\n(% of all taxa in tree)\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='sampling location') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','longbranches_p17full_by_rungaps_taxan1600_Acute10pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
+	#
+	#
+	#	plot simulated trees versus true tree
+	#
+	require(ggtree)	
+	setkey(sa, SC, TEAM, GENE, RUNGAPS)
+	invisible(subset(sa, TEAM!='RUNGAPS_ExaML')[, 
+						{
+							#IDX		<- c(531,532,533,534,535,536,537,538,539,540,748,749,750,751,752,753,754,755,756,757,870)
+							#TEAM	<- c(1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0 , 0  ,0  ,0  ,0 )
+							#GENE	<- rep('POL', length(IDX))
+							tmp		<- lapply(IDX, function(i) strs_rtt[[i]] )				
+							if(MODEL[1]!='R')
+								tmp[[length(tmp)+1]]	<- ttrs[[TIME_IDX_T[1]]]
+							if(MODEL[1]=='R')
+								tmp[[length(tmp)+1]]	<- ttrs[[SUB_IDX_T[1]]]
+							tmp		<- lapply( c(length(tmp), seq(1,length(tmp)-1)), function(i) tmp[[i]] )
+							class(tmp) 	<- "multiPhylo"
+							print(c('Simulated phylogeny',paste(TEAM, GENE, IDX, sep='-')))
+							names(tmp)	<- c('Simulated phylogeny',paste(TEAM, GENE, IDX, sep='-'))
+							p	<- ggtree(tmp, size=0.1) + facet_wrap(~.id, ncol=10, scales='free_x')				
+							pdf(file=file.path(edir, paste(timetag,'_strs_rtt_',SC,'.pdf',sep='')), w=40, h=length(IDX)/10*12)
+							print(p)
+							dev.off()	
+							NULL
+						}, by=c('SC')])				
+	invisible(subset(sa, TEAM=='RUNGAPS_ExaML')[, 
+					{
+						#IDX		<- c(531,532,533,534,535,536,537,538,539,540,748,749,750,751,752,753,754,755,756,757,870)
+						#TEAM	<- c(1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0 , 0  ,0  ,0  ,0 )
+						#GENE	<- rep('POL', length(IDX))
+						tmp		<- lapply(IDX, function(i) strs_rtt[[i]] )				
+						tmp[[length(tmp)+1]]	<- ttrs[[SUB_IDX_T[1]]]
+						tmp		<- lapply( c(length(tmp), seq(1,length(tmp)-1)), function(i) tmp[[i]] )
+						class(tmp) 	<- "multiPhylo"
+						print(c('Simulated phylogeny',paste(TEAM, GENE, IDX, RUNGAPS, sep='-')))
+						names(tmp)	<- c('Simulated phylogeny',paste(GENE, IDX, RUNGAPS, sep='-'))
+						p	<- ggtree(tmp, size=0.1) + facet_wrap(~.id, ncol=10)				
+						pdf(file=file.path(edir, paste(timetag,'_strs_rtt_rungaps_',GENE,'.pdf',sep='')), w=40, h=length(IDX)/10*12)
+						print(p)
+						dev.off()	
+						NULL
+					}, by=c('GENE')])	
+	#
+	#	select for structured coalescent and date trees with LSD
+	#
+	wdir	<- '~/duke/tmp'
+	ds		<- subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN1' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1]), by='GENE']
+	ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
+	ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN4' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
+	ds		<- merge(ds, submitted.info, by=c('IDX','GENE'))	
+	ds[, {	
+				ph				<- strs_rtt[[IDX]]
+				tmp				<- data.table(TAXA=ph$tip.label, SEQ_T= sapply(strsplit(ph$tip.label, '|', fixed=1),'[[', 4))
+				tmp				<- tmp[,  list(STR=paste(TAXA,' ',SEQ_T,sep='')), by='TAXA'][, paste(STR, collapse='\n')]
+				tmp				<- paste(Ntip(ph),'\n',tmp,sep='')
+				infile.tree		<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'.newick',sep=''))				
+				infile.dates	<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'.txt',sep=''))
+				outfile			<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_LSD',sep=''))
+				cat(tmp, file=infile.dates)
+				write.tree(ph, file=infile.tree)
+				ali.nrow		<- 6800
+				if(GENE=='GAG')
+					ali.nrow	<- 1440				
+				cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
+				cat(cmd)
+				#system(cmd)
+				stop()
+			}, by='IDX']
 }	
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
@@ -3718,42 +3976,7 @@ treecomparison.ana.160627<- function()
 	#timetag		<- '160627'
 	timetag			<- '160713'
 	
-	load(paste(edir,'/','submitted_160713_RFPDQDTP.rda',sep=''))
-	
-	#
-	#	long branches on regional
-	#
-	lba			<- merge(lba, subset(submitted.info, select=c(IDX, OTHER)), by='IDX')
-	#	get reference of error without long branches
-	lba[, ERR:= DEPTH_T-DEPTH]
-	#	these are the closest trees in terms of NRF
-	ref.box		<- subset(lba, IDX==858)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
-	ref.box		<- subset(lba, IDX==2)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
-	subset(lba, IDX==858)[, sd(ERR)*10]
-	#	this suggests the following Tukey criterion:
-	ref.box		<- c(-0.04,0.04)
-	ref.box		<- c(-0.1,0.1)
-	lba.su		<- subset(lba, OTHER=='N')[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR<ref.box[1] | ERR>ref.box[2])), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
-	lba.su[, OUTLIER_N:=TAXAN*OUTLIER_P]
-	ggplot(lba.su, aes(x=factor(GAPS, levels=c('none','low','high'), labels=c('none','low','high')), y=OUTLIER_P, colour=GENE)) + 
-			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) + 
-			scale_y_continuous(labels = scales::percent, limits=c(0, 1)) +
-			facet_grid(~TEAM+GENE)  + theme_bw() +
-			labs(	x='\ngaps', 
-					y='branch length to root\n50% too small or too large\n(% of all taxa in tree)\n')
-	file	<- file.path(edir, paste(timetag,'_','longbranches.pdf',sep=''))
-	ggsave(file=file, w=15, h=7)
-	#
-	lba.su	<- subset(lba, OTHER=='N')[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR< -0.04 | ERR>0.04)), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
-	ggplot(lba.su, aes(x=factor(GAPS, levels=c('none','low','high'), labels=c('none','low','high')), y=OUTLIER_P, colour=GENE)) + 
-			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) + 
-			scale_y_continuous(labels = scales::percent, limits=c(0, 1)) +
-			facet_grid(~TEAM+GENE)  + theme_bw() +
-			labs(	x='\ngaps', 
-					y='branch length to root\n20% too small or too large\n(% of all taxa in tree)\n')
-	file	<- file.path(edir, paste(timetag,'_','longbranches_20pc.pdf',sep=''))
-	ggsave(file=file, w=15, h=7)
-	
+	load(paste(edir,'/','submitted_160713_RFPDQDTP.rda',sep=''))	
 	#
 	#
 	#

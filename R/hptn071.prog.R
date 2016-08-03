@@ -178,7 +178,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)	#submit various
+	if(0)	#submit various
 	{
 		cmd			<- cmd.various()
 		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="6000mb")
@@ -188,6 +188,39 @@ pipeline.various<- function()
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
+	if(1)	#run LSD
+	{
+		require(ape)
+		require(data.table)
+		require(big.phylo)
+		
+		wdir	<- '/work/or105/Gates_2014/tree_comparison/lsd'
+		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'
+		load(file)				
+		
+		ds		<- subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN1' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1]), by='GENE']
+		ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
+		ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN4' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
+		ds		<- merge(ds, submitted.info, by=c('IDX','GENE'))	
+		ds[, {	
+					ph				<- strs_rtt[[IDX]]
+					tmp				<- data.table(TAXA=ph$tip.label, SEQ_T= sapply(strsplit(ph$tip.label, '|', fixed=1),'[[', 4))
+					tmp				<- tmp[,  list(STR=paste(TAXA,' ',SEQ_T,sep='')), by='TAXA'][, paste(STR, collapse='\n')]
+					tmp				<- paste(Ntip(ph),'\n',tmp,sep='')
+					infile.tree		<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'.newick',sep=''))				
+					infile.dates	<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'.txt',sep=''))
+					outfile			<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_LSD',sep=''))
+					cat(tmp, file=infile.dates)
+					write.tree(ph, file=infile.tree)
+					ali.nrow		<- 6800
+					if(GENE=='GAG')
+						ali.nrow	<- 1440				
+					cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
+					cat(cmd)		
+					cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("lsd",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)					
+					stop()
+				}, by='IDX']
+	}
 	if(0)	#calculate genetic distances in alignment + get bootstrap variance
 	{
 		#batch.i		<- 1
@@ -234,8 +267,7 @@ pipeline.various<- function()
 					cat(cmd)
 					cmd.hpccaller(indir, paste("exa",signat,sep='.'), cmd)
 					Sys.sleep(1)
-				}, by='SC'])
-		
+				}, by='SC'])		
 	}
 	if(0)
 	{
@@ -262,7 +294,7 @@ pipeline.various<- function()
 ##--------------------------------------------------------------------------------------------------------
 prog.treecomparison<- function()
 {
-	if(1)
+	if(0)
 	{
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
@@ -275,7 +307,7 @@ prog.treecomparison<- function()
 	{
 		indir	<- wdir	<- file.path(DATA,'gds')
 		treecomparison.bootstrap.sd.vs.coverage(indir, wdir)
-	}
+	}	
 	quit("no")
 }
 ##--------------------------------------------------------------------------------------------------------
