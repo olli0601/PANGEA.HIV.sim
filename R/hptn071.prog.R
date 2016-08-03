@@ -216,6 +216,7 @@ pipeline.various<- function()
 					if(GENE=='GAG')
 						ali.nrow	<- 1440				
 					cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
+					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=10, hpc.mem="6000mb")
 					cat(cmd)		
 					cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("lsd",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)					
 					stop()
