@@ -195,7 +195,7 @@ pipeline.various<- function()
 		require(big.phylo)
 		
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/lsd'
-		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'
+		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713_05QD.rda'
 		load(file)				
 		
 		ds		<- subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN1' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1]), by='GENE']
