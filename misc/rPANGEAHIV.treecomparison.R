@@ -3815,11 +3815,11 @@ treecomparison.ana.160627.strs<- function()
 	#	get reference of error without long branches
 	lba.su[, ERR:= DEPTH_T-DEPTH]
 	#	these are the closest trees in terms of NRF
-	ref.box		<- subset(lba.su, IDX==858)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
-	ref.box		<- subset(lba.su, IDX==2)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
-	subset(lba.su, IDX==858)[, sd(ERR)*10]
+	#ref.box		<- subset(lba.su, IDX==858)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
+	#ref.box		<- subset(lba.su, IDX==2)[, quantile(ERR, p=c(0.25, 0.75))+c(-1,1)*3*diff(quantile(ERR, p=c(0.25, 0.75)))]
+	#subset(lba.su, IDX==858)[, sd(ERR)*10]
 	#	this suggests the following Tukey criterion:
-	ref.box		<- c(-0.04,0.04)
+	#ref.box		<- c(-0.04,0.04)
 	ref.box		<- c(-0.1,0.1)
 	#
 	#	severe branch lengths errors by team
@@ -3925,33 +3925,7 @@ treecomparison.ana.160627.strs<- function()
 						print(p)
 						dev.off()	
 						NULL
-					}, by=c('GENE')])	
-	#
-	#	select for structured coalescent and date trees with LSD
-	#
-	wdir	<- '~/duke/tmp'
-	ds		<- subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN1' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1]), by='GENE']
-	ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
-	ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN4' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
-	ds		<- merge(ds, submitted.info, by=c('IDX','GENE'))	
-	ds[, {	
-				ph				<- strs_rtt[[IDX]]
-				tmp				<- data.table(TAXA=ph$tip.label, SEQ_T= sapply(strsplit(ph$tip.label, '|', fixed=1),'[[', 4))
-				tmp				<- tmp[,  list(STR=paste(TAXA,' ',SEQ_T,sep='')), by='TAXA'][, paste(STR, collapse='\n')]
-				tmp				<- paste(Ntip(ph),'\n',tmp,sep='')
-				infile.tree		<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'.newick',sep=''))				
-				infile.dates	<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'.txt',sep=''))
-				outfile			<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_LSD',sep=''))
-				cat(tmp, file=infile.dates)
-				write.tree(ph, file=infile.tree)
-				ali.nrow		<- 6800
-				if(GENE=='GAG')
-					ali.nrow	<- 1440				
-				cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
-				cat(cmd)
-				#system(cmd)
-				stop()
-			}, by='IDX']
+					}, by=c('GENE')])		
 }	
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
