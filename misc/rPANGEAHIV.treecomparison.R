@@ -1877,7 +1877,8 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	tmp		<- lapply(infiles[, FILE], function(x)
 		{
 			load(x)
-			merge(tp, tpi, by=c('TAXA1','TAXA2'))
+			ans	<- merge(tp, tpi, by=c('TAXA1','TAXA2'))
+			ans
 		})
 	tp		<- do.call('rbind', tmp)	
 	setkey(tp, ID1, ID2)
@@ -1936,8 +1937,8 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	#
 	#	
 	#	
-	save(d, v, file=file.path(wdir,'150701_Regional_TRAIN4_REP_1_GENE_GAGPOLENV.rda'))
-	na.rm.p			<- 0.1
+	
+	
 	diag(d)			<- NA_real_
 	diag(v)			<- NA_real_
 	#	remove cols/rows that contain nothing else than NAs
@@ -1950,13 +1951,32 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	ds				<- ds[tmp,tmp]
 	vs				<- vs[tmp,tmp]	
 	#	remove cols/rows that contain more than 10% NAs
-	tmp				<- apply(ds, 1, function(x) length(which(is.na(x))) ) / ncol(ds)
-	tmp				<- which(tmp>na.rm.p)
-	cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
-	ds				<- ds[-tmp,-tmp]
-	vs				<- vs[-tmp,-tmp]	
+	#na.rm.p			<- 0.1
+	#tmp				<- apply(ds, 1, function(x) length(which(is.na(x))) ) / ncol(ds)
+	#tmp				<- which(tmp>na.rm.p)
+	#cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
+	#ds				<- ds[-tmp,-tmp]
+	#vs				<- vs[-tmp,-tmp]	
 	#	in total, 9 columns out of 1600 cols deleted
 	
+	require(smacof)
+	diag(ds)		<- 0
+	fit				<- mds(ds, type="interval", ndim=2)
+	fit2			<- mds(ds, type="interval", ndim=100)
+	fit3			<- mds(ds, type="interval", ndim=500)
+	fit4			<- mds(ds, ndim=750, type="mspline", spline.intKnots=3, spline.degree=2)
+	
+	save(tp, d, v, ds, vs, fit4, file=file.path(wdir,'150701_Regional_TRAIN4_REP_1_GENE_GAGPOLENV.rda'))
+	
+	#rnd.stress 		<- mean( randomstress(n=1591, ndim=500, nrep=100) )	#even just one iteration takes forever
+	
+	plot(fit, plot.type = "Shepard", main = "dim 2")
+	plot(fit2, plot.type = "Shepard", main = "dim 100")
+	plot(fit3, plot.type = "Shepard", main = "dim 500")
+	plot(fit4, plot.type = "Shepard", main = "dim 750 mspline")	#this looks good
+	
+	ifit4 			<- inverseMDS(fit4$conf) 
+
 	vs[ is.na(vs) ]	<- max(vs, na.rm=TRUE) 
 	
 	ds			<- ds[-tmp,-tmp]

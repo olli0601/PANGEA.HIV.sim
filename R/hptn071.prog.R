@@ -188,7 +188,7 @@ pipeline.various<- function()
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
-	if(1)	#run LSD
+	if(0)	#run LSD
 	{
 		require(ape)
 		require(data.table)
@@ -238,18 +238,18 @@ pipeline.various<- function()
 				}, by='IDX']		
 		quit('no')
 	}
-	if(0)	#calculate genetic distances in alignment + get bootstrap variance
+	if(1)	#calculate genetic distances in alignment + get bootstrap variance
 	{
 		#batch.i		<- 1
 		indir		<- file.path(DATA, 'gds')	
-		infile.fa	<- '150701_Regional_TRAIN4_SIMULATED.fa'
-		infile.ge	<- '150701_Regional_TRAIN4_SIMULATED_gene.txt'
+		infile.fa	<- '150701_Regional_TRAIN2_SIMULATED.fa'
+		infile.ge	<- '150701_Regional_TRAIN2_SIMULATED_gene.txt'
 		outdir		<- indir
-		for(batch.i in 1:1)
+		for(batch.i in 1:400)
 		{
 			outfile	<- paste(gsub('.fa','',infile.fa),'_GDS_BATCH',batch.i,'.rda',sep='')
 			cmd		<- cmd.gendist(indir, infile.fa, infile.ge, outdir, outfile, batch.i)		
-			cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=48, hpc.mem="5000mb")
+			cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=58, hpc.mem="5000mb")
 			cat(cmd)		
 			cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)				
 		}			
