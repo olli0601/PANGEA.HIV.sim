@@ -201,32 +201,41 @@ pipeline.various<- function()
 		load(file)				
 		
 		setkey(submitted.info, TEAM, SC, GENE, RUNGAPS)
-		ds		<- subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN1' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1]), by='GENE']
-		ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
-		ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN4' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])		
-		ds		<- rbind(ds, subset(submitted.info, TEAM=='RUNGAPS_ExaML' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('P17','GAG','GAG+POL+ENV'))[, list(IDX=IDX[seq.int(1,length(IDX),3)]), by='GENE'])
-		
-		ds		<- merge(ds, submitted.info, by=c('IDX','GENE'))	
+
+		ds		<- subset(submitted.info, MODEL=='R')
+		#ds		<- subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN1' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1]), by='GENE']
+		#ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
+		#ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN4' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])		
+		#ds		<- rbind(ds, subset(submitted.info, TEAM=='RUNGAPS_ExaML' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('P17','GAG','GAG+POL+ENV'))[, list(IDX=IDX[seq.int(1,length(IDX),3)]), by='GENE'])		
+		#ds		<- merge(ds, submitted.info, by=c('IDX','GENE'))	
 		ds[, {	
 					ph				<- strs_rtt[[IDX]]
 					tmp				<- data.table(TAXA=ph$tip.label, SEQ_T= sapply(strsplit(ph$tip.label, '|', fixed=1),'[[', 4))
 					tmp				<- tmp[,  list(STR=paste(TAXA,' ',SEQ_T,sep='')), by='TAXA'][, paste(STR, collapse='\n')]
 					tmp				<- paste(Ntip(ph),'\n',tmp,sep='')
-					infile.tree		<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_RUNGAPS_',RUNGAPS,'.newick',sep=''))				
-					infile.dates	<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_RUNGAPS_',RUNGAPS,'.txt',sep=''))
-					outfile			<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_RUNGAPS_',RUNGAPS,'_LSD',sep=''))
+					#infile.tree		<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_RUNGAPS_',RUNGAPS,'.newick',sep=''))				
+					#infile.dates	<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_RUNGAPS_',RUNGAPS,'.txt',sep=''))
+					#outfile			<- file.path(wdir, paste(gsub('\\.treefile','',basename(FILE)),'_IDX_',IDX,'_GAPS_',GAPS,'_RUNGAPS_',RUNGAPS,'_LSD',sep=''))					
+					infile.tree		<- file.path(wdir, paste('IDX_',IDX,'.newick',sep=''))				
+					infile.dates	<- file.path(wdir, paste('IDX_',IDX,'.txt',sep=''))
+					outfile			<- file.path(wdir, paste('IDX_',IDX,'_LSD',sep=''))
 					cat(tmp, file=infile.dates)
 					write.tree(ph, file=infile.tree)
 					ali.nrow		<- 6800
 					if(GENE=='GAG')
-						ali.nrow	<- 1440				
+						ali.nrow	<- 1440	
+					if(GENE=='GAG+PARTIALPOL')
+						ali.nrow	<- 3000
+					if(GENE=='P17')
+						ali.nrow	<- 400	
+					if(GENE=='POL')
+						ali.nrow	<- 2850						
 					cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
-					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=10, hpc.mem="6000mb")
+					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=5, hpc.mem="6000mb")
 					cat(cmd)		
-					cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("lsd",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
-					quit('no')
-				}, by='IDX']
-		
+					cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("lsd",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)					
+					#quit('no')
+				}, by='IDX']		
 		quit('no')
 	}
 	if(0)	#calculate genetic distances in alignment + get bootstrap variance

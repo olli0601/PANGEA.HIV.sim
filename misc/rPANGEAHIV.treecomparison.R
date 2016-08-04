@@ -1785,6 +1785,7 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	#
 	#	
 	#	
+	save(d, v, file=file.path(wdir,'150701_Regional_TRAIN4_REP_1_GENE_GAGPOLENV.rda'))
 	na.rm.p		<- 0.1
 	diag(d)		<- NA_real_
 	diag(v)		<- NA_real_
@@ -1803,13 +1804,13 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
 	ds			<- ds[-tmp,-tmp]
 	vs			<- vs[-tmp,-tmp]	
-	
+	#	in total, 9 columns out of 1600 cols deleted
 	tmp	<- 1:150
 	ds			<- ds[-tmp,-tmp]
 	vs			<- vs[-tmp,-tmp]	
 	
-	#	in total, 9 columns out of 1600 cols deleted
-	save(d,v, ds, vs, file=file.path(wdir,'150701_Regional_TRAIN4_REP_1_GENE_GAGPOLENV.rda'))
+	
+	
 	
 	# njs(ds, fs = 15) # runs fine
 	ph			<- mvrs(ds, vs, fs = 15)	
