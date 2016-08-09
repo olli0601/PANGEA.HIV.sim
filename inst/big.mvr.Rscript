@@ -40,7 +40,7 @@ require(PANGEA.HIV.sim)
 #
 #	read precomputed distances in long format
 #
-tmp			<- load(file)
+tmp			<- load(infile)
 if(length(tmp)!=1)		
 	stop("Unexpected length of objects in file",infile)
 eval(parse(text=paste("tps<- ",tmp,sep='')))
