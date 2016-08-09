@@ -1927,38 +1927,54 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	require(ape)
 	require(data.table)
 	require(ggplot2)
+	#	get master RDA file with all distances
+	if(0)	
+	{
+		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'	
+		indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
+		infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'	
+		#	create tp with IDs -- need this to complete to matrix	
+		seq		<- read.dna(file.path(indir, infile), format='fa')
+		tp		<- as.data.table( t(combn(rownames(seq),2)) )		
+		setnames(tp, c('V1','V2'), c('TAXA1','TAXA2'))
+		tmp		<- as.data.table( t(combn(seq_len(nrow(seq)),2)) )
+		setnames(tmp, c('V1','V2'), c('ID1','ID2'))
+		tp		<- cbind(tp, tmp)
+		#
+		#	read genetic distances between taxon pairs
+		#		
+		infiles	<- data.table(FILE=list.files(wdir, pattern='BATCH[0-9]+.rda$', full.names=TRUE))
+		infiles[, BATCH:= as.integer(gsub('BATCH','',regmatches(FILE, regexpr('BATCH[0-9]+', FILE))))]
+		setkey(infiles, BATCH)
+		#	not yet completed
+		stopifnot( infiles[, length(setdiff(seq.int(1,400), BATCH))==0]	)
+		#	read files
+		tmp		<- lapply(infiles[, FILE], function(x)
+				{
+					load(x)
+					ans	<- merge(tp, tpi, by=c('TAXA1','TAXA2'))
+					ans
+				})
+		tp		<- do.call('rbind', tmp)	
+		setkey(tp, ID1, ID2)
+		tp[, GD_V:= GD_SD*GD_SD]
+		#
+		#	save tp to file
+		#
+		save(tp, seq, file=file.path(wdir, '150701_Regional_TRAIN4_SIMULATED_tps.rda'))	
+	}	
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.11
+seq.big.mvr<- function(tps, na.rm.p=NA, mds.args=list('ndim'= 750, type="mspline", "spline.intKnots"=3, "spline.degree"=2), wfile=NA)
+{
+	require(smacof)
 	
-	wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
-	infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'	
-	#	create tp with IDs -- need this to complete to matrix	
-	seq		<- read.dna(file.path(indir, infile), format='fa')
-	tp		<- as.data.table( t(combn(rownames(seq),2)) )		
-	setnames(tp, c('V1','V2'), c('TAXA1','TAXA2'))
-	tmp		<- as.data.table( t(combn(seq_len(nrow(seq)),2)) )
-	setnames(tmp, c('V1','V2'), c('ID1','ID2'))
-	tp		<- cbind(tp, tmp)
-	#
-	#	read genetic distances between taxon pairs
-	#		
-	infiles	<- data.table(FILE=list.files(wdir, pattern='BATCH[0-9]+.rda$', full.names=TRUE))
-	infiles[, BATCH:= as.integer(gsub('BATCH','',regmatches(FILE, regexpr('BATCH[0-9]+', FILE))))]
-	setkey(infiles, BATCH)
-	#	not yet completed
-	stopifnot( infiles[, length(setdiff(seq.int(1,400), BATCH))==0]	)
-	#	read files
-	tmp		<- lapply(infiles[, FILE], function(x)
-		{
-			load(x)
-			ans	<- merge(tp, tpi, by=c('TAXA1','TAXA2'))
-			ans
-		})
-	tp		<- do.call('rbind', tmp)	
-	setkey(tp, ID1, ID2)
-	tp[, GD_V:= GD_SD*GD_SD]
 	#	select (rep 1 gag+pol+env)
 	tps				<- subset(tp, REP==1 & GENE=='gag+pol+env')
+	#
 	#	get distance matrix
+	#
 	tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD')		
 	d				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
 	d				<- rbind(d, NA_real_)
@@ -2008,13 +2024,10 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	stopifnot(ncol(v)==nrow(v))	
 	cat('V matrix: proportion of NA entries=',length(which(is.na(v))) / prod(dim(v)))
 	#
-	#	
-	#	
-	
-	
-	diag(d)			<- NA_real_
-	diag(v)			<- NA_real_
 	#	remove cols/rows that contain nothing else than NAs
+	#	
+	diag(d)			<- NA_real_
+	diag(v)			<- NA_real_		
 	tmp				<- apply(d, 1, function(x) !all(is.na(x)))
 	cat('\nIn D: found',length(which(!tmp)),'columns / rows with NA only: remove in D and V. ', rownames(d)[!tmp])
 	ds				<- d[tmp,tmp]
@@ -2023,65 +2036,40 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 	cat('\nIn V: found additional',length(which(!tmp)),'columns / rows with NA only: remove in D and V too. ', rownames(d)[!tmp])
 	ds				<- ds[tmp,tmp]
 	vs				<- vs[tmp,tmp]	
+	#
 	#	remove cols/rows that contain more than 10% NAs
-	#na.rm.p			<- 0.1
-	#tmp				<- apply(ds, 1, function(x) length(which(is.na(x))) ) / ncol(ds)
-	#tmp				<- which(tmp>na.rm.p)
-	#cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
-	#ds				<- ds[-tmp,-tmp]
-	#vs				<- vs[-tmp,-tmp]	
-	#	in total, 9 columns out of 1600 cols deleted
-	
-	require(smacof)
+	#
+	if(!is.na(na.rm.p))
+	{		
+		tmp				<- apply(ds, 1, function(x) length(which(is.na(x))) ) / ncol(ds)
+		tmp				<- which(tmp>na.rm.p)
+		cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
+		ds				<- ds[-tmp,-tmp]
+		vs				<- vs[-tmp,-tmp]			
+	}
+	#
+	#	do MDS to impute missing distances since mvrs fails too often
+	#	
+	attach(mds.args)
 	diag(ds)		<- 0
-	fit				<- mds(ds, type="interval", ndim=2)
-	fit2			<- mds(ds, type="interval", ndim=100)
-	fit3			<- mds(ds, type="interval", ndim=500)
-	fit4			<- mds(ds, ndim=750, type="mspline", spline.intKnots=3, spline.degree=2)
-	
-	save(tp, d, v, ds, vs, fit4, file=file.path(wdir,'150701_Regional_TRAIN4_REP_1_GENE_GAGPOLENV.rda'))
+	#mds.fit		<- mds(ds, ...)
+	mds.fit			<- mds(ds, ndim=ndim, type=type, spline.intKnots=spline.intKnots, spline.degree=spline.degree)
+	if(!is.na(wfile))
+	{
+		pdf(file=paste(wfile,'.shephard.pdf',sep=''), width=5, height=5)
+		plot(mds.fit, plot.type = "Shepard")	
+		dev.off()
+	}	
+	mds.ifit 		<- inverseMDS(mds.fit$conf) 
+	if(!is.na(wfile))
+	{
+		save(tps, ds, vs, mds.fit, mds.ifit, mds.args, file=paste(wfile,'mds.rda',sep=''))	
+	}
+	#	unfinished
 	
 	#rnd.stress 		<- mean( randomstress(n=1591, ndim=500, nrep=100) )	#even just one iteration takes forever
-	
-	plot(fit, plot.type = "Shepard", main = "dim 2")
-	plot(fit2, plot.type = "Shepard", main = "dim 100")
-	plot(fit3, plot.type = "Shepard", main = "dim 500")
-	plot(fit4, plot.type = "Shepard", main = "dim 750 mspline")	#this looks good
-	
-	ifit4 			<- inverseMDS(fit4$conf) 
-
-	vs[ is.na(vs) ]	<- max(vs, na.rm=TRUE) 
-	
-	ds			<- ds[-tmp,-tmp]
-	vs			<- vs[-tmp,-tmp]	
-	
-	
-	
-	
 	# njs(ds, fs = 15) # runs fine
-	ph			<- mvrs(ds, vs, fs = 15)	
-	
-	which(!tmp)
-	
-	which(apply(d, 1, function(x) all(is.na(x))))
-	
-	d[1:30, which(is.na(d[1, ]))]
-	tmp			<- which(apply(ds, 1, function(x) any(is.na(x))))
-	system.time({ ph	<- mvrs(d, v, fs = 100) })
-
-
-	tmp			<- dcast.data.table(tps, TAXA1~TAXA2, value.var='GD_V')
-	v			<- as.matrix(tmp[, -1, with=FALSE])
-	rownames(v)	<- tmp[, TAXA1]
-	stopifnot(ncol(v)==nrow(v))
-	#	run mvrs 
-	
-	TAXA1	<- tmp[, TAXA1]
-	TAXA2	<- tmp[, TAXA2]
-	GD		<- tmp[, GD]
-	
-	unique(TAXA1)
-	
+	# ph			<- mvrs(ds, vs, fs = 15)			
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11

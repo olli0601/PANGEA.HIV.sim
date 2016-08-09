@@ -12,6 +12,7 @@ Suggests:
     reshape2,
     data.table,
     RColorBrewer,
+    smacof,
     grid,
     ggplot2,
     igraph,

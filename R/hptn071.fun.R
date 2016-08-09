@@ -73,6 +73,117 @@ seq.singleton2bifurcatingtree<- function(ph.s, dummy.label=NA)
 	ph.s
 }
 ##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.11
+#' @import data.table ape smacof
+#' @export
+seq.big.mvr<- function(tps, na.rm.p=NA, mds.args=list('ndim'= 750, type="mspline", "spline.intKnots"=3, "spline.degree"=2), outfile=NA)
+{
+	#require(smacof)	
+	#	select (rep 1 gag+pol+env)
+	#	tps				<- subset(tp, REP==1 & GENE=='gag+pol+env')
+	#
+	#	get distance matrix
+	#
+	tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD')		
+	d				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
+	d				<- rbind(d, NA_real_)
+	colnames(d)[1]	<- setdiff( as.character(tmp[, ID1]), colnames(d) )
+	rownames(d)		<- colnames(d)
+	diag(d)			<- 0
+	#	complete lower triangular from upper triangular and vice versa
+	tmp				<- lower.tri(d) & is.na(d)	
+	d[tmp]			<- t(d)[tmp]
+	tmp				<- upper.tri(d) & is.na(d)
+	d[tmp]			<- t(d)[tmp]
+	#	reset names
+	tmp				<- subset( tps, select=c(TAXA1, ID1) )
+	setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
+	tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
+	setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )
+	setkey(tmp, ID)
+	rownames(d)		<- tmp[, TAXA]
+	colnames(d)		<- tmp[, TAXA]
+	#	checks	
+	stopifnot(ncol(d)==nrow(d))
+	stopifnot(length(which(is.na(d)))==2*nrow(subset(tps, is.na(GD))))
+	cat('D matrix: proportion of NA entries=',length(which(is.na(d))) / prod(dim(d)))
+	#
+	#	get variance matrix
+	#
+	tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD_V')		
+	v				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
+	v				<- rbind(v, NA_real_)
+	colnames(v)[1]	<- setdiff( as.character(tmp[, ID1]), colnames(v) )
+	rownames(v)		<- colnames(v)
+	diag(v)			<- 0
+	#	complete lower triangular from upper triangular and vice versa
+	tmp				<- lower.tri(v) & is.na(v)	
+	v[tmp]			<- t(v)[tmp]
+	tmp				<- upper.tri(v) & is.na(v)
+	v[tmp]			<- t(v)[tmp]
+	#	reset names
+	tmp				<- subset( tps, select=c(TAXA1, ID1) )
+	setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
+	tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
+	setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )
+	setkey(tmp, ID)
+	rownames(v)		<- tmp[, TAXA]
+	colnames(v)		<- tmp[, TAXA]
+	#	checks	
+	stopifnot(ncol(v)==nrow(v))	
+	cat('V matrix: proportion of NA entries=',length(which(is.na(v))) / prod(dim(v)))
+	#
+	#	remove cols/rows that contain nothing else than NAs
+	#	
+	diag(d)			<- NA_real_
+	diag(v)			<- NA_real_		
+	tmp				<- apply(d, 1, function(x) !all(is.na(x)))
+	cat('\nIn D: found',length(which(!tmp)),'columns / rows with NA only: remove in D and V. ', rownames(d)[!tmp])
+	ds				<- d[tmp,tmp]
+	vs				<- v[tmp,tmp]	
+	tmp				<- apply(vs, 1, function(x) !all(is.na(x)))
+	cat('\nIn V: found additional',length(which(!tmp)),'columns / rows with NA only: remove in D and V too. ', rownames(d)[!tmp])
+	ds				<- ds[tmp,tmp]
+	vs				<- vs[tmp,tmp]	
+	#
+	#	remove cols/rows that contain more than 10% NAs
+	#
+	if(!is.na(na.rm.p))
+	{		
+		tmp				<- apply(ds, 1, function(x) length(which(is.na(x))) ) / ncol(ds)
+		tmp				<- which(tmp>na.rm.p)
+		cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
+		ds				<- ds[-tmp,-tmp]
+		vs				<- vs[-tmp,-tmp]			
+	}
+	#	free as much mem as possible
+	d	<- v <- tps	<- NULL
+	gc()
+	#
+	#	do MDS to impute missing distances since mvrs fails too often
+	#	
+	attach(mds.args)
+	diag(ds)		<- 0
+	#mds.fit		<- mds(ds, ...)
+	mds.fit			<- mds(ds, ndim=ndim, type=type, spline.intKnots=spline.intKnots, spline.degree=spline.degree)
+	if(!is.na(outfile))
+	{
+		pdf(file=paste(outfile,'.shephard.pdf',sep=''), width=5, height=5)
+		plot(mds.fit, plot.type = "Shepard")	
+		dev.off()
+	}	
+	mds.ifit 		<- inverseMDS(mds.fit$conf) 
+	if(!is.na(outfile))
+	{
+		save(mds.fit, mds.ifit, mds.args, file=paste(outfile,'mds.rda',sep=''))	
+	}
+	#	unfinished
+	
+	# rnd.stress 		<- mean( randomstress(n=1591, ndim=500, nrep=100) )	#even just one iteration takes forever
+	# njs(ds, fs = 15) # runs fine
+	# ph			<- mvrs(ds, vs, fs = 15)			
+}
+##--------------------------------------------------------------------------------------------------------
 #	olli 23.07.2016
 ##--------------------------------------------------------------------------------------------------------
 #' @import data.table ape
@@ -1699,10 +1810,6 @@ PANGEA.add.gaps.simulate<- function(indir.simu, indir.gap, infile.simu, infile.g
 	file.remove(tmp)	
 	sgp		
 }
-##--------------------------------------------------------------------------------------------------------	
-#	olli originally written 29-07-2016
-#' @useDynLib mvrs_standalone
-
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.add.gaps.allocate.chunks.to.sequences<- function(ch, ms)
 {

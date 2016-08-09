@@ -1,8 +1,7 @@
 CWD= $$(pwd)
 
 all:	
-	echo "current directory is "$(CWD)
-	MAKEFLAGS="SHLIB_CXXLD=g++ CXX=g++" R CMD SHLIB -o mvrs_standalone.so *.cpp
+	echo "current directory is "$(CWD)	
 	@echo "*********************************************** "
 	@echo "********* BUILDING seq-gen ******************** "
 	@echo "*********************************************** "	

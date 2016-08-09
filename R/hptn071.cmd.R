@@ -5,6 +5,7 @@ PR.STARTME					<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/misc/rPANG
 PR.HPTN071.INPUT.PARSER4	<- paste('Rscript',system.file(package=PR.PACKAGE, "HPTN071.input.parser.v4.Rscript"),sep=' ')
 PR.SEQGEN.FILECREATOR		<- paste('Rscript',system.file(package=PR.PACKAGE, "PANGEA.SeqGen.createInputFile.Rscript"),sep=' ')
 PR.SEQGEN.SIMULATOR			<- paste('Rscript',system.file(package=PR.PACKAGE, "PANGEA.SeqGen.run.v4.Rscript"),sep=' ')
+PR.MVR						<- system.file(package=PR.PACKAGE, "ext", "big.mvr.Rscript")
 PR.VIRUSTREESIMULATOR		<- system.file(package=PR.PACKAGE, "ext", "VirusTreeSimulator.jar")
 PR.SEQGEN					<- system.file(package=PR.PACKAGE, "ext", "seq-gen")
 PR.HPTN071.LOWACUTE			<- system.file(package=PR.PACKAGE, "ext", "popart-lowacute")
@@ -240,6 +241,21 @@ cmd.SeqGen.createInputFiles<- function(indir.epi, infile.epi, indir.vts, infile.
 	cmd		<- paste(cmd,paste("echo \'end ",prog,"\'\n",sep=''))
 	cmd		<- paste(cmd,"#######################################################
 # end: run SeqGen.createInputFile
+#######################################################\n",sep='')
+	cmd
+}
+######################################################################################
+#	return command line to run SeqGen and process SeqGen output 	
+cmd.bigmvr<- function(infile, outfile, prog=PR.MVR)
+{
+	cmd<- "#######################################################
+# start: run big.mvr.Rscript 
+#######################################################"
+	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
+	cmd		<- paste(cmd, paste(prog,' -infile=', infile,' -outfile=',outfile,' \n', sep=''))
+	cmd		<- paste(cmd,paste("echo \'end ",prog,"\'\n",sep=''))
+	cmd		<- paste(cmd,"#######################################################
+# end: run big.mvr.Rscript
 #######################################################\n",sep='')
 	cmd
 }

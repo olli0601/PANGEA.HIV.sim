@@ -1,0 +1,50 @@
+args <- commandArgs()
+if(!any(args=='--args'))
+	args<- vector("numeric",0)
+if(any(args=='--args'))
+	args<- args[-(1:match("--args", args)) ]
+#
+#	default args
+#
+infile		<- file.path('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr','150701_Regional_TRAIN4_SIMULATED_tps.rda')	
+outfile		<- infile
+na.rm.p		<- NA	 
+mds.args	<- list('ndim'= 750, type="mspline", "spline.intKnots"=3, "spline.degree"=2)
+verbose		<- 1
+#
+#	read args as specified
+#
+if(exists("args"))
+{
+	#	args input
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,7),
+								infile= return(substr(arg,9,nchar(arg))),NA)	}))
+	if(length(tmp)>0) infile<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,8),
+								outfile= return(substr(arg,10,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outfile<- tmp[1]	
+}
+if(verbose)
+{
+	cat('\ninput args\n',paste(infile, outfile, sep='\n'))
+}
+#
+#	start script
+#
+require(ape)
+require(data.table)
+require(smacof)
+require(PANGEA.HIV.sim)
+#
+#	read precomputed distances in long format
+#
+tmp			<- load(file)
+if(length(tmp)!=1)		
+	stop("Unexpected length of objects in file",infile)
+eval(parse(text=paste("tps<- ",tmp,sep='')))
+#
+#	get distances and save
+#
+seq.big.mvr(tps, na.rm.p=na.rm.p, mds.args=mds.args, outfile=outfile)
