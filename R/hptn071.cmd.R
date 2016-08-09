@@ -5,7 +5,7 @@ PR.STARTME					<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/misc/rPANG
 PR.HPTN071.INPUT.PARSER4	<- paste('Rscript',system.file(package=PR.PACKAGE, "HPTN071.input.parser.v4.Rscript"),sep=' ')
 PR.SEQGEN.FILECREATOR		<- paste('Rscript',system.file(package=PR.PACKAGE, "PANGEA.SeqGen.createInputFile.Rscript"),sep=' ')
 PR.SEQGEN.SIMULATOR			<- paste('Rscript',system.file(package=PR.PACKAGE, "PANGEA.SeqGen.run.v4.Rscript"),sep=' ')
-PR.MVR						<- system.file(package=PR.PACKAGE, "big.mvr.Rscript")
+PR.MVR						<- paste('Rscript',system.file(package=PR.PACKAGE, "big.mvr.Rscript"),sep=' ')
 PR.VIRUSTREESIMULATOR		<- system.file(package=PR.PACKAGE, "ext", "VirusTreeSimulator.jar")
 PR.SEQGEN					<- system.file(package=PR.PACKAGE, "ext", "seq-gen")
 PR.HPTN071.LOWACUTE			<- system.file(package=PR.PACKAGE, "ext", "popart-lowacute")
