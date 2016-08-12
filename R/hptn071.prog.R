@@ -194,11 +194,12 @@ pipeline.various<- function()
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/mvr'
 		#wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		infile	<- '150701_Regional_TRAIN4_SIMULATED_tps.rda'
+		infile	<- '150701_Regional_TRAIN2_SIMULATED_tps.rda'
 		load(file.path(wdir, infile))
 		
 		loop.rep	<- tp[, unique(REP)]
 		loop.gene	<- tp[, unique(GENE)]
-		loop.gene	<- "gag+pol+env"
+		#loop.gene	<- "gag+pol+env"
 		for(gene in loop.gene)
 			for(rep in loop.rep)
 			{
@@ -209,7 +210,7 @@ pipeline.various<- function()
 				cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=2, hpc.mem="6000mb")
 				cat(cmd)		
 				cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("mvr",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
-				quit('no')
+				#quit('no')
 			}
 		quit('no')
 	}
