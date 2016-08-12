@@ -76,8 +76,10 @@ seq.singleton2bifurcatingtree<- function(ph.s, dummy.label=NA)
 ##	olli 27.06.11
 #' @import data.table ape recosystem ggplot2
 #' @export
-seq.big.mvr<- function(tps, seed=42, v.mult=1.2, reco.opts=c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120), outfile=NA)
+seq.big.mvr<- function(tps, seed=42, v.mult=1.2, opt.expressions=15000, reco.opts=c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120), outfile=NA, verbose=FALSE)
 {	
+	opt.expressions.old	<- getOption('expressions')
+	options(expressions=opt.expressions)
 	#reco.opts	<- c(dim=500, costp_l1=0, costp_l2=0.01, costq_l1=0, costq_l2=0.01, nthread=1, lrate=0.003, niter=40)	
 	stopifnot( c('TAXA1','TAXA2','ID1','ID2','GD','GD_V')%in%colnames(tps) )
 	#	tps				<- subset(tp, REP==1 & GENE=='gag+pol+env')
@@ -92,6 +94,8 @@ seq.big.mvr<- function(tps, seed=42, v.mult=1.2, reco.opts=c(dim=750, costp_l1=0
 	tmp		<- data.table(ID1= seq.int(tmp[1], tmp[2]), ID2= seq.int(tmp[1], tmp[2]), GD=0)
 	tpc		<- rbind(tpc, tmp)
 	#	setup matrix completion
+	if(verbose)
+		cat('\nmatrix completion')
 	tmp		<- subset(tpc, !is.na(GD))
 	tmp		<- data_memory(tmp[,ID1], tmp[,ID2], rating=tmp[,GD], index1=TRUE)
 	if(!is.na(seed))
@@ -105,6 +109,8 @@ seq.big.mvr<- function(tps, seed=42, v.mult=1.2, reco.opts=c(dim=750, costp_l1=0
 		ggplot(subset(tpc, !is.na(GD)), aes(x=GD, y=GDp)) + geom_point(colour='grey80', size=0.5, pch=16) + geom_abline(slope=1, intercept=0)
 		ggsave(file=paste(outfile, '_', paste(reco.opts,collapse='_'), '.pdf', sep=''), w=7, h=7)		
 	}
+	if(verbose)
+		cat('\ngenerating distance matrix d')
 	#	fill in distance matrix
 	tpc[, GDf:= GD]
 	tmp			<- tpc[, which(is.na(GDf))]
@@ -125,6 +131,8 @@ seq.big.mvr<- function(tps, seed=42, v.mult=1.2, reco.opts=c(dim=750, costp_l1=0
 	#
 	#	generate variance matrix
 	#
+	if(verbose)
+		cat('\ngenerating variance matrix v')
 	tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD_V')		
 	v				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
 	v				<- rbind(v, NA_real_)
@@ -142,6 +150,8 @@ seq.big.mvr<- function(tps, seed=42, v.mult=1.2, reco.opts=c(dim=750, costp_l1=0
 	#
 	#	reset names
 	#
+	if(verbose)
+		cat('\nsetting taxon names')
 	tmp				<- subset( tps, select=c(TAXA1, ID1) )
 	setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
 	tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
@@ -155,12 +165,16 @@ seq.big.mvr<- function(tps, seed=42, v.mult=1.2, reco.opts=c(dim=750, costp_l1=0
 	#				
 	#	run mvr with completed distance and variance matrices
 	#
+	if(verbose) 
+		cat('\ngenerating mvr phylogeny')
 	d				<- as.dist(d)
 	v				<- as.dist(v)
 	#	clean up
 	gc()
 	#
 	ph				<- mvr(d, v)
+	#
+	options(expressions=opt.expressions.old)	
 	ph
 }
 ##--------------------------------------------------------------------------------------------------------
