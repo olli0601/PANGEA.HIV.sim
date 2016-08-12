@@ -1960,8 +1960,8 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 		tp[, GD_V:= GD_SD*GD_SD]
 		#
 		#	save tp to file
-		#
-		save(tp, seq, file=file.path(wdir, '150701_Regional_TRAIN4_SIMULATED_tps.rda'))	
+		#		
+		save(tp, seq, file=file.path(wdir, gsub('\\.fa','_tps.rda',infile)))	
 	}	
 	if(1)
 	{
