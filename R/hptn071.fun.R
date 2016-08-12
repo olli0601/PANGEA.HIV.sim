@@ -76,10 +76,8 @@ seq.singleton2bifurcatingtree<- function(ph.s, dummy.label=NA)
 ##	olli 27.06.11
 #' @import data.table ape recosystem ggplot2
 #' @export
-seq.big.mvr<- function(tps, seed=42, v.mult=1.2, opt.expressions=15000, reco.opts=c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120), outfile=NA, verbose=FALSE)
+seq.big.mvr<- function(tps, seed=42, v.mult=1.2, reco.opts=c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120), outfile=NA, verbose=FALSE)
 {	
-	opt.expressions.old	<- getOption('expressions')
-	options(expressions=opt.expressions)
 	#reco.opts	<- c(dim=500, costp_l1=0, costp_l2=0.01, costq_l1=0, costq_l2=0.01, nthread=1, lrate=0.003, niter=40)	
 	stopifnot( c('TAXA1','TAXA2','ID1','ID2','GD','GD_V')%in%colnames(tps) )
 	#	tps				<- subset(tp, REP==1 & GENE=='gag+pol+env')
@@ -173,8 +171,6 @@ seq.big.mvr<- function(tps, seed=42, v.mult=1.2, opt.expressions=15000, reco.opt
 	gc()
 	#
 	ph				<- mvr(d, v)
-	#
-	options(expressions=opt.expressions.old)	
 	ph
 }
 ##--------------------------------------------------------------------------------------------------------

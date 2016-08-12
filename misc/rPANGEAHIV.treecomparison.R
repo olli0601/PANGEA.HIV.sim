@@ -1966,6 +1966,35 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 	}	
 	if(1)
 	{
+		na.rm.p			<- NA	 
+		seed			<- 42		
+		v.mult			<- 1.2
+		reco.opts		<- c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120)
+		verbose			<- 1
+		
+		#wdir	<- '/work/or105/Gates_2014/tree_comparison/mvr'
+		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+		infile	<- '150701_Regional_TRAIN4_SIMULATED_tps.rda'
+		load(file.path(wdir, infile))
+		
+		loop.rep	<- tp[, unique(REP)]
+		loop.gene	<- tp[, unique(GENE)]
+		loop.gene	<- "gag+pol+env"
+		for(gene in loop.gene)
+			for(rep in loop.rep)
+			{
+				tps		<- subset(tp, GENE==gene & REP==rep)
+				outfile	<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,sep=''), infile))
+				ph		<- seq.big.mvr(tps, seed=seed, v.mult=v.mult, reco.opts=reco.opts, outfile=outfile, verbose=verbose)				
+				outfile	<- paste(outfile,'_',paste(reco.opts,collapse='_'),'_mvr.newick',sep='')
+				options(expressions=5e5)
+				write.tree(ph, file=outfile)	
+				options(expressions=5e3)
+			}
+		quit('no')
+	}
+	if(0)
+	{
 		tps				<- subset(tp, REP==1 & GENE=='gag+pol+env')		
 		tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD')		
 		d				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
@@ -2029,7 +2058,7 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 		ds				<- ds[tmp,tmp]
 		vs				<- vs[tmp,tmp]			
 	}
-	if(1)
+	if(0)
 	{
 		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		load(file.path(wdir, '150701_Regional_TRAIN4_SIMULATED_tps.rda'))

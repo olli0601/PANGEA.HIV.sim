@@ -50,8 +50,11 @@ eval(parse(text=paste("tps<- ",tmp,sep='')))
 #
 #	get distances and save
 #
-ph	<- seq.big.mvr(tps, seed=seed, opt.expressions=opt.expressions, v.mult=v.mult, reco.opts=reco.opts, outfile=outfile, verbose=verbose)
+ph	<- seq.big.mvr(tps, seed=seed, v.mult=v.mult, reco.opts=reco.opts, outfile=outfile, verbose=verbose)
 #
 #	write to file
 #
+opt.expressions.old	<- getOption('expressions')
+options(expressions=opt.expressions)
 write.tree(ph, file=paste(outfile,'_',paste(reco.opts,collapse='_'),'_mvr.newick',sep=''))
+options(expressions=opt.expressions.old)	
