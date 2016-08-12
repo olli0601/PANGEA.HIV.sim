@@ -11,7 +11,7 @@ outfile			<- infile
 na.rm.p			<- NA	 
 seed			<- 42		
 v.mult			<- 1.2
-opt.expressions	<- 15e3
+opt.expressions	<- 5e5
 reco.opts		<- c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120)
 verbose			<- 1
 #

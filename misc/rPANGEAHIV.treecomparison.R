@@ -1932,7 +1932,8 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 	{
 		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'	
 		indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
-		infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'	
+		#infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'
+		infile	<- '150701_Regional_TRAIN2_SIMULATED.fa'
 		#	create tp with IDs -- need this to complete to matrix	
 		seq		<- read.dna(file.path(indir, infile), format='fa')
 		tp		<- as.data.table( t(combn(rownames(seq),2)) )		
