@@ -9,7 +9,9 @@ if(any(args=='--args'))
 infile		<- file.path('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr','150701_Regional_TRAIN4_SIMULATED_tps.rda')	
 outfile		<- infile
 na.rm.p		<- NA	 
-mds.args	<- list('ndim'= 750, type="mspline", "spline.intKnots"=3, "spline.degree"=2)
+seed		<- 42		
+v.mult		<- 1.2
+reco.opts	<- c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120)
 verbose		<- 1
 #
 #	read args as specified
@@ -35,7 +37,7 @@ if(verbose)
 #
 require(ape)
 require(data.table)
-require(smacof)
+require(recosystem)
 require(PANGEA.HIV.sim)
 #
 #	read precomputed distances in long format
@@ -47,4 +49,8 @@ eval(parse(text=paste("tps<- ",tmp,sep='')))
 #
 #	get distances and save
 #
-seq.big.mvr(tps, na.rm.p=na.rm.p, mds.args=mds.args, outfile=outfile)
+ph	<- seq.big.mvr(tps, seed=seed, v.mult=v.mult, reco.opts=reco.opts, outfile=outfile)
+#
+#	write to file
+#
+write.tree(ph, file=paste(outfile,'_',paste(reco.opts,collapse='_'),'_mvr.newick',sep=''))

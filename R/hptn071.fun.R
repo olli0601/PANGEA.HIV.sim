@@ -74,41 +74,56 @@ seq.singleton2bifurcatingtree<- function(ph.s, dummy.label=NA)
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
-#' @import data.table ape smacof
+#' @import data.table ape recosystem ggplot2
 #' @export
-seq.big.mvr<- function(tps, na.rm.p=NA, mds.args=list('ndim'= 750, type="mspline", "spline.intKnots"=3, "spline.degree"=2), outfile=NA)
-{
-	#require(smacof)	
-	#	select (rep 1 gag+pol+env)
+seq.big.mvr<- function(tps, seed=42, v.mult=1.2, reco.opts=c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120), outfile=NA)
+{	
+	#reco.opts	<- c(dim=500, costp_l1=0, costp_l2=0.01, costq_l1=0, costq_l2=0.01, nthread=1, lrate=0.003, niter=40)	
+	stopifnot( c('TAXA1','TAXA2','ID1','ID2','GD','GD_V')%in%colnames(tps) )
 	#	tps				<- subset(tp, REP==1 & GENE=='gag+pol+env')
+	tpc		<- subset(tps, select=c('ID1','ID2','GD'))
+	#	add upper triangular
+	tmp		<- copy(tpc)
+	set(tmp, NULL, 'ID1', tpc[, ID2])
+	set(tmp, NULL, 'ID2', tpc[, ID1])
+	tpc		<- rbind(tpc, tmp)
+	#	add zero diagonal
+	tmp		<- tpc[, range(ID1)]
+	tmp		<- data.table(ID1= seq.int(tmp[1], tmp[2]), ID2= seq.int(tmp[1], tmp[2]), GD=0)
+	tpc		<- rbind(tpc, tmp)
+	#	setup matrix completion
+	tmp		<- subset(tpc, !is.na(GD))
+	tmp		<- data_memory(tmp[,ID1], tmp[,ID2], rating=tmp[,GD], index1=TRUE)
+	if(!is.na(seed))
+		set.seed(seed)
+	r		<- Reco()	
+	r$train(tmp, opts=reco.opts)	
+	tpc[, GDp:= r$predict(data_memory(tpc[,ID1], tpc[,ID2], index1=TRUE), out_memory())]
+	# plot
+	if(!is.na(outfile))
+	{
+		ggplot(subset(tpc, !is.na(GD)), aes(x=GD, y=GDp)) + geom_point(colour='grey80', size=0.5, pch=16) + geom_abline(slope=1, intercept=0)
+		ggsave(file=paste(outfile, '_', paste(reco.opts,collapse='_'), '.pdf', sep=''), w=7, h=7)		
+	}
+	#	fill in distance matrix
+	tpc[, GDf:= GD]
+	tmp			<- tpc[, which(is.na(GDf))]
+	set(tpc, tmp, 'GDf', tpc[tmp, GDp])
+	#	convert to matrix (not necessarily symmetric)
+	tmp			<- dcast.data.table( subset(tpc, select=c(ID1,ID2,GDf)), ID1~ID2, value.var='GDf' )		
+	d			<- as.matrix(tmp[, -1, with=FALSE])
+	rownames(d)	<- colnames(d)
+	#	make symmetric
+	d			<- (d+t(d))/2	
+	#	some rows/cols may have NAs only -- remove these as the matrix completion problem is ill-specified for these
+	tmp			<- subset(subset(tpc, is.na(GD))[, list(GDM=length(GD)), by='ID1'], GDM==nrow(d)-1) #subtract one since diagonal is zero
+	tmp			<- setdiff(rownames(d), tmp[, as.character(ID1)] )
+	d			<- d[tmp, tmp]
+	#	clean up
+	tpc			<- r	<- NULL
+	gc()
 	#
-	#	get distance matrix
-	#
-	tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD')		
-	d				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
-	d				<- rbind(d, NA_real_)
-	colnames(d)[1]	<- setdiff( as.character(tmp[, ID1]), colnames(d) )
-	rownames(d)		<- colnames(d)
-	diag(d)			<- 0
-	#	complete lower triangular from upper triangular and vice versa
-	tmp				<- lower.tri(d) & is.na(d)	
-	d[tmp]			<- t(d)[tmp]
-	tmp				<- upper.tri(d) & is.na(d)
-	d[tmp]			<- t(d)[tmp]
-	#	reset names
-	tmp				<- subset( tps, select=c(TAXA1, ID1) )
-	setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
-	tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
-	setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )
-	setkey(tmp, ID)
-	rownames(d)		<- tmp[, TAXA]
-	colnames(d)		<- tmp[, TAXA]
-	#	checks	
-	stopifnot(ncol(d)==nrow(d))
-	stopifnot(length(which(is.na(d)))==2*nrow(subset(tps, is.na(GD))))
-	cat('D matrix: proportion of NA entries=',length(which(is.na(d))) / prod(dim(d)))
-	#
-	#	get variance matrix
+	#	generate variance matrix
 	#
 	tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD_V')		
 	v				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
@@ -121,67 +136,32 @@ seq.big.mvr<- function(tps, na.rm.p=NA, mds.args=list('ndim'= 750, type="mspline
 	v[tmp]			<- t(v)[tmp]
 	tmp				<- upper.tri(v) & is.na(v)
 	v[tmp]			<- t(v)[tmp]
+	#	set missing variances to large default
+	v[is.na(v)]		<- max(v, na.rm=TRUE)*v.mult
+	v				<- v[rownames(d),colnames(d)]		
+	#
 	#	reset names
+	#
 	tmp				<- subset( tps, select=c(TAXA1, ID1) )
 	setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
 	tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
-	setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )
+	setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )		
+	tmp				<- merge(tmp, data.table(ID=as.integer(rownames(d))), by='ID')
 	setkey(tmp, ID)
+	rownames(d)		<- tmp[, TAXA]
+	colnames(d)		<- tmp[, TAXA]		
 	rownames(v)		<- tmp[, TAXA]
-	colnames(v)		<- tmp[, TAXA]
-	#	checks	
-	stopifnot(ncol(v)==nrow(v))	
-	cat('V matrix: proportion of NA entries=',length(which(is.na(v))) / prod(dim(v)))
+	colnames(v)		<- tmp[, TAXA]	
+	#				
+	#	run mvr with completed distance and variance matrices
 	#
-	#	remove cols/rows that contain nothing else than NAs
-	#	
-	diag(d)			<- NA_real_
-	diag(v)			<- NA_real_		
-	tmp				<- apply(d, 1, function(x) !all(is.na(x)))
-	cat('\nIn D: found',length(which(!tmp)),'columns / rows with NA only: remove in D and V. ', rownames(d)[!tmp])
-	ds				<- d[tmp,tmp]
-	vs				<- v[tmp,tmp]	
-	tmp				<- apply(vs, 1, function(x) !all(is.na(x)))
-	cat('\nIn V: found additional',length(which(!tmp)),'columns / rows with NA only: remove in D and V too. ', rownames(d)[!tmp])
-	ds				<- ds[tmp,tmp]
-	vs				<- vs[tmp,tmp]	
-	#
-	#	remove cols/rows that contain more than 10% NAs
-	#
-	if(!is.na(na.rm.p))
-	{		
-		tmp				<- apply(ds, 1, function(x) length(which(is.na(x))) ) / ncol(ds)
-		tmp				<- which(tmp>na.rm.p)
-		cat('\nIn D: found',length(tmp),'columns / rows with more than',na.rm.p*100,'% NAs: remove in D and V. ', rownames(ds)[tmp])
-		ds				<- ds[-tmp,-tmp]
-		vs				<- vs[-tmp,-tmp]			
-	}
-	#	free as much mem as possible
-	d	<- v <- tps	<- NULL
+	d				<- as.dist(d)
+	v				<- as.dist(v)
+	#	clean up
 	gc()
 	#
-	#	do MDS to impute missing distances since mvrs fails too often
-	#	
-	attach(mds.args)
-	diag(ds)		<- 0
-	#mds.fit		<- mds(ds, ...)
-	mds.fit			<- mds(ds, ndim=ndim, type=type, spline.intKnots=spline.intKnots, spline.degree=spline.degree)
-	if(!is.na(outfile))
-	{
-		pdf(file=paste(outfile,'.shephard.pdf',sep=''), width=5, height=5)
-		plot(mds.fit, plot.type = "Shepard")	
-		dev.off()
-	}	
-	mds.ifit 		<- inverseMDS(mds.fit$conf) 
-	if(!is.na(outfile))
-	{
-		save(mds.fit, mds.ifit, mds.args, file=paste(outfile,'mds.rda',sep=''))	
-	}
-	#	unfinished
-	
-	# rnd.stress 		<- mean( randomstress(n=1591, ndim=500, nrep=100) )	#even just one iteration takes forever
-	# njs(ds, fs = 15) # runs fine
-	# ph			<- mvrs(ds, vs, fs = 15)			
+	ph				<- mvr(d, v)
+	ph
 }
 ##--------------------------------------------------------------------------------------------------------
 #	olli 23.07.2016

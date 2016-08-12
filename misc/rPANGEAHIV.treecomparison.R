@@ -1922,7 +1922,7 @@ treecomparison.bootstrap.mvr.inC<- function(indir=NULL, wdir=NULL)
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
-treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
+treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 {
 	require(ape)
 	require(data.table)
@@ -1963,6 +1963,250 @@ treecomparison.bootstrap.mvr<- function(indir=NULL, wdir=NULL)
 		#
 		save(tp, seq, file=file.path(wdir, '150701_Regional_TRAIN4_SIMULATED_tps.rda'))	
 	}	
+	if(1)
+	{
+		tps				<- subset(tp, REP==1 & GENE=='gag+pol+env')		
+		tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD')		
+		d				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
+		d				<- rbind(d, NA_real_)
+		colnames(d)[1]	<- setdiff( as.character(tmp[, ID1]), colnames(d) )
+		rownames(d)		<- colnames(d)
+		diag(d)			<- 0
+		#	complete lower triangular from upper triangular and vice versa
+		tmp				<- lower.tri(d) & is.na(d)	
+		d[tmp]			<- t(d)[tmp]
+		tmp				<- upper.tri(d) & is.na(d)
+		d[tmp]			<- t(d)[tmp]
+		#	reset names
+		tmp				<- subset( tps, select=c(TAXA1, ID1) )
+		setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
+		tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
+		setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )
+		setkey(tmp, ID)
+		rownames(d)		<- tmp[, TAXA]
+		colnames(d)		<- tmp[, TAXA]
+		#	checks	
+		stopifnot(ncol(d)==nrow(d))
+		stopifnot(length(which(is.na(d)))==2*nrow(subset(tps, is.na(GD))))
+		cat('D matrix: proportion of NA entries=',length(which(is.na(d))) / prod(dim(d)))
+		#
+		#	get variance matrix
+		#
+		tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD_V')		
+		v				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
+		v				<- rbind(v, NA_real_)
+		colnames(v)[1]	<- setdiff( as.character(tmp[, ID1]), colnames(v) )
+		rownames(v)		<- colnames(v)
+		diag(v)			<- 0
+		#	complete lower triangular from upper triangular and vice versa
+		tmp				<- lower.tri(v) & is.na(v)	
+		v[tmp]			<- t(v)[tmp]
+		tmp				<- upper.tri(v) & is.na(v)
+		v[tmp]			<- t(v)[tmp]
+		#	reset names
+		tmp				<- subset( tps, select=c(TAXA1, ID1) )
+		setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
+		tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
+		setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )
+		setkey(tmp, ID)
+		rownames(v)		<- tmp[, TAXA]
+		colnames(v)		<- tmp[, TAXA]
+		#	checks	
+		stopifnot(ncol(v)==nrow(v))	
+		cat('V matrix: proportion of NA entries=',length(which(is.na(v))) / prod(dim(v)))
+		#
+		#	remove cols/rows that contain nothing else than NAs
+		#	
+		diag(d)			<- NA_real_
+		diag(v)			<- NA_real_		
+		tmp				<- apply(d, 1, function(x) !all(is.na(x)))
+		cat('\nIn D: found',length(which(!tmp)),'columns / rows with NA only: remove in D and V. ', rownames(d)[!tmp])
+		ds				<- d[tmp,tmp]
+		vs				<- v[tmp,tmp]	
+		tmp				<- apply(vs, 1, function(x) !all(is.na(x)))
+		cat('\nIn V: found additional',length(which(!tmp)),'columns / rows with NA only: remove in D and V too. ', rownames(d)[!tmp])
+		ds				<- ds[tmp,tmp]
+		vs				<- vs[tmp,tmp]			
+	}
+	if(1)
+	{
+		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+		load(file.path(wdir, '150701_Regional_TRAIN4_SIMULATED_tps.rda'))
+		tps		<- subset(tp, REP==1 & GENE=='gag+pol+env', select=c(ID1, ID2, GD))
+		#	add upper triangular
+		tmp		<- copy(tps)
+		set(tmp, NULL, 'ID1', tps[, ID2])
+		set(tmp, NULL, 'ID2', tps[, ID1])
+		tps		<- rbind(tps, tmp)
+		#	add zero diagonal
+		tmp		<- tps[, range(ID1)]
+		tmp		<- data.table(ID1= seq.int(tmp[1], tmp[2]), ID2= seq.int(tmp[1], tmp[2]), GD=0)
+		tps		<- rbind(tps, tmp)
+		#	ignore NA entries
+		tps.na	<- subset(tps, is.na(GD))
+		tps		<- subset(tps, !is.na(GD))
+		tps.all	<- rbind(tps, tps.na)
+		#	setup matrix completion
+		tmp		<- data_memory(tps[,ID1], tps[,ID2], rating=tps[,GD], index1=TRUE)				
+		set.seed(123)
+		r		<- Reco()
+		opts	<- r$tune(tmp, opts=list(dim=c(10, 100, 500, 750), lrate=c(0.01), costp_l1=0, costp_l2=c(0.001, 0.01, 0.1), costq_l1=0, costq_l2=c(0.001, 0.01, 0.1), nthread=1, niter=10))
+		#best is  dim=750 costp_l2=0.001 costq_l2=0.001  lrate=0.01 rmse=0.01457322
+		opts	<- r$tune(tmp, opts=list(dim=c(500, 750, 1000), lrate=c(0.001, 0.01), costp_l1=0, costp_l2=c(0.0001, 0.001), costq_l1=0, costq_l2=c(0.0001, 0.001), nthread=1, niter=10))
+		#best is  dim=1000 costp_l2=0.0001 costq_l2=0.0001  lrate=0.01 rmse=0.01457322
+		opts	<- r$tune(tmp, opts=list(dim=c(100, 500), lrate=c(0.003, 0.005), costp_l1=0, costp_l2=c(0.01), costq_l1=0, costq_l2=c(0.01), nthread=1, niter=100))
+		
+		r$train(tmp, opts=c(dim=500, costp_l1=0, costp_l2=0.01, costq_l1=0, costq_l2=0.01, nthread=1, lrate=0.003, niter=40))
+		#rmse 0.0211
+		tps.all[, GDp:= r$predict(data_memory(tps.all[,ID1], tps.all[,ID2], index1=TRUE), out_memory())]
+		#plot
+		ggplot(subset(tps.all, !is.na(GD)), aes(x=GD, y=GDp)) + geom_point(colour='grey80', size=0.5, pch=16) + geom_abline(slope=1, intercept=0)
+		ggsave(file=file.path(wdir, 'reco_500_1e-2_3e-3_40.pdf'), w=7, h=7)
+		
+		r$train(tmp, opts=c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120))
+		#rmse 0.0155
+		tps.all[, GDp2:= r$predict(data_memory(tps.all[,ID1], tps.all[,ID2], index1=TRUE), out_memory())]
+		#plot
+		ggplot(subset(tps.all, !is.na(GD)), aes(x=GD, y=GDp2)) + geom_point(colour='grey80', size=0.5, pch=16) + geom_abline(slope=1, intercept=0)
+		ggsave(file=file.path(wdir, 'reco_750_1e-3_3e-3_120.pdf'), w=7, h=7)
+		
+		#	fill in distance matrix
+		tps.all[, GDf:= GD]
+		tmp		<- tps.all[, which(is.na(GDf))]
+		set(tps.all, tmp, 'GDf', tps.all[tmp, GDp2])
+		#	convert to matrix (not necessarily symmetric)
+		tmp			<- dcast.data.table( subset(tps.all, select=c(ID1,ID2,GDf)), ID1~ID2, value.var='GDf' )		
+		d			<- as.matrix(tmp[, -1, with=FALSE])
+		rownames(d)	<- colnames(d)
+		#	make symmetric
+		d			<- (d+t(d))/2	
+		#	some rows/cols may have NAs only -- remove these as the matrix completion problem is ill-specified for these
+		tmp			<- subset(tps.na[, list(GDM=length(GD)), by='ID1'], GDM==nrow(d)-1) #subtract one since diagonal is zero
+		tmp			<- setdiff(rownames(d), tmp[, as.character(ID1)] )
+		d			<- d[tmp, tmp]		
+		#
+		#	generate variance matrix
+		#
+		tps				<- subset(tp, REP==1 & GENE=='gag+pol+env', select=c(TAXA1, ID1, TAXA2, ID2, GD_V))	
+		tmp				<- dcast.data.table(tps, ID1~ID2, value.var='GD_V')		
+		v				<- cbind(NA_real_, as.matrix(tmp[, -1, with=FALSE]))
+		v				<- rbind(v, NA_real_)
+		colnames(v)[1]	<- setdiff( as.character(tmp[, ID1]), colnames(v) )
+		rownames(v)		<- colnames(v)
+		diag(v)			<- 0
+		#	complete lower triangular from upper triangular and vice versa
+		tmp				<- lower.tri(v) & is.na(v)	
+		v[tmp]			<- t(v)[tmp]
+		tmp				<- upper.tri(v) & is.na(v)
+		v[tmp]			<- t(v)[tmp]
+		#	set missing variances to large default
+		v[is.na(v)]		<- max(v, na.rm=TRUE)*1.2
+		v				<- v[rownames(d),colnames(d)]		
+		#
+		#	reset names
+		#
+		tmp				<- subset( tps, select=c(TAXA1, ID1) )
+		setnames(tmp, c('TAXA1','ID1'), c('TAXA2','ID2') )
+		tmp				<- unique(rbind( tmp, subset( tps, select=c(TAXA2, ID2) ) ))
+		setnames(tmp, c('TAXA2','ID2'), c('TAXA','ID') )		
+		tmp				<- merge(tmp, data.table(ID=as.integer(rownames(d))), by='ID')
+		setkey(tmp, ID)
+		rownames(d)		<- tmp[, TAXA]
+		colnames(d)		<- tmp[, TAXA]		
+		rownames(v)		<- tmp[, TAXA]
+		colnames(v)		<- tmp[, TAXA]
+		#				
+		#	run mvr with completed distance and variance matrices
+		#
+		d				<- as.dist(d)
+		v				<- as.dist(v)
+		ph				<- mvr(d, v)
+
+	}
+	if(0)	#play with basic recosystem example
+	{
+		library(data.table)
+		library(recosystem)
+		#	this is the example		 
+		train_set	<- data_file(system.file("dat", "smalltrain.txt", package = "recosystem"))
+		test_set	<- data_file(system.file("dat", "smalltest.txt",  package = "recosystem"))
+		set.seed(123)
+		r			<- Reco()
+		opts		<- r$tune(train_set, opts=list(dim=c(10, 20, 30), lrate=c(0.1, 0.2), costp_l1=0, costq_l1=0, nthread=1, niter=10))
+		r$train(train_set, opts = c(opts$min, nthread = 1, niter = 20))
+		pred_rvec	<- r$predict(test_set, out_memory())
+		
+		test	 	<- read.table(test_set@source, sep = " ", header = FALSE)
+		
+		#	this is the same example but from memory
+		infile		<- system.file("dat", "smalltrain.txt", package = "recosystem")
+		dm			<- as.data.table(read.table(file=infile, sep=' '))
+		setnames(dm, c('V1','V2','V3'), c('IDX1','IDX2','D'))				
+		infile		<- system.file("dat", "smalltest.txt", package = "recosystem")
+		dt			<- as.data.table(read.table(file=infile, sep=' '))
+		setnames(dt, c('V1','V2'), c('IDX1','IDX2'))		
+		dm.eco		<- data_memory(dm[,IDX1], dm[,IDX2], rating=dm[,D], index1=FALSE)
+		dt.eco		<- data_memory(dt[,IDX1], dt[,IDX2], index1=FALSE)		
+		set.seed(123)
+		r			<- Reco()
+		opts2		<- r$tune(dm.eco, opts=list(dim=c(10, 20, 30), lrate=c(0.1, 0.2), costp_l1=0, costq_l1=0, nthread=1, niter=10))
+		r$train(dm.eco, opts = c(opts2$min, nthread = 1, niter = 20))
+		pred_rvec2	<- r$predict(dt.eco, out_memory())		
+		stopifnot( length(which( pred_rvec!=pred_rvec2 ))==0 )	#OK this works
+		
+		#	this is the same example but from memory and with ordered entries
+		infile		<- system.file("dat", "smalltrain.txt", package = "recosystem")
+		dm			<- as.data.table(read.table(file=infile, sep=' '))
+		setnames(dm, c('V1','V2','V3'), c('IDX1','IDX2','D'))				
+		infile		<- system.file("dat", "smalltest.txt", package = "recosystem")
+		dt			<- as.data.table(read.table(file=infile, sep=' '))
+		setnames(dt, c('V1','V2'), c('IDX1','IDX2'))	
+		setkey(dm, IDX1, IDX2)
+		setkey(dt, IDX1, IDX2)
+		dm.eco		<- data_memory(dm[,IDX1], dm[,IDX2], rating=dm[,D], index1=FALSE)
+		dt.eco		<- data_memory(dt[,IDX1], dt[,IDX2], index1=FALSE)		
+		set.seed(123)
+		r			<- Reco()
+		opts3		<- r$tune(dm.eco, opts=list(dim=c(10, 20, 30), lrate=c(0.1, 0.2), costp_l1=0, costq_l1=0, nthread=1, niter=10))
+		r$train(dm.eco, opts = c(opts3$min, nthread = 1, niter = 20))
+		pred_rvec3	<- r$predict(dt.eco, out_memory())		
+		stopifnot( length(which( pred_rvec!=pred_rvec3 ))==0 )	#not identical 
+		
+		#	reproduce RMSE manually
+		infile		<- system.file("dat", "smalltrain.txt", package = "recosystem")
+		dm			<- as.data.table(read.table(file=infile, sep=' '))
+		setnames(dm, c('V1','V2','V3'), c('IDX1','IDX2','D'))
+		dm.eco		<- data_memory(dm[,IDX1], dm[,IDX2], rating=dm[,D], index1=FALSE)
+		infile		<- system.file("dat", "smalltest.txt", package = "recosystem")		
+		dt			<- copy(dm)
+		dt[, D:=NULL]		
+		dt.eco		<- data_memory(dt[,IDX1], dt[,IDX2], index1=FALSE)		
+		set.seed(123)
+		r			<- Reco()
+		opts4		<- r$tune(dm.eco, opts=list(dim=c(10, 20, 30), lrate=c(0.1, 0.2), costp_l1=0, costq_l1=0, nthread=1, niter=10))
+		r$train(dm.eco, opts = c(opts4$min, nthread = 1, niter = 20))	#RMSE improves with niter
+		dm[, PREDICT:= r$predict(dt.eco, out_memory())]
+		subset(dm, !is.na(D))[, sqrt(mean((D-PREDICT)*(D-PREDICT)))]	#OK this works
+		
+		#	reproduce RMSE manually also when entries are ordered and all entries to be predicted?
+		#	note: 	diagonal is not automatically considered zero, 
+		#			and the matrix is not necessarily symmetric either!		
+		infile		<- system.file("dat", "smalltrain.txt", package = "recosystem")
+		dm			<- as.data.table(read.table(file=infile, sep=' '))
+		setnames(dm, c('V1','V2','V3'), c('IDX1','IDX2','D'))
+		setkey(dm, IDX1, IDX2)
+		dm.eco		<- data_memory(dm[,IDX1], dm[,IDX2], rating=dm[,D], index1=FALSE)		
+		tmp			<- dm[, range(IDX1)]	
+		dp			<- as.data.table(expand.grid(IDX1=seq.int(tmp[1],tmp[2]), IDX2=seq.int(tmp[1],tmp[2])))		
+		tmp			<- data_memory(dp[,IDX1], dp[,IDX2], index1=FALSE)
+		set.seed(123)
+		r			<- Reco()
+		opts		<- r$tune(dm.eco, opts=list(dim=c(10, 20, 30), lrate=c(0.1, 0.2), costp_l1=0, costq_l1=0, nthread=1, niter=10))
+		r$train(dm.eco, opts = c(opts$min, nthread = 1, niter = 20))	
+		dp[, PREDICT:= r$predict(tmp, out_memory())]				
+		dp			<- merge(dp, dm, by=c('IDX1','IDX2'), all.x=1)
+		subset(dp, !is.na(D))[, sqrt(mean((D-PREDICT)*(D-PREDICT)))]	#OK this works too
+	}
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11

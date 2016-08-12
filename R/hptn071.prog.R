@@ -197,7 +197,7 @@ pipeline.various<- function()
 		load(file.path(wdir, infile))
 		
 		loop.rep	<- tp[, unique(REP)]
-		#loop.gene	<- tp[, unique(GENE)]
+		loop.gene	<- tp[, unique(GENE)]
 		loop.gene	<- "gag+pol+env"
 		for(gene in loop.gene)
 			for(rep in loop.rep)
@@ -205,8 +205,8 @@ pipeline.various<- function()
 				tps		<- subset(tp, GENE==gene & REP==rep)
 				tmp		<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,'.rda',sep=''), infile))
 				save(tps, file=tmp)
-				cmd		<- cmd.bigmvr(tmp, outfile=tmp)
-				cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.walltime=10, hpc.mem="60000mb")
+				cmd		<- cmd.bigmvr(tmp, outfile=gsub('\\.rda','',tmp))
+				cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.walltime=2, hpc.mem="6000mb")
 				cat(cmd)		
 				cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("mvr",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
 				quit('no')
