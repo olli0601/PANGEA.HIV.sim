@@ -337,7 +337,7 @@ pipeline.various<- function()
 ##--------------------------------------------------------------------------------------------------------
 prog.treecomparison<- function()
 {
-	if(0)
+	if(1)
 	{
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
