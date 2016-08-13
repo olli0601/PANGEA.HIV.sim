@@ -2896,6 +2896,19 @@ treecomparison.submissions.160627<- function()
 	names(MetaPIGA.trees)	<- unlist(tmp)
 	strs					<- c(strs, unclass(MetaPIGA.trees))
 	#
+	#	to keep old index, add MVR trees now
+	#
+	options(warn=2)
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+	tmp		<- data.table(FILE=list.files(indir, pattern="newick", recursive=1, full.names=1))	
+	mvrtrs	<- lapply(tmp[, FILE], function(x)
+			{
+				cat(x)
+				read.tree(file=x)	
+			})
+	names(mvrtrs)	<- tmp[, FILE]
+	strs			<- c(strs, mvrtrs)
+	#
 	#	add MetaPIGA trees, version 150831. stored as nexus
 	#
 	#indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_150831'
@@ -2924,7 +2937,8 @@ treecomparison.submissions.160627<- function()
 	set(submitted.info, submitted.info[, which(grepl('IQTree',FILE))], 'TEAM', 'IQTree')
 	set(submitted.info, submitted.info[, which(grepl('MetaPIGA|Consensus pruning|Best individual of population',FILE))], 'TEAM', 'MetaPIGA')
 	set(submitted.info, submitted.info[, which(grepl('PhyML',FILE))], 'TEAM', 'PhyML')
-	set(submitted.info, submitted.info[, which(grepl('running_gaps',FILE))], 'TEAM', 'RUNGAPS_ExaML')	
+	set(submitted.info, submitted.info[, which(grepl('running_gaps',FILE))], 'TEAM', 'RUNGAPS_ExaML')
+	set(submitted.info, submitted.info[, which(grepl('tree_mvr',FILE))], 'TEAM', 'MVR')
 	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )	
 	#
 	#	scenario
@@ -2989,6 +3003,12 @@ treecomparison.submissions.160627<- function()
 	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML' & grepl('GAGPP_SIMULATED', FILE))], 'GENE', 'GAG+PARTIALPOL')
 	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML' & grepl('P17_SIMULATED', FILE))], 'GENE', 'P17')
 	stopifnot(nrow(subset(submitted.info, TEAM=='RUNGAPS_ExaML' & is.na(GENE)))==0)
+	set(submitted.info, submitted.info[, which(TEAM=='MVR' & grepl('gag+pol+env', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(TEAM=='MVR' & grepl('pol', FILE))], 'GENE', 'POL')
+	set(submitted.info, submitted.info[, which(TEAM=='MVR' & grepl('gag', FILE))], 'GENE', 'GAG')
+	set(submitted.info, submitted.info[, which(TEAM=='MVR' & grepl('env', FILE))], 'GENE', 'ENV')
+	stopifnot(nrow(subset(submitted.info, TEAM=='MVR' & is.na(GENE)))==0)
+	
 	#
 	#	best tree for each scenario
 	#
@@ -3069,6 +3089,11 @@ treecomparison.submissions.160627<- function()
 	#
 	submitted.info[, BRL:='subst']
 	#
+	#	number taxa in tree
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, TAXAN:= sapply(strs, Ntip)]	
+	#
 	#	add index of true tree
 	#
 	require(phangorn)
@@ -3130,6 +3155,7 @@ treecomparison.submissions.160627<- function()
 	for(i in seq_len(nrow(tmp)))
 	{
 		j			<- tmp[i, IDX]
+		cat('\n',j)		
 		otree		<- tmp[i, TIME_IDX_T]
 		stree		<- unroot(strs[[j]])
 		otree		<- unroot(ttrs[[otree]])					
@@ -3137,11 +3163,6 @@ treecomparison.submissions.160627<- function()
 		z[, IDPOP:= gsub('IDPOP_','',regmatches(TAXA, regexpr('IDPOP_[0-9]+',TAXA)))]	
 		strs[[j]]	<- drop.tip(stree, subset( z, is.na(TYPE.y))[, TAXA])		
 	}
-	#
-	#	number taxa in tree
-	#
-	setkey(submitted.info, IDX)
-	submitted.info[, TAXAN:= sapply(strs, Ntip)]
 	#
 	#	are trees rooted?
 	#
