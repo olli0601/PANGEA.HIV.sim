@@ -191,6 +191,8 @@ pipeline.various<- function()
 	#	split into individual distances and run MVR on HPC because MDS needs a ton of RAM
 	if(0)
 	{
+		require(big.phylo)
+		
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/mvr'
 		#wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		infile	<- '150701_Regional_TRAIN4_SIMULATED_tps.rda'
@@ -199,18 +201,18 @@ pipeline.various<- function()
 		
 		loop.rep	<- tp[, unique(REP)]
 		loop.gene	<- tp[, unique(GENE)]
-		#loop.gene	<- "gag+pol+env"
+		loop.gene	<- "gag+pol+env"
 		for(gene in loop.gene)
 			for(rep in loop.rep)
 			{
 				tps		<- subset(tp, GENE==gene & REP==rep)
 				tmp		<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,'.rda',sep=''), infile))
 				save(tps, file=tmp)
-				cmd		<- cmd.bigmvr(tmp, outfile=gsub('\\.rda','',tmp))
+				cmd		<- cmd.mvr(tmp, outfile=gsub('\\.rda','',tmp))
 				cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=2, hpc.mem="6000mb")
 				cat(cmd)		
 				cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("mvr",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
-				#quit('no')
+				quit('no')
 			}
 		quit('no')
 	}

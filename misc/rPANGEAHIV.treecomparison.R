@@ -1926,6 +1926,7 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 {
 	require(ape)
 	require(data.table)
+	require(recosystem)
 	require(ggplot2)
 	#	get master RDA file with all distances
 	if(0)	
@@ -1964,10 +1965,20 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 		#		
 		save(tp, seq, file=file.path(wdir, gsub('\\.fa','_tps.rda',infile)))	
 	}	
-	if(1)
+	if(0)
+	{
+		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+		df		<- data.table(FILE=list.files(wdir, pattern='newick$',full.names=1))
+		tmp		<- df[, {
+					ph2	<- read.tree(FILE)
+					list(CH= nrow(unique(data.table(TAXA=ph2$tip.label)))==Ntip(ph2) )
+				}, by='FILE']
+		
+	}
+	if(0)
 	{
 		na.rm.p			<- NA	 
-		seed			<- 42		
+		seed			<- 123		
 		v.mult			<- 1.2
 		reco.opts		<- c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120)
 		verbose			<- 1
@@ -1975,14 +1986,18 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 		#wdir	<- '/work/or105/Gates_2014/tree_comparison/mvr'
 		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		infile	<- '150701_Regional_TRAIN4_SIMULATED_tps.rda'
+		infile	<- '150701_Regional_TRAIN2_SIMULATED_tps.rda'
 		load(file.path(wdir, infile))
 		
 		loop.rep	<- tp[, unique(REP)]
 		loop.gene	<- tp[, unique(GENE)]
 		loop.gene	<- "gag+pol+env"
+				
 		for(gene in loop.gene)
 			for(rep in loop.rep)
 			{
+				#gene	<- "env"; rep<- 1
+				#gene	<- "gag+pol+env"; rep<- 1
 				tps		<- subset(tp, GENE==gene & REP==rep)
 				outfile	<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,sep=''), infile))
 				ph		<- seq.big.mvr(tps, seed=seed, v.mult=v.mult, reco.opts=reco.opts, outfile=outfile, verbose=verbose)				
