@@ -178,7 +178,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)	#submit various
+	if(0)	#submit various
 	{
 		cmd			<- cmd.various()
 		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="6000mb")
@@ -189,7 +189,7 @@ pipeline.various<- function()
 		quit("no")		
 	}	
 	#	split into individual distances and run MVR on HPC because MDS needs a ton of RAM
-	if(0)
+	if(1)
 	{
 		require(big.phylo)
 		
