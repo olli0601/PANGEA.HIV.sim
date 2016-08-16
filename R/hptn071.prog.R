@@ -199,21 +199,24 @@ pipeline.various<- function()
 		infile	<- '150701_Regional_TRAIN2_SIMULATED_tps.rda'
 		load(file.path(wdir, infile))
 		
-		loop.rep	<- tp[, unique(REP)]
-		loop.gene	<- tp[, unique(GENE)]
-		loop.gene	<- "gag+pol+env"
+		complete.distance.matrix	<- 0
+		loop.method					<- c('MVR','BioNJ')
+		loop.rep					<- tp[, unique(REP)]
+		loop.gene					<- setdiff(tp[, unique(GENE)],'env')
+		#loop.gene					<- "gag+pol+env"
 		for(gene in loop.gene)
 			for(rep in loop.rep)
-			{
-				tps		<- subset(tp, GENE==gene & REP==rep)
-				tmp		<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,'.rda',sep=''), infile))
-				save(tps, file=tmp)
-				cmd		<- cmd.mvr(tmp, outfile=gsub('\\.rda','',tmp))
-				cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=2, hpc.mem="6000mb")
-				cat(cmd)		
-				cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("mvr",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
-				quit('no')
-			}
+				for(method in loop.method)
+				{
+					tps		<- subset(tp, GENE==gene & REP==rep)
+					tmp		<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,'_M_',method,'_C_',complete.distance.matrix,'.rda',sep=''), infile))
+					save(tps, file=tmp)
+					cmd		<- cmd.mvr(tmp, outfile=gsub('\\.rda','',tmp, method=method, complete.distance.matrix=complete.distance.matrix))
+					cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=8, hpc.mem="16000mb")
+					cat(cmd)		
+					cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("mvr",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
+					quit('no')
+				}
 		quit('no')
 	}
 	if(0)	#run LSD

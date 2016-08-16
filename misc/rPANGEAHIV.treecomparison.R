@@ -1283,11 +1283,6 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 			theme_bw() +
 			theme(	legend.position='bottom', strip.text= element_blank(), strip.background=element_blank()) +
 			guides(colour=guide_legend(override.aes=list(size=5)))
-	
-	
-	rccsHistory	<- as.data.table(rccsHistory)
-	rccsHistory[, list(circum_not_NA= any(!is.na(circum))), by='RCCS_studyid'][, table(circum_not_NA)]
-	rccsHistory[, list(circum_01= any(circum%in%c(0,1))), by='RCCS_studyid'][, table(circum_01)]
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 25.07.16
@@ -1883,43 +1878,6 @@ treecomparison.explaingaps.collect.data<- function()
 	subset(dpand, PR=='1R')
 	dcast.data.table(subset(dpand, PR=='1R'), TAXA~POS, value.var='NT_DIFF')
 }
-
-treecomparison.bootstrap.mvr.inC<- function(indir=NULL, wdir=NULL)
-{	
-	require(PANGEA.HIV.sim)		
-	dyn.load(system.file(package='PANGEA.HIV.sim','libs','mvrs_standalone.so'))
-	data(woodmouse)
-	
-	X 	<- dist.dna(woodmouse, variance = TRUE)
-	V 	<- attr(rt, "variance")
-	fs	<- 15L
-	
-	if (fs < 1) 
-		stop("argument 'fs' must be a non-zero positive integer")
-	if (is.matrix(X)) 
-		X <- as.dist(X)
-	if (is.matrix(V)) 
-		V <- as.dist(V)
-	X[is.na(X)] 	<- -1
-	X[X < 0] 		<- -1
-	X[is.nan(X)] 	<- -1
-	N 				<- attr(X, "Size")
-	labels 			<- attr(X, "Labels")
-	if (is.null(labels)) 
-		labels 		<- as.character(1:N)
-	ans <- .C(	'C_mvrs_OR', 
-				as.double(X), 
-				as.double(V), 
-				as.integer(N), 
-				integer(2 * N - 3), integer(2 * N - 3), 
-				double(2 * N - 3), 
-				as.integer(fs), 
-				NAOK = TRUE)
-	obj <- list(edge = cbind(ans[[4]], ans[[5]]), edge.length = ans[[6]], 
-			tip.label = labels, Nnode = N - 2L)
-	class(obj) <- "phylo"
-	reorder(obj)
-}
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
 treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
@@ -1933,8 +1891,8 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 	{
 		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'	
 		indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
-		#infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'
-		infile	<- '150701_Regional_TRAIN2_SIMULATED.fa'
+		infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'
+		#infile	<- '150701_Regional_TRAIN2_SIMULATED.fa'
 		#	create tp with IDs -- need this to complete to matrix	
 		seq		<- read.dna(file.path(indir, infile), format='fa')
 		tp		<- as.data.table( t(combn(rownames(seq),2)) )		
@@ -1977,16 +1935,17 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 	}
 	if(0)
 	{
-		na.rm.p			<- NA	 
-		seed			<- 123		
-		v.mult			<- 1.2
-		reco.opts		<- c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120)
-		verbose			<- 1
+		na.rm.p						<- NA	 
+		complete.distance.matrix	<- 0
+		seed						<- 123		
+		v.mult						<- 1.2
+		reco.opts					<- c(dim=750, costp_l1=0, costp_l2=0.001, costq_l1=0, costq_l2=0.001, nthread=1, lrate=0.003, niter=120)
+		verbose						<- 1
 		
 		#wdir	<- '/work/or105/Gates_2014/tree_comparison/mvr'
 		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		infile	<- '150701_Regional_TRAIN4_SIMULATED_tps.rda'
-		infile	<- '150701_Regional_TRAIN2_SIMULATED_tps.rda'
+		#infile	<- '150701_Regional_TRAIN2_SIMULATED_tps.rda'
 		load(file.path(wdir, infile))
 		
 		loop.rep	<- tp[, unique(REP)]
@@ -1999,8 +1958,27 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 				#gene	<- "env"; rep<- 1
 				#gene	<- "gag+pol+env"; rep<- 1
 				tps		<- subset(tp, GENE==gene & REP==rep)
-				outfile	<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,sep=''), infile))
-				ph		<- seq.big.mvr(tps, seed=seed, v.mult=v.mult, reco.opts=reco.opts, outfile=outfile, verbose=verbose)				
+				outfile	<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,'_C_',complete.distance.matrix,sep=''), infile))
+				tmp		<- seq.mvr.d.and.v(tps, seed=seed, v.mult=v.mult, complete.distance.matrix=complete.distance.matrix, reco.opts=reco.opts, outfile=outfile, verbose=verbose)				
+				d		<- tmp$d
+				v		<- tmp$v
+				tmp		<- NULL
+				gc()
+				#	write to file
+				d		<- as.matrix(d)
+				v		<- as.matrix(v)
+				d[is.na(d)]	<- -1
+				v[is.na(v)]	<- -1
+				file.d	<- paste(gsub('\\.rda|\\.newick|\\.tree','',outfile),'_d.phylip',sep='')
+				file.v	<- paste(gsub('\\.rda|\\.newick|\\.tree','',outfile),'_v.phylip',sep='')
+				seq.write.dna.phylip.triangular(d, file=file.d)
+				seq.write.dna.phylip.triangular(v, file=file.v)
+				#	call PhyD*
+				tmp		<- cmd.phydstar(file.d, outfile=outfile, method='BioNJ', fs=15, binary=TRUE, negative.branch.length=FALSE, lower.triangular=TRUE)
+				cat(tmp)
+				tmp		<- cmd.phydstar(file.d, outfile=outfile, infile.v=file.v, method='MVR', fs=15, binary=TRUE, negative.branch.length=FALSE, lower.triangular=TRUE)
+				system(tmp)
+				
 				outfile	<- paste(outfile,'_',paste(reco.opts,collapse='_'),'_mvr.newick',sep='')
 				options(expressions=5e5)
 				write.tree(ph, file=outfile)	
@@ -2170,8 +2148,6 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 	}
 	if(0)	#play with basic recosystem example
 	{
-		library(data.table)
-		library(recosystem)
 		#	this is the example		 
 		train_set	<- data_file(system.file("dat", "smalltrain.txt", package = "recosystem"))
 		test_set	<- data_file(system.file("dat", "smalltest.txt",  package = "recosystem"))
