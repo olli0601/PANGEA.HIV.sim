@@ -5908,7 +5908,7 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 	gds	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
 					{
 						tmp				<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
-						#FILE	<- '150129_PANGEAsim_Regional_SecondObj_scH_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scH_DATEDTREE.newick'
+						#file	<- file.path(tmp,'150129_PANGEAsim_Regional_SecondObj_scH_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scH_DATEDTREE.newick')
 						file			<- paste(tmp, dfi[i, FILE], sep='/' )
 						cat(paste('\nprocess',file))
 						phd				<- read.tree(file)										
@@ -5921,13 +5921,23 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 									tmp			<- cophenetic.phylo(ph)
 									diag(tmp)	<- Inf
 									ans			<- data.table(LABEL=rownames(tmp), LABEL_CL=colnames(tmp)[apply(tmp, 1, which.min)])
-									ans			<- merge(ans, ans[,  list(BRL=tmp[LABEL, LABEL_CL]), by='LABEL'], by='LABEL')
+									ans			<- merge(ans, ans[,  list(BRL_TIME=tmp[LABEL, LABEL_CL]), by='LABEL'], by='LABEL')
 									ans[, CLU_IDX:=k]
 									ans[, IDPOP:= as.integer(substring(sapply(strsplit(LABEL,label.sep,fixed=T),'[[',label.idx.idpop),7)),]
 									ans[, TIME_SEQ:=as.numeric(sapply(strsplit(LABEL,label.sep,fixed=T),'[[',label.idx.date))]
 									ans
 								})
-						gds			<- do.call('rbind',tmp)				
+						gds			<- do.call('rbind',tmp)	
+						#	calculate raw genetic distances between taxon and phylogenetically closest taxon					
+						tmp			<- dfi[i, FILE_INTRNL]
+						load(tmp)
+						#	generate simulated sequences
+						tmp				<- tolower(do.call('rbind',strsplit(df.seq[, paste(GAG,POL,ENV,sep='')],'')))		
+						rownames(tmp)	<- df.seq[, LABEL]	
+						seq				<- as.DNAbin(tmp)
+						#	calculate pairwise distances
+						tmp			<- gds[, list(GD=as.numeric(dist.dna(seq[c(LABEL, LABEL_CL),], model='raw'))), by=c('LABEL','LABEL_CL')]
+						gds			<- merge(gds, tmp, by=c('LABEL','LABEL_CL'))
 						gds[, SC:= dfi[i, SC]]
 						gds[, SCL:= dfi[i, SCL]]
 						gds[, CONFIG:= dfi[i, CONFIG]]
@@ -6015,7 +6025,8 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 	#	
 	#	gds
 	#
-	ggplot(subset(gds, TIME_TR>2005), aes(x=BRL*0.0022, colour=SCL, alpha=CONFIG)) + stat_ecdf() + 
+	#ggplot(subset(gds, TIME_TR>2005), aes(x=BRL*0.0022, colour=SCL, alpha=CONFIG)) + stat_ecdf() +
+	ggplot(subset(gds, TIME_TR>2005), aes(x=GD, colour=SCL, alpha=CONFIG)) + stat_ecdf() +
 			facet_grid(PERIOD_TR~INT) +  
 			#labs(x='\ntime spent diverging\nbetween phylogenetically closest individuals',y='empirical CDF') +
 			labs(x='\ngenetic distance\nbetween phylogenetically closest individuals\n(subst/site/year)',y='empirical CDF\n') +
@@ -6025,7 +6036,7 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 			scale_y_continuous(expand=c(0,0)) +
 			scale_alpha_manual(values=rep(1,trms[, length(unique(CONFIG))]), guide = FALSE) +
 			theme_bw() + theme(legend.position='bottom')
-	file	<- file.path(outdir, '150715_R_GeneticDistanceSequencedRecByACSC.pdf')
+	file	<- file.path(outdir, '150715_R_GeneticDistanceSequencedRecByACSC2.pdf')
 	ggsave(file=file, w=10, h=7)
 	#
 	#	coal

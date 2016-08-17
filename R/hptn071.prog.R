@@ -199,9 +199,12 @@ pipeline.various<- function()
 		infile	<- '150701_Regional_TRAIN2_SIMULATED_tps.rda'
 		load(file.path(wdir, infile))
 		
+		name.gd.col					<- 'GD_MEAN'
 		complete.distance.matrix	<- 0
-		loop.method					<- c('MVR','BioNJ')
-		loop.rep					<- tp[, unique(REP)]
+		#loop.method					<- c('MVR','BioNJ')
+		loop.method					<- 'BioNJ'
+		#loop.rep					<- tp[, unique(REP)]
+		loop.rep					<- setdiff( tp[, unique(REP)], c(1) )
 		loop.gene					<- setdiff(tp[, unique(GENE)],'env')
 		#loop.gene					<- "gag+pol+env"
 		for(gene in loop.gene)
@@ -211,11 +214,12 @@ pipeline.various<- function()
 					tps		<- subset(tp, GENE==gene & REP==rep)
 					tmp		<- file.path(wdir, gsub('\\.rda',paste('_GENE_',gene,'_REP_',rep,'_M_',method,'_C_',complete.distance.matrix,'.rda',sep=''), infile))
 					save(tps, file=tmp)
-					cmd		<- cmd.mvr(tmp, outfile=gsub('\\.rda','',tmp), method=method, complete.distance.matrix=complete.distance.matrix)
-					cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=8, hpc.mem="16000mb")
+					cmd		<- cmd.mvr(tmp, outfile=gsub('\\.rda','',tmp), method=method, complete.distance.matrix=complete.distance.matrix, name.gd.col=name.gd.col)
+					cmd	<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=8, hpc.mem="16000mb")
+					#cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.walltime=8, hpc.mem="16000mb")
 					cat(cmd)		
 					cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("mvr",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)
-					quit('no')
+					#quit('no')
 				}
 		quit('no')
 	}
