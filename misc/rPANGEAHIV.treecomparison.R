@@ -15,7 +15,7 @@ treedist.pathdifference.wrapper<- function(submitted.info, ttrs, strs_rtt)
 				stree		<- strs_rtt[[IDX]]
 				otree		<- ttrs[[TIME_IDX_T]]								
 				z			<- setdiff(otree$tip.label, stree$tip.label)
-				stopifnot( length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+				stopifnot( length(z)==abs(diff(c(Ntip(otree), Ntip(stree)))) )
 				if(length(z))
 					otree	<- drop.tip(otree, z)				
 				z			<- path.dist(otree, stree)
@@ -74,7 +74,7 @@ treedist.quartetdifference.wrapper<- function(submitted.info, ttrs, strs_rtt)
 				#print(stree)
 				#print(otree)
 				z			<- setdiff(otree$tip.label, stree$tip.label)
-				stopifnot( length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+				stopifnot( length(z)==abs(diff(c(Ntip(otree), Ntip(stree)))) )
 				if(length(z))
 					otree	<- unroot(drop.tip(otree, z))				
 				z			<- quartets.distance.cmd(otree, stree)
@@ -481,7 +481,7 @@ treedist.quartets.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file
 				#print(stree)
 				#print(otree)
 				z			<- setdiff(otree$tip.label, stree$tip.label)
-				stopifnot( length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+				stopifnot( length(z)==abs(diff(c(Ntip(otree), Ntip(stree)))) )
 				if(length(z))
 					otree	<- unroot(drop.tip(otree, z))				
 				z			<- quartets.distance.cmd(otree, stree)
@@ -691,8 +691,8 @@ treedist.robinsonfould.wrapper<- function(submitted.info, ttrs, strs, check.bina
 				}
 				#print(stree)
 				#print(otree)
-				z			<- setdiff(otree$tip.label, stree$tip.label)
-				stopifnot( length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+				z			<- setdiff(otree$tip.label, stree$tip.label)				
+				stopifnot( length(z)==abs(diff(c(Ntip(otree), Ntip(stree)))) )
 				if(length(z))
 					otree	<- unroot(drop.tip(otree, z))				
 				#https://groups.google.com/forum/#!topic/raxml/JgvxgknTeqw
@@ -774,7 +774,7 @@ treedist.billera.add<- function(submitted.info=NULL, ttrs=NULL, strs=NULL, file=
 				#print(stree)
 				#print(otree)
 				z			<- setdiff(otree$tip.label, stree$tip.label)
-				stopifnot( length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+				stopifnot( length(z)==abs(diff(c(Ntip(otree), Ntip(stree)))) )				
 				if(length(z))
 					otree	<- drop.tip(otree, z)				
 				otree		<- root(otree, outgroup=POSTHOC_ROOT, resolve.root=TRUE)
@@ -1125,6 +1125,213 @@ treecomparison.submissions.151119<- function()
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 25.07.16
 ##--------------------------------------------------------------------------------------------------------
+treecomparison.explaingaps.bams.160817<- function()
+{
+	require(scales)
+	require(ggplot2)
+	#
+	#	collect information on batches
+	#
+	wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	load(file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'))
+	load(file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_logistic.rda'))
+	bami	<- subset(dpand, PR=='1R' & POS=='PR_1' & !is.na(PANGEA_ID) & !is.na(SANGER_ID), select=c(PANGEA_ID, STUDY_ID, SANGER_ID))
+	#	extract location of samples in batch
+	bami[, BATCH:= sapply(strsplit(SANGER_ID,'_'),'[[',1)]
+	bami[, LOC:= substr(gsub('PG[0-9]+-','',PANGEA_ID),1,2)]
+	bami	<- bami[, list(LOC= paste(unique(LOC),collapse='-')), by='BATCH']
+	#	extract significant batches
+	tmp		<- subset(m2f.1.or, u95<0.95)
+	tmp[, PR:='2F']
+	tmp2	<- subset(m2r.1.or, u95<0.95)
+	tmp2[, PR:='2R']
+	tmp		<- rbind(tmp, tmp2)
+	tmp		<- subset(tmp, grepl('BATCH', COEF))
+	set(tmp, NULL, 'BATCH', tmp[,gsub('BATCH','',COEF)])
+	#	
+	setkey(tmp, PR, OR)
+	ggplot(tmp, aes(x=BATCH, y=OR, ymin=l95, ymax=u95)) + geom_point() + geom_errorbar() + facet_grid(~PR) + coord_flip()
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_batch_oddsratio.pdf'), w=7, h=10)
+	#	batches are typically significant in both 2F and 2R	
+	tmp2	<- dcast.data.table(tmp, BATCH~PR, value.var='OR')
+	setnames(tmp2, c('2F','2R'), c('OR_2F','OR_2R'))
+	bami	<- merge(bami, tmp2, by='BATCH',all.x=1)
+	tmp2	<- dcast.data.table(tmp, BATCH~PR, value.var='u95')
+	setnames(tmp2, c('2F','2R'), c('ORu95_2F','ORu95_2R'))
+	bami	<- merge(bami, tmp2, by='BATCH',all.x=1)
+	tmp2	<- dcast.data.table(tmp, BATCH~PR, value.var='l95')
+	setnames(tmp2, c('2F','2R'), c('ORl95_2F','ORl95_2R'))
+	bami	<- merge(bami, tmp2, by='BATCH',all.x=1)	
+	bami	<- melt(bami, id.vars=c('BATCH','LOC'))	
+	set(bami, bami[, which(is.na(value))],'value', 1)
+	bami	<- dcast.data.table(bami, BATCH+LOC~variable, value.var='value')
+	#
+	#	get length of short reads
+	#	
+	infile	<- '~/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/readlengths/bam_stats_150218.rda'
+	load(infile)	
+	bam.len[, BATCH:= sapply(strsplit(FILE,'_'),'[[',1)]
+	tmp		<- subset(bam.len,QU>=40 & QU<320)[, list(CDF.bamlen= mean(CDF)), by=c('BATCH','QU')]
+	tmp		<- merge(tmp, bami, by='BATCH')
+		
+	ggplot(tmp, aes(y=CDFm, x=QU, colour=LOC, group=BATCH)) +
+			geom_line() +
+			#geom_boxplot() + 
+			scale_y_continuous(labels=scales::percent, expand=c(0,0)) +
+			theme_bw() + labs(y='average frequency in run\n(cumulated)\n', x='\nlength of quality-trimmed short reads\n(nt)', fill='sequence run') +
+			theme(legend.position='bottom') 
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_bamlen_by_run.pdf'), w=14, h=7)
+	
+	ggplot(tmp, aes(y=CDF.bamlen, x=QU, colour=OR_2F, group=BATCH)) +
+			geom_line() +
+			scale_x_continuous(breaks=seq(0,5e2,50), expand=c(0,0)) +
+			scale_colour_gradientn(colours=c('red','grey50')) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0)) +
+			theme_bw() + labs(y='average frequency of read length of individuals in batch\n(cumulated)\n', x='\nlength of quality-trimmed short reads\n(nt)', colour='odds ratio for batch effect\nin 2F primer analysis\n(0 is strong batch effect)      ') +
+			theme(legend.position='bottom') 
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_bamlen_by_OR2F.pdf'), w=14, h=7)
+	
+	ggplot(tmp, aes(y=CDF.bamlen, x=QU, colour=OR_2R, group=BATCH)) +
+			geom_line() +
+			scale_x_continuous(breaks=seq(0,5e2,50), expand=c(0,0)) + 
+			scale_colour_gradientn(colours=c('red','grey50')) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0)) +
+			theme_bw() + 
+			labs(y='average frequency of read length of individuals in batch\n(cumulated)\n', x='\nlength of quality-trimmed short reads\n(nt)', colour='odds ratio for batch effect\nin 2R primer analysis\n(0 is strong batch effect)      ') +
+			theme(legend.position='bottom') 
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_bamlen_by_OR2R.pdf'), w=14, h=7)
+	#
+	#	OK so those significant on the 2R primer are also a bit shorter than others
+	#
+	#
+	bam.cov[, BATCH:= sapply(strsplit(FILE_ID,'_'),'[[',1)]
+	bam.cov	<- merge(bam.cov, bami, by='BATCH')
+	setkey(bam.cov, BATCH, FILE_ID, POS)
+	bam.covs<- lapply(bam.cov[, unique(BATCH)], function(batch)
+			{
+				cat('\nprocess run', batch)
+				tmp		<- subset(bam.cov, BATCH==batch)
+				tmp		<- tmp[, 	{
+							z	<- rep(COV,REP)
+							list(COV=z, POS=seq_along(z), REF=REF[1])
+						}, by=c('FILE_ID','BATCH')]
+				tmp		<- tmp[, list(QU=paste('QU',100*c(0.25, 0.5, 0.75),sep=''), COV=quantile(COV, p=c(0.25, 0.5, 0.75))), by=c('BATCH','REF','POS')]
+				tmp		<- dcast.data.table(tmp, REF+BATCH+POS~QU, value.var='COV')
+				tmp
+			})
+	bam.covs<- do.call('rbind', bam.covs)
+	stopifnot( bam.covs[, length(unique(REF))]==1 )	#if not the same reference, then the positions do not share the same coordinate system
+	bam.covs<- merge(bam.covs, bami, by='BATCH')
+	
+	ggplot(bam.covs, aes(y=QU50, x=POS, colour=OR_2R, group=BATCH)) +
+			geom_line() +			 
+			scale_colour_gradientn(colours=c('red','grey50')) +
+			scale_x_continuous(expand=c(0,0), breaks=seq(0,2e4,1e3)) +
+			scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+			theme_bw() + labs(y='average number of reads per individual in batch\n', x='\nnt position in reference', colour='odds ratio for batch effect\nin 2R primer analysis\n(0 is strong batch effect)      ') +
+			theme(legend.position='bottom') 
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_bamcov_by_OR2R.pdf'), w=14, h=7)
+	ggplot(bam.covs, aes(y=QU50, x=POS, colour=OR_2F, group=BATCH)) +
+			geom_line() +			 
+			scale_colour_gradientn(colours=c('red','grey50')) +
+			scale_x_continuous(expand=c(0,0), breaks=seq(0,2e4,1e3)) +
+			scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+			theme_bw() + labs(y='average number of reads per individual in batch\n', x='\nnt position in reference', colour='odds ratio for batch effect\nin 2F primer analysis\n(0 is strong batch effect)      ') +
+			theme(legend.position='bottom') 
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_bamcov_by_OR2F.pdf'), w=14, h=7)
+	
+	
+	tmp		<- subset(bam.covs, POS>=1500 & POS<=4500)
+	tmp[, OR_2F:= factor(OR_2F<1, levels=c(TRUE,FALSE), labels=c('Yes','No'))]
+	tmp[, OR_2R:= factor(OR_2R<1, levels=c(TRUE,FALSE), labels=c('Yes','No'))]
+	tmp[, POSc:= as.numeric(as.character(cut(POS, breaks=seq(1500,4500,250), labels=seq(1501,4500,250))))]
+	tmp		<- subset(tmp, !is.na(POSc))
+	set(tmp, NULL, 'POSc', tmp[, paste(POSc,'-',POSc+249,sep='')])
+	ggplot(tmp, aes(x=POSc, y=QU50, fill=OR_2F)) + geom_boxplot(outlier.shape=NA) +
+			scale_fill_manual(values=c('Yes'='red','No'='grey50')) +
+			scale_x_discrete(expand=c(0,0)) +
+			coord_trans(y='log10p1') +
+			scale_y_continuous(breaks=c(1,10,100, 1e3,1e4, 1e5)) +
+			theme_bw() + 
+			labs(y='average number of reads per individual in batch\n', x='\nnt position in reference', fill='significant odds ratio for batch effect\nin 2F primer analysis      ') +
+			theme(legend.position='bottom')
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_bamcov_by_OR2F_boxpol.pdf'), w=12, h=6)
+	ggplot(tmp, aes(x=POSc, y=QU50, fill=OR_2R)) + geom_boxplot(outlier.shape=NA) +
+			scale_fill_manual(values=c('Yes'='red','No'='grey50')) +
+			scale_x_discrete(expand=c(0,0)) +
+			coord_trans(y='log10p1') +
+			scale_y_continuous(breaks=c(1,10,100, 1e3,1e4, 1e5)) +
+			theme_bw() + 
+			labs(y='average number of reads per individual in batch\n', x='\nnt position in reference', fill='significant odds ratio for batch effect\nin 2R primer analysis     ') +
+			theme(legend.position='bottom')
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_bamcov_by_OR2R_boxpol.pdf'), w=12, h=6)
+	
+	tmp		<- copy(bam.covs)
+	tmp[, PLOT_ROW:= factor(POS<=4500, levels=c(TRUE,FALSE),labels=c('1st half of genome','2nd half of genome'))]
+	tmp[, OR_2F:= factor(OR_2F<1, levels=c(TRUE,FALSE), labels=c('Yes','No'))]
+	tmp[, OR_2R:= factor(OR_2R<1, levels=c(TRUE,FALSE), labels=c('Yes','No'))]
+	tmp[, POSc:= as.numeric(as.character(cut(POS, breaks=seq(0,9250,250), labels=seq(1,9250,250))))]
+	tmp		<- subset(tmp, !is.na(POSc))
+	setkey(tmp, POSc)
+	tmp2	<- tmp[, unique(POSc)]
+	set(tmp, NULL, 'POSc', tmp[, factor(POSc, levels=tmp2, labels=paste(tmp2,'-',tmp2+249,sep=''))])
+	ggplot(tmp, aes(x=POSc, y=log10(QU50+.1), fill=OR_2R)) + geom_boxplot(outlier.shape=NA) +
+			scale_fill_manual(values=c('Yes'='red','No'='grey50')) +
+			scale_x_discrete(expand=c(0,0)) +			
+			scale_y_continuous(breaks=c(0,1,2,3,4,5), labels=c(1,10,100, 1e3,1e4, 1e5)) +
+			theme_bw() + 
+			facet_wrap(~PLOT_ROW, ncol=1, scale='free_x') +
+			labs(y='average number of reads per individual in batch\n', x='\nnt position in reference', fill='significant odds ratio for batch effect   ') +
+			theme(legend.position='bottom')
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_bamcov_by_OR2R_boxall.pdf'), w=16, h=12)
+	
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 25.07.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.samplecharacteristics.160817<- function()
+{
+	require(ape)
+	require(scales)
+	require(ggplot2)
+	require(data.table)
+	require(Hmisc)
+	
+	wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wfile	<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
+	load(file.path(wdir,wfile))
+	#
+	#	table on sequence characteristics by cohort
+	#
+	pngi		<- subset(dpand, grepl('^PG[0-9]+|^R[0-9]+', TAXA) & PR=='1R' & POS=='PR_1')
+	setkey(pngi, TAXA)
+	pngi		<- unique(pngi)	
+	pngi[, COUNTRY:= substr(PANGEA_ID, 6,7)]
+	#	complete COHORT
+	pngi[, table(COUNTRY, COHORT, useNA='if')]
+	set(pngi, pngi[, which(COUNTRY=='UG' & is.na(COHORT))], 'COHORT', 'UG-MRC')
+	set(pngi, pngi[, which(COUNTRY=='ZA' & is.na(COHORT))], 'COHORT', 'AC missing')
+	#	exclude missing AC
+	pngi		<- subset(pngi, COHORT!='AC missing')
+	#	sex by cohort
+	set(pngi, pngi[, which(is.na(SEX))], 'SEX', 'missing')
+	pngs		<- pngi[, {
+				z<- table(SEX)
+				list(N= as.numeric(z), SEX= attr(z, 'dimnames')[[1]])
+			}, by='COHORT']
+	#	sampling years
+	pngi[, SAMPLEYR:= as.character(floor(SAMPLEDATE))]
+	set(pngi, pngi[, which(is.na(SAMPLEYR))], 'SAMPLEYR', 'missing')
+	pngi[, {
+				z<- table(SAMPLEYR)
+				list(N= as.numeric(z), SAMPLEYR= attr(z, 'dimnames')[[1]])
+			}, by='COHORT']
+	pngi[, range(SAMPLEDATE)]
+	
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 25.07.16
+##--------------------------------------------------------------------------------------------------------
 treecomparison.explaingaps.mutationspectrum.160725<- function()
 {
 	require(ape)
@@ -1138,38 +1345,33 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 	#	select taxa that failed after 1R despite high viral load + not on ART
 	#	select taxa that were successful after 1R despite low viral load + not on ART
 	#
-	set(dpand, NULL, 'date', dpand[,hivc.db.Date2numeric(date)])	
-	set(dpand, NULL, 'firstPosDate', dpand[,hivc.db.Date2numeric(firstPosDate)])
-	set(dpand, NULL, 'arvStartDate', dpand[,hivc.db.Date2numeric(arvStartDate)])
-	set(dpand, NULL, 'FirstSelfReportArt', dpand[,hivc.db.Date2numeric(FirstSelfReportArt)])
-	set(dpand, NULL, 'recentVLdate', dpand[,hivc.db.Date2numeric(recentVLdate)])
 	#	low viral load and high coverage
 	dsmut	<- subset(dpand,	PR=='1R' & POS=='PR_1' &	
 					UNASS_HALF_INDIR_P<0.1 &
-					recentVL<2e4 & abs(date-recentVLdate)<.5, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
+					RECENTVL<2e4 & abs(SAMPLEDATE-RECENTVLDATE)<.5, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	dsmut[, TYPE:= 'Rakai_VL_<2e4_Coverage_>90pc']
 	tmp		<- subset(dpand,	PR=='3F' & POS=='PR_1' &	
 					UNASS_HALF_INDIR_P<0.1 &
-					recentVL<2e4 & abs(date-recentVLdate)<.5, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
+					RECENTVL<2e4 & abs(SAMPLEDATE-RECENTVLDATE)<.5, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'Rakai_VL_<2e4_Coverage_>90pc']		
 	dsmut	<- rbind(dsmut, tmp)
 	#	high viral load and no coverage
 	tmp		<- subset(dpand,	PR=='1R' & 	POS=='PR_1' &
 					UNASS_HALF_INDIR_P>0.95 &
-					(is.na(arvStartDate) | date<arvStartDate) &
-					(!everSelfReportArt | everSelfReportArt & date<FirstSelfReportArt) &
-					recentVL>4e4 & abs(date-recentVLdate)<.5, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
+					(is.na(ARTSTART) | SAMPLEDATE<ARTSTART) &
+					(!everSelfReportArt | everSelfReportArt & SAMPLEDATE<FirstSelfReportArt) &
+					RECENTVL>4e4 & abs(SAMPLEDATE-RECENTVLDATE)<.5, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'Rakai_VL_>4e4_Coverage_<5pc']		
 	dsmut	<- rbind(dsmut, tmp)
 	tmp		<- subset(dpand,	PR=='3F' & 	POS=='PR_1' &
 					UNASS_HALF_INDIR_P>0.95 &
-					(is.na(arvStartDate) | date<arvStartDate) &
-					(!everSelfReportArt | everSelfReportArt & date<FirstSelfReportArt) &
-					recentVL>4e4 & abs(date-recentVLdate)<.5, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
+					(is.na(ARTSTART) | SAMPLEDATE<ARTSTART) &
+					(!everSelfReportArt | everSelfReportArt & SAMPLEDATE<FirstSelfReportArt) &
+					RECENTVL>4e4 & abs(SAMPLEDATE-RECENTVLDATE)<.5, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'Rakai_VL_>4e4_Coverage_<5pc']	
 	dsmut	<- rbind(dsmut, tmp)
 	#	coverage
-	tmp		<- subset(dpand,	PR=='1R' & POS=='PR_1' & !is.na(RCCS_studyid) &
+	tmp		<- subset(dpand,	PR=='1R' & POS=='PR_1' & !is.na(STUDY_ID) &
 					UNASS_HALF_INDIR_P<0.1, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'Rakai_Coverage_>90pc']			
 	dsmut	<- rbind(dsmut, tmp)
@@ -1177,7 +1379,7 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 					UNASS_HALF_INDIR_P>0.95, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'Rakai_Coverage_<5pc']			
 	dsmut	<- rbind(dsmut, tmp)
-	tmp		<- subset(dpand,	PR=='3F' & POS=='PR_1' & !is.na(RCCS_studyid) &
+	tmp		<- subset(dpand,	PR=='3F' & POS=='PR_1' & !is.na(STUDY_ID) &
 					UNASS_HALF_INDIR_P<0.1, select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'Rakai_Coverage_>90pc']			
 	dsmut	<- rbind(dsmut, tmp)
@@ -1189,13 +1391,13 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 	tmp		<- subset(dpand,	PR=='1R' & 	POS=='PR_1' & !is.na(PANGEA_ID), select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'PANGEA_All']
 	dsmut	<- rbind(dsmut, tmp)
-	tmp		<- subset(dpand,	PR=='1R' & 	POS=='PR_1' & !is.na(RCCS_studyid), select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
+	tmp		<- subset(dpand,	PR=='1R' & 	POS=='PR_1' & !is.na(STUDY_ID), select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'Rakai_All']
 	dsmut	<- rbind(dsmut, tmp)
 	tmp		<- subset(dpand,	PR=='3F' & 	POS=='PR_1' & !is.na(PANGEA_ID), select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'PANGEA_All']
 	dsmut	<- rbind(dsmut, tmp)
-	tmp		<- subset(dpand,	PR=='3F' & 	POS=='PR_1' & !is.na(RCCS_studyid), select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
+	tmp		<- subset(dpand,	PR=='3F' & 	POS=='PR_1' & !is.na(STUDY_ID), select=c(TAXA, PR, UNASS_HALF_INDIR_P, UNASS_TO_NEXTPRIMER_P))
 	tmp[, TYPE:= 'Rakai_All']
 	dsmut	<- rbind(dsmut, tmp)	
 	#	subtypes
@@ -1224,13 +1426,13 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 	tmp[, TYPE:= 'Rakai_D_Coverage_<5pc']			
 	dsmut	<- rbind(dsmut, tmp)
 	
-	tmp		<- merge(subset(dpand, PR=='2F', select=c(TAXA, PR, POS, NT_DIFF, REGION, COMM_NUM, HH_NUM, SEX, AGEYRS, COMET_Region1)), subset(dsmut, PR=='1R', c(TAXA, UNASS_HALF_INDIR_P, TYPE)), by=c('TAXA'), allow.cartesian=TRUE)	
-	dsmut	<- rbind(tmp, merge(subset(dpand, PR=='2R', select=c(TAXA, PR, POS, NT_DIFF, REGION, COMM_NUM, HH_NUM, SEX, AGEYRS, COMET_Region1)), subset(dsmut, PR=='3F', c(TAXA, UNASS_HALF_INDIR_P, TYPE)), by=c('TAXA'), allow.cartesian=TRUE))
+	tmp		<- merge(subset(dpand, PR=='2F', select=c(TAXA, PR, POS, NT_DIFF, LOC, COMM_NUM, HH_NUM, SEX, AGE, COMET_Region1)), subset(dsmut, PR=='1R', c(TAXA, UNASS_HALF_INDIR_P, TYPE)), by=c('TAXA'), allow.cartesian=TRUE)	
+	dsmut	<- rbind(tmp, merge(subset(dpand, PR=='2R', select=c(TAXA, PR, POS, NT_DIFF, LOC, COMM_NUM, HH_NUM, SEX, AGE, COMET_Region1)), subset(dsmut, PR=='3F', c(TAXA, UNASS_HALF_INDIR_P, TYPE)), by=c('TAXA'), allow.cartesian=TRUE))
 	
 	set(dsmut, NULL, 'POS', dsmut[,gsub('PR_','',POS)])
 	set(dsmut, NULL, 'PR', dsmut[, paste('PR_',PR, sep='')])
 	dsmut	<- subset(dsmut, !is.na(POS))
-	#dcast.data.table(dsmut, TYPE+TAXA+PR1R_UNASS_TO_NEXTPRIMER_P+REGION+COMM_NUM+HH_NUM+SEX+AGEYRS+COMET_Region1  ~  PR+POS, value.var='NT_DIFF')
+	#dcast.data.table(dsmut, TYPE+TAXA+PR1R_UNASS_TO_NEXTPRIMER_P+LOC+COMM_NUM+HH_NUM+SEX+AGE+COMET_Region1  ~  PR+POS, value.var='NT_DIFF')
 	
 	tmp		<- dsmut[,{
 				z	<- round(as.numeric(binconf(length(which(NT_DIFF==1)), length(which(!is.na(NT_DIFF))))), d=3)
@@ -1297,7 +1499,7 @@ treecomparison.explaingaps.regressions.160804<- function()
 	#
 	#	regression using ART, viral load, subtype, batch
 	#
-	dr		<- subset(dpand, !is.na(PANGEA_ID) & !is.na(RCCS_studyid), select=c(PANGEA_ID, TAXA, RCCS_studyid, SANGER_ID, PR, POS, NT_DIFF, UNASS_TO_NEXTPRIMER_P, UNASS_HALF_INDIR_P, date, arvStartDate, selfReportArt, everSelfReportArt, recentVL, COMET_Region1, REGION, COMM_NUM))
+	dr		<- subset(dpand, !is.na(PANGEA_ID) & !is.na(STUDY_ID), select=c(PANGEA_ID, TAXA, STUDY_ID, SANGER_ID, PR, POS, NT_DIFF, UNASS_TO_NEXTPRIMER_P, UNASS_HALF_INDIR_P, SAMPLEDATE, ARTSTART, selfReportArt, everSelfReportArt, RECENTVL, COMET_Region1, LOC, COMM_NUM))
 	#	calculate total mutational distance in the 2F and 2R primers
 	tmp		<- subset(dr, PR%in%c('2F','2R'))[, list(NT_DIFF_SUM=sum(NT_DIFF)), by=c('TAXA','PR')]
 	set(tmp, NULL, 'PR', tmp[, paste('NT_DIFF_',PR,sep='')])	
@@ -1312,13 +1514,13 @@ treecomparison.explaingaps.regressions.160804<- function()
 	tmp		<- dr[, which(!is.na(SANGER_ID))]
 	set(dr, tmp, 'BATCH', dr[tmp, regmatches(SANGER_ID,regexpr('^[0-9]+', SANGER_ID))])	
 	set(dr, dr[, which(is.na(BATCH))], 'BATCH', 'No matched ID')
-	dr[, ART:= as.integer(arvStartDate<date)]
+	dr[, ART:= as.integer(ARTSTART<SAMPLEDATE)]
 	set(dr, dr[, which(is.na(ART))], 'ART', 0L)
 	set(dr, dr[, which(ART==0 & everSelfReportArt==1)], 'ART', 2L)
-	set(dr, dr[, which(ART==0 & recentVL<1e4)], 'ART', 3L)
+	set(dr, dr[, which(ART==0 & RECENTVL<1e4)], 'ART', 3L)
 	set(dr, dr[, which(ART==1L)], 'ART', 2L)
 	set(dr, NULL, 'ART', dr[, factor(ART, levels=c(0L,2L,3L), labels=c('no ART', 'ART started or self reported','no ART but VL<1e4'))])	
-	dr[, VL:= cut(recentVL, breaks=c(0, 1e4, 2e4, 4e4, 1e5, Inf), labels=c('<1e4','1e4-2e4','2e4-4e4','4e4-1e5','>1e5'))]	
+	dr[, VL:= cut(RECENTVL, breaks=c(0, 1e4, 2e4, 4e4, 1e5, Inf), labels=c('<1e4','1e4-2e4','2e4-4e4','4e4-1e5','>1e5'))]	
 	set(dr, dr[, which(is.na(VL))], 'VL', 'No VL measured')	
 	dr[, ST:='Other or Unassigned']
 	set(dr, dr[, which(COMET_Region1=='A1')], 'ST', 'A1')
@@ -1343,24 +1545,24 @@ treecomparison.explaingaps.regressions.160804<- function()
 	set(dr, NULL, 'NT_DIFF_2Rc', dr[, relevel(factor(NT_DIFF_2Rc), ref='0')])
 	set(dr, NULL, 'NT_DIFF_2Fc', dr[, relevel(factor(NT_DIFF_2Fc), ref='0')])
 	set(dr, NULL, 'NT_DIFF_SUMc', dr[, relevel(factor(NT_DIFF_SUMc), ref='0')])	
-	set(dr, NULL, 'REGION', dr[, relevel(factor(REGION), ref='13')])
+	set(dr, NULL, 'LOC', dr[, relevel(factor(LOC), ref='13')])
 	set(dr, NULL, 'COMM_NUM', dr[, relevel(factor(COMM_NUM), ref='7')])
 	#
 	#	do logistic regression for 2R
 	#
 	dr[, UNASSc:= as.character(cut(UNASS_HALF_INDIR_P, breaks=c(-1, 0.2, 0.8, 2), labels=c('near_complete','partial','near_fail')))]
-	drs2f	<- subset(dr, PR=='1R' & UNASSc%in%c('near_complete','near_fail'), select=c("UNASSc", "PANGEA_ID", "BATCH", "ART", "VL", "REGION", "COMM_NUM", "ST", "NT_DIFF_2Fc"))
+	drs2f	<- subset(dr, PR=='1R' & UNASSc%in%c('near_complete','near_fail'), select=c("UNASSc", "PANGEA_ID", "BATCH", "ART", "VL", "LOC", "COMM_NUM", "ST", "NT_DIFF_2Fc"))
 	drs2f[, ASS:= as.numeric(as.character(factor(UNASSc, levels=c('near_complete','near_fail'), labels=c('1','0'))))]
-	drs2r	<- subset(dr, PR=='3F' & UNASSc%in%c('near_complete','near_fail'), select=c("UNASSc", "PANGEA_ID", "BATCH", "ART", "VL", "REGION", "COMM_NUM", "ST", "NT_DIFF_2Rc"))
+	drs2r	<- subset(dr, PR=='3F' & UNASSc%in%c('near_complete','near_fail'), select=c("UNASSc", "PANGEA_ID", "BATCH", "ART", "VL", "LOC", "COMM_NUM", "ST", "NT_DIFF_2Rc"))
 	drs2r[, ASS:= as.numeric(as.character(factor(UNASSc, levels=c('near_complete','near_fail'), labels=c('1','0'))))]
 	
 	
-	m2f.1	<- glm(data=drs2f, ASS ~ VL + BATCH + ART + ST + REGION + COMM_NUM + NT_DIFF_2Fc, family='binomial')
+	m2f.1	<- glm(data=drs2f, ASS ~ VL + BATCH + ART + ST + LOC + COMM_NUM + NT_DIFF_2Fc, family='binomial')
 	summary(m2f.1)
 	m2f.1.or<- cbind(data.table(COEF=names(coef(m2f.1))), as.data.table( exp(cbind(OR = coef(m2f.1), confint(m2f.1))) ) )
 	setnames(m2f.1.or, c('2.5 %','97.5 %'), c('l95','u95'))	
 	subset(m2f.1.or, u95<0.95)
-	m2r.1	<- glm(data=drs2r, ASS ~ VL + BATCH + ART + ST + REGION + COMM_NUM + NT_DIFF_2Rc, family='binomial')
+	m2r.1	<- glm(data=drs2r, ASS ~ VL + BATCH + ART + ST + LOC + COMM_NUM + NT_DIFF_2Rc, family='binomial')
 	summary(m2r.1)
 	m2r.1.or<- cbind(data.table(COEF=names(coef(m2r.1))), as.data.table( exp(cbind(OR = coef(m2r.1), confint(m2r.1))) ) )
 	setnames(m2r.1.or, c('2.5 %','97.5 %'), c('l95','u95'))
@@ -1373,7 +1575,7 @@ treecomparison.explaingaps.regressions.160804<- function()
 	#	step down selection of model components
 	require(MASS)
 	m2f.2 <- stepAIC(m2f.1,
-			scope = list(upper = ~VL + BATCH + ART + ST + REGION + COMM_NUM + NT_DIFF_2Fc, lower = ~1),
+			scope = list(upper = ~VL + BATCH + ART + ST + LOC + COMM_NUM + NT_DIFF_2Fc, lower = ~1),
 			trace = FALSE)
 	summary(m2f.2)
 	m2f.2.or<- cbind(data.table(COEF=names(coef(m2f.2))), as.data.table( exp(cbind(OR = coef(m2f.2), confint(m2f.2))) ) )
@@ -1382,7 +1584,7 @@ treecomparison.explaingaps.regressions.160804<- function()
 	#	kept VL, BATCH, NTDIFF, ST (also sig for at least one mutation)
 
 	m2r.2 <- stepAIC(m2r.1,
-			scope = list(upper = ~VL + BATCH + ART + ST + REGION + COMM_NUM + NT_DIFF_2Rc, lower = ~1),
+			scope = list(upper = ~VL + BATCH + ART + ST + LOC + COMM_NUM + NT_DIFF_2Rc, lower = ~1),
 			trace = FALSE)
 	summary(m2r.2)
 	m2r.2.or<- cbind(data.table(COEF=names(coef(m2r.2))), as.data.table( exp(cbind(OR = coef(m2r.2), confint(m2r.2))) ) )
@@ -1480,10 +1682,10 @@ treecomparison.explaingaps.plots.160725<- function()
 	#	plot Rakai samples by REGA subtype
 	#
 	setnames(ch, 'PANGEA_ID', 'TAXA')
-	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, REGA_GAG_A, REGA_GAG_AS, REGA_GAG_PURE, REGA_GAG_PURES)))
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, STUDY_ID, REGA_GAG_A, REGA_GAG_AS, REGA_GAG_PURE, REGA_GAG_PURES)))
 	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
 	set(chr, chr[, which(is.na(REGA_GAG_A))], 'REGA_GAG_A', 'No matched ID')	
-	chr		<- subset(chr, !is.na(RCCS_studyid))
+	chr		<- subset(chr, !is.na(STUDY_ID))
 	#	redefine ordering
 	chr[, PLOT:=NULL]	
 	setkey(chr, REGA_GAG_A, TAXA)	
@@ -1508,9 +1710,9 @@ treecomparison.explaingaps.plots.160725<- function()
 	#
 	#	plot Rakai samples by COMET subtype
 	#
-	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, COMET_Region1, COMET_Region2, COMET_Region3)))
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, STUDY_ID, COMET_Region1, COMET_Region2, COMET_Region3)))
 	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
-	chr		<- subset(chr, !is.na(RCCS_studyid))
+	chr		<- subset(chr, !is.na(STUDY_ID))
 	set(chr, chr[, which(is.na(COMET_Region1))], 'COMET_Region1', 'unassigned')
 	set(chr, chr[, which(is.na(COMET_Region2))], 'COMET_Region2', 'unassigned')
 	set(chr, chr[, which(is.na(COMET_Region3))], 'COMET_Region3', 'unassigned')
@@ -1544,9 +1746,9 @@ treecomparison.explaingaps.plots.160725<- function()
 	#
 	#	plot Rakai samples by Sanger processing batch
 	#	
-	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, SANGER_ID)))
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, STUDY_ID, SANGER_ID)))
 	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
-	#chr		<- subset(chr, !is.na(RCCS_studyid))
+	#chr		<- subset(chr, !is.na(STUDY_ID))
 	chr[, BATCH:=NA_character_]
 	tmp		<- chr[, which(!is.na(SANGER_ID))]
 	set(chr, tmp, 'BATCH', chr[tmp, regmatches(SANGER_ID,regexpr('^[0-9]+', SANGER_ID))])	
@@ -1559,7 +1761,7 @@ treecomparison.explaingaps.plots.160725<- function()
 	tmp		<- tmp[, list(TAXA=TAXA, PLOT=BATCH, PLOT_ID=seq_along(TAXA)), by='BATCH']
 	chr		<- merge(chr, subset(tmp, select=c(TAXA, PLOT_ID)), by='TAXA')	
 	ggplot(chr) +
-			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=factor(is.na(RCCS_studyid), levels=c(TRUE,FALSE), labels=c('OTHER','Rakai')))) +  
+			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=factor(is.na(STUDY_ID), levels=c(TRUE,FALSE), labels=c('OTHER','Rakai')))) +  
 			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="black") +			
 			facet_wrap(~BATCH, scales='free_y', ncol=4) +
 			scale_x_continuous(expand=c(0,0), breaks=dpani$START, labels=dpani$PR) +
@@ -1574,16 +1776,16 @@ treecomparison.explaingaps.plots.160725<- function()
 	#	plot Rakai samples by ART
 	#
 	#	redefine ordering	
-	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, date, arvStartDate, selfReportArt, everSelfReportArt, recentVL)))
-	tmp[, ART:= as.integer(arvStartDate<date)]
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, STUDY_ID, SAMPLEDATE, ARTSTART, selfReportArt, everSelfReportArt, RECENTVL)))
+	tmp[, ART:= as.integer(ARTSTART<SAMPLEDATE)]
 	set(tmp, tmp[, which(is.na(ART))], 'ART', 0L)
 	set(tmp, tmp[, which(ART==0 & everSelfReportArt==1)], 'ART', 2L)
-	set(tmp, tmp[, which(ART==0 & recentVL<1e4)], 'ART', 3L)
+	set(tmp, tmp[, which(ART==0 & RECENTVL<1e4)], 'ART', 3L)
 	set(tmp, NULL, 'ART', tmp[, factor(ART, levels=c(0L,1L,2L,3L), labels=c('no ART', 'ART started', 'ART self reported','no ART but VL<1e4'))])
 	
 	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
 	set(chr, chr[, which(is.na(ART))], 'ART', 'No matched ID')	
-	chr		<- subset(chr, !is.na(RCCS_studyid))
+	chr		<- subset(chr, !is.na(STUDY_ID))
 	#	redefine ordering
 	chr[, PLOT:=NULL]	
 	setkey(chr, TAXA)	
@@ -1608,12 +1810,12 @@ treecomparison.explaingaps.plots.160725<- function()
 	#	plot Rakai samples by ART
 	#
 	#	redefine ordering	
-	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, date, arvStartDate, selfReportArt, everSelfReportArt, recentVL)))
-	tmp[, VL:= cut(recentVL, breaks=c(0, 1e4, 2e4, 4e4, 1e5, Inf), labels=c('<1e4','1e4-2e4','2e4-4e4','4e4-1e5','>1e5'))]	
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, STUDY_ID, SAMPLEDATE, ARTSTART, selfReportArt, everSelfReportArt, RECENTVL)))
+	tmp[, VL:= cut(RECENTVL, breaks=c(0, 1e4, 2e4, 4e4, 1e5, Inf), labels=c('<1e4','1e4-2e4','2e4-4e4','4e4-1e5','>1e5'))]	
 	set(tmp, tmp[, which(is.na(VL))], 'VL', 'No VL measured')
 	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
 	set(chr, chr[, which(is.na(VL))], 'VL', 'No matched ID')	
-	chr		<- subset(chr, !is.na(RCCS_studyid))	
+	chr		<- subset(chr, !is.na(STUDY_ID))	
 	chr[, PLOT:=NULL]	
 	setkey(chr, TAXA)	
 	tmp		<- unique(chr)
@@ -1636,20 +1838,20 @@ treecomparison.explaingaps.plots.160725<- function()
 	#	plot Rakai samples by region
 	#
 	#	redefine ordering	
-	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, RCCS_studyid, REGION)))
-	set(tmp, NULL, 'REGION', tmp[, factor(REGION)])
+	tmp		<- unique(subset(dpand, !is.na(PANGEA_ID), select=c(PANGEA_ID, TAXA, STUDY_ID, LOC)))
+	set(tmp, NULL, 'LOC', tmp[, factor(LOC)])
 	chr		<- merge(ch, tmp, by='TAXA', all.x=1)
-	chr		<- subset(chr, !is.na(RCCS_studyid))	
+	chr		<- subset(chr, !is.na(STUDY_ID))	
 	chr[, PLOT:=NULL]	
 	setkey(chr, TAXA)	
 	tmp		<- unique(chr)
-	setkey(tmp, REGION, COVP, TAXA)	
-	tmp		<- tmp[, list(TAXA=TAXA, PLOT=REGION, PLOT_ID=seq_along(TAXA)), by='REGION']
+	setkey(tmp, LOC, COVP, TAXA)	
+	tmp		<- tmp[, list(TAXA=TAXA, PLOT=LOC, PLOT_ID=seq_along(TAXA)), by='LOC']
 	chr		<- merge(chr, subset(tmp, select=c(TAXA, PLOT_ID)), by='TAXA')	
 	ggplot(chr) +
-			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=REGION)) +  
+			geom_segment(aes(y=PLOT_ID, yend=PLOT_ID, x=POS_CH, xend=POS_CH+REP_CH-1L, colour=LOC)) +  
 			geom_rect(data=dpani, aes(xmin=START, xmax=END, ymin=-Inf, ymax=Inf), fill="black") +			
-			facet_wrap(~REGION, scales='free_y', ncol=6) +
+			facet_wrap(~LOC, scales='free_y', ncol=6) +
 			scale_x_continuous(expand=c(0,0), breaks=dpani$START, labels=dpani$PR) +
 			scale_y_continuous(expand=c(0,0)) +
 			scale_colour_brewer(palette='Dark2') +						
@@ -1809,23 +2011,40 @@ treecomparison.explaingaps.collect.data<- function()
 		set(dpand, tmp, 'PANGEA_ID', dpand[tmp, regmatches(TAXA,regexpr('PG[0-9]+-[A-Za-z0-9]+', TAXA))])	
 		#	add RCCS data
 		load("~/Dropbox (Infectious Disease)/Rakai Pangea Meta Data/Data for Fish Analysis Working Group/RakaiPangeaMetaData.rda")
-		rccsData			<- as.data.table(rccsData)
-		subtypeSummaryData	<- as.data.table(subtypeSummaryData)
+		rccsData	<- as.data.table(rccsData)		
 		rccsData	<- subset(rccsData, select=c('Pangea.id', 'RCCS_studyid', 'date', 'batch', 'birthyr', 'REGION', 'COMM_NUM', 'HH_NUM', 'SEX', 'AGEYRS','firstPosDate', 'arvStartDate', 'selfReportArt', 'everSelfReportArt', 'FirstSelfReportArt', 'recentVL', 'recentVLdate'))
-		setnames(rccsData, 'Pangea.id', 'PANGEA_ID')
+		setnames(rccsData, c('Pangea.id','RCCS_studyid','REGION','date','birthyr','firstPosDate','arvStartDate','recentVL','recentVLdate',"AGEYRS"), c('PANGEA_ID','STUDY_ID','LOC','SAMPLEDATE','DOB','FIRSTPOSDATE','ARTSTART','RECENTVL','RECENTVLDATE',"AGE"))
 		rccsData	<- subset(rccsData, !is.na(PANGEA_ID))
 		setkey(rccsData, PANGEA_ID)
-		rccsData	<- unique(rccsData)	#remove 4 duplicates "K104085" "E106462" "F030186" "F101874"	
-		dpand		<- merge(dpand, rccsData, by='PANGEA_ID', all.x=1)
+		rccsData	<- unique(rccsData)	#remove 4 duplicates "K104085" "E106462" "F030186" "F101874"
+		rccsData[, COHORT:='RCCS']
+		set(rccsData, NULL, 'SAMPLEDATE', rccsData[,hivc.db.Date2numeric(SAMPLEDATE)])	
+		set(rccsData, NULL, 'FIRSTPOSDATE', rccsData[,hivc.db.Date2numeric(FIRSTPOSDATE)])
+		set(rccsData, NULL, 'ARTSTART', rccsData[,hivc.db.Date2numeric(ARTSTART)])
+		set(rccsData, NULL, 'FirstSelfReportArt', rccsData[,hivc.db.Date2numeric(FirstSelfReportArt)])
+		set(rccsData, NULL, 'RECENTVLDATE', rccsData[,hivc.db.Date2numeric(RECENTVLDATE)])
+		#	add Mochudi data
+		load("~/duke/2016_AC/PANGEA_160817/160817_PANGEA_BW_corevariables_n373.rda")
+		setnames(bwp, 'PANGEAID', 'PANGEA_ID')
+		set(bwp, NULL, 'SEQID', NULL)
+		tmp			<- rbind(rccsData, bwp, use.names=TRUE, fill=TRUE) 
+		#	add AC data
+		load("~/duke/2016_AC/PANGEA_160817/160817_PANGEA_AC_corevariables_n2940.rda")
+		setnames(acp, 'PANGEAID', 'PANGEA_ID')
+		set(acp, NULL, c('REASONSAMPLING','LATESTARTREGIMEN','CIRCUMCISED','LASTNEGDATE','LASTNUMSEXUALPARTNERS','LATESTARTREGIMENSTARTED'), NULL)		
+		tmp			<- rbind(tmp, acp, use.names=TRUE, fill=TRUE)
+		dpand		<- merge(dpand, tmp, by='PANGEA_ID', all.x=1)
 		#	add CLASS subtype data
-		dst			<- subset(subtypeSummaryData, select=c(RCCS_studyid, gp.class, gag.class, pol.class, vpu.class, env.class, comp.class))
-		setkey(dst, RCCS_studyid)
-		dst			<- unique(dst)	#no duplicates here
-		dst			<- melt(dst, id.var='RCCS_studyid')
+		subtypeSummaryData	<- as.data.table(subtypeSummaryData)
+		setnames(subtypeSummaryData, 'RCCS_studyid', 'STUDY_ID')
+		dst					<- subset(subtypeSummaryData, select=c(STUDY_ID, gp.class, gag.class, pol.class, vpu.class, env.class, comp.class))
+		setkey(dst, STUDY_ID)
+		dst					<- unique(dst)	#no duplicates here
+		dst					<- melt(dst, id.var='STUDY_ID')
 		set(dst, NULL, 'value', dst[, gsub('\\s','',gsub('Complex','',gsub('Subtype', '',value)))])
 		set(dst, NULL, 'variable', dst[, paste('SUBTYPE_',toupper(gsub('\\.class','',variable)),sep='')])	
-		dst			<- dcast.data.table(dst, RCCS_studyid~variable)
-		dpand		<- merge(dpand, dst, by='RCCS_studyid',all.x=1)
+		dst					<- dcast.data.table(dst, STUDY_ID~variable)
+		dpand				<- merge(dpand, dst, by='STUDY_ID',all.x=1)
 		#	add REGA subtype data
 		load("~/Dropbox (Infectious Disease)/PANGEA_alignments/Rega Subtype Analysis/Gag REGA results/regaGag.rda")
 		regaGag		<- as.data.table(regaGag)
@@ -2358,48 +2577,36 @@ treecomparison.bootstrap.sd.vs.coverage<- function(indir=NULL, wdir=NULL)
 	seqi[, START:= as.integer(gsub('-','',regmatches(V2, regexpr('[0-9]+-', V2))))]
 	seqi[, END:= as.integer(gsub('-','',regmatches(V2, regexpr('-[0-9]+', V2))))]
 	seqi[, GENE_L:=END-START+1L]
-	seqi	<- subset(seqi, select=c(GENE,START,END))
+	seqi	<- subset(seqi, select=c(GENE,START,END,GENE_L))
 	seqi	<- rbind(seqi, data.table(GENE='gag+pol+env', START=1L, END=seqi[, max(END)], GENE_L=seqi[, max(END)]))
 	
-	tp		<- as.data.table( t(combn(rownames(seq),2)) )
-	setnames(tp, c('V1','V2'), c('TAXA1','TAXA2'))
-	tp[, IDX:= seq_len(nrow(tp))]
-	#	subset by batch
-	tp[, BATCH:= ceiling(IDX/batch.n)]
-	#
-	#	read genetic distances between taxon pairs
-	#	
-	infiles	<- data.table(FILE=list.files(wdir, pattern='BATCH[0-9]+.rda$', full.names=TRUE))
-	infiles[, BATCH:= as.integer(gsub('BATCH','',regmatches(FILE, regexpr('BATCH[0-9]+', FILE))))]
-	setkey(infiles, BATCH)
-	tmp		<- infiles[, {
-				load(FILE)
-				tpi
-			}, by='FILE']
-	tmp[, FILE:=NULL]
-	tpi		<- merge(tp, tmp, by=c('TAXA1','TAXA2'))
-	tpi		<- merge(tpi, subset(seqi, select=c(GENE, GENE_L)), by='GENE')
-	set(tpi, NULL, 'GENE', tpi[, factor(GENE, levels=c('gag','pol','env','gag+pol+env'), labels=c('gag','pol','env','gag+pol+env'))])
+	
+	load(file.path(wdir,'150701_Regional_TRAIN4_SIMULATED_tps.rda'))
+	
+	tp		<- merge(tp, subset(seqi, select=c(GENE, GENE_L)), by='GENE')
+	set(tp, NULL, 'GENE', tp[, factor(GENE, levels=c('gag','pol','env','gag+pol+env'), labels=c('gag','pol','env','gag+pol+env'))])
 	#
 	#	do we have higher bootstrap variance if there are more gaps by gene?
 	#
-	tmp		<- subset(tpi, REP==1)
+	tmp		<- subset(tp, REP==1)
 		
-	ggplot( subset(tmp, GD_MEAN>0), aes(x=cut(DO/GENE_L, breaks=seq(0,1,0.01)), y=GD_SD) ) + 	
+	ggplot( subset(tmp, GD_MEAN>0), aes(x=cut(DO/GENE_L, breaks=seq(0,1,0.01), labels=seq(0.01,1,0.01)), y=GD_SD) ) + 	
 			geom_boxplot(outlier.shape=NA) +
 			coord_cartesian(ylim=c(0,0.18)) +
+			scale_x_discrete(breaks=seq(0,1,0.1), labels=paste(100*seq(0,1,0.1),'%',sep='')) +
 			scale_y_continuous(expand=c(0,0)) +
 			facet_grid(~GENE) + theme_bw() +
 			labs(x='\noverlap between taxon pairs\n(% of sequence length)', y='std deviation in genetic distance\n')
-	ggsave(file=file.path(wdir, gsub('.fa','_GDSD_by_overlap.pdf',infile)), w=10, h=5)
+	ggsave(file=file.path(wdir, gsub('.fa','_GDSD_by_overlap.pdf',infile)), w=14, h=7)
 	
-	ggplot( subset(tmp, GD_MEAN>0), aes(x=cut(DO/GENE_L, breaks=seq(0,1,0.01)), y=GD_SD/GD_MEAN) ) + 	
+	ggplot( subset(tmp, GD_MEAN>0), aes(x=cut(DO/GENE_L, breaks=seq(0,1,0.01), labels=seq(0.01,1,0.01)), y=GD_SD/GD_MEAN) ) + 	
 			geom_boxplot(outlier.shape=NA) +
 			coord_cartesian(ylim=c(0,0.6)) +
+			scale_x_discrete(breaks=seq(0,1,0.1), labels=paste(100*seq(0,1,0.1),'%',sep='')) +
 			scale_y_continuous(expand=c(0,0)) +
 			facet_grid(~GENE) + theme_bw() +
 			labs(x='\noverlap between taxon pairs\n(% of sequence length)', y='coefficient of variation in genetic distance\nacross bootstrap alignments\n')
-	ggsave(file=file.path(wdir, gsub('.fa','_GDCOV_by_overlap.pdf',infile)), w=10, h=5)
+	ggsave(file=file.path(wdir, gsub('.fa','_GDCOV_by_overlap.pdf',infile)), w=14, h=7)
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
@@ -2929,7 +3136,8 @@ treecomparison.submissions.160627<- function()
 	set(submitted.info, submitted.info[, which(grepl('MetaPIGA|Consensus pruning|Best individual of population',FILE))], 'TEAM', 'MetaPIGA')
 	set(submitted.info, submitted.info[, which(grepl('PhyML',FILE))], 'TEAM', 'PhyML')
 	set(submitted.info, submitted.info[, which(grepl('running_gaps',FILE))], 'TEAM', 'RUNGAPS_ExaML')
-	set(submitted.info, submitted.info[, which(grepl('tree_mvr',FILE))], 'TEAM', 'MVR')
+	set(submitted.info, submitted.info[, which(grepl('tree_mvr.*MVR_C_0\\.newick',FILE))], 'TEAM', 'MVR')
+	set(submitted.info, submitted.info[, which(grepl('tree_mvr.*BioNJ_C_0\\.newick',FILE))], 'TEAM', 'BioNJ')
 	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )	
 	#
 	#	scenario
@@ -2994,12 +3202,11 @@ treecomparison.submissions.160627<- function()
 	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML' & grepl('GAGPP_SIMULATED', FILE))], 'GENE', 'GAG+PARTIALPOL')
 	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML' & grepl('P17_SIMULATED', FILE))], 'GENE', 'P17')
 	stopifnot(nrow(subset(submitted.info, TEAM=='RUNGAPS_ExaML' & is.na(GENE)))==0)
-	set(submitted.info, submitted.info[, which(TEAM=='MVR' & grepl('gag+pol+env', FILE))], 'GENE', 'GAG+POL+ENV')
-	set(submitted.info, submitted.info[, which(TEAM=='MVR' & grepl('pol', FILE))], 'GENE', 'POL')
-	set(submitted.info, submitted.info[, which(TEAM=='MVR' & grepl('gag', FILE))], 'GENE', 'GAG')
-	set(submitted.info, submitted.info[, which(TEAM=='MVR' & grepl('env', FILE))], 'GENE', 'ENV')
-	stopifnot(nrow(subset(submitted.info, TEAM=='MVR' & is.na(GENE)))==0)
-	
+	set(submitted.info, submitted.info[, which(TEAM%in%c('MVR','BioNJ') & grepl('gag+pol+env', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(TEAM%in%c('MVR','BioNJ') & grepl('pol', FILE))], 'GENE', 'POL')
+	set(submitted.info, submitted.info[, which(TEAM%in%c('MVR','BioNJ') & grepl('gag', FILE))], 'GENE', 'GAG')
+	set(submitted.info, submitted.info[, which(TEAM%in%c('MVR','BioNJ') & grepl('env', FILE))], 'GENE', 'ENV')
+	stopifnot(nrow(subset(submitted.info, TEAM%in%c('MVR','BioNJ') & is.na(GENE)))==0)	
 	#
 	#	best tree for each scenario
 	#
@@ -3154,6 +3361,7 @@ treecomparison.submissions.160627<- function()
 		z[, IDPOP:= gsub('IDPOP_','',regmatches(TAXA, regexpr('IDPOP_[0-9]+',TAXA)))]	
 		strs[[j]]	<- drop.tip(stree, subset( z, is.na(TYPE.y))[, TAXA])		
 	}
+	submitted.info[, TAXAN:= sapply(strs, Ntip)]
 	#
 	#	are trees rooted?
 	#
@@ -3189,10 +3397,10 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 					cat('\n',i)
 					#i	<- 628 ; i<- 241; i<- 571
 					ph	<- strs[[i]]
-					tmp	<- data.table(TAXA=ph$tip.label)	
-					tmp[, T_SEQ:= tmp[, regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA)) ]]
+					tmp	<- data.table(TAXA=ph$tip.label)
+					set(tmp, NULL, 'T_SEQ', tmp[, as.numeric(regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA))) ])					
 					#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
-					phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)], ncpu=1)
+					phr	<- rtt(ph, tmp[, T_SEQ], ncpu=1)	#this may drop a tip!
 					phr
 				})
 		names(strs_rtt)	<- names(strs)
@@ -3819,7 +4027,7 @@ treecomparison.submissions.151016<- function()
 				#print(stree)
 				#print(otree)
 				z			<- setdiff(otree$tip.label, stree$tip.label)
-				stopifnot( length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+				stopifnot( length(z)==abs(diff(c(Ntip(otree), Ntip(stree)))) )
 				if(length(z))
 					otree	<- unroot(drop.tip(otree, z))								
 				#normalize with choose(n,2)		
