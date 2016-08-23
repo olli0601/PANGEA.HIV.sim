@@ -913,13 +913,14 @@ project.PANGEA.TEST.SSApg.NJR2<- function()
 	outdir		<- '/Users/Oliver/git/HPTN071sim/tmp140914/140716_RUN001_INTERNAL'
 	#indir		<- '/Users/Oliver/git/HPTN071sim/tmp140912/140911_DSPS_RUN002_INTERNAL'  
 	#outdir		<- '/Users/Oliver/git/HPTN071sim/tmp140912/140911_DSPS_RUN002_INTERNAL'
-	indir		<- '/Users/Oliver/duke/2014_Gates/methods_comparison_pipeline/140914'  
-	outdir		<- '/Users/Oliver/duke/2014_Gates/methods_comparison_pipeline/140914'	
+	indir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional_unblinded'  
+	outdir		<- '~/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures'	
 	
 	
 	infiles		<- list.files(indir, '.*INTERNAL.R$', full.names=FALSE)
 	for(i in seq_along(infiles))
 	{
+		i<-19#i<- 8 #i<- 4
 		infile		<- infiles[i]	
 		#	load simulated data
 		file			<- paste(indir, '/', infile, sep='')
@@ -949,13 +950,16 @@ project.PANGEA.TEST.SSApg.NJR2<- function()
 		nj				<- nj(tmp)
 		tmp				<- which(nj$tip.label=="HXB2")
 		nj				<- reroot(nj, tmp, nj$edge.length[which(nj$edge[,2]==tmp)])
-		nj				<- ladderize(nj)		
-		file			<- paste( outdir, '/', substr(infile,1,nchar(infile)-20),'INFO_simu_NJpol.pdf', sep='' )	
-		pdf(file=file, w=10, h=150)
-		plot(nj, show.tip=TRUE, cex=0.5)
-		add.scale.bar()
-		dev.off()			
-		#	get root to tip divergence
+		nj				<- ladderize(nj)	
+		if(0)
+		{
+			file			<- paste( outdir, '/', substr(infile,1,nchar(infile)-20),'INFO_simu_NJpol.pdf', sep='' )	
+			pdf(file=file, w=10, h=150)
+			plot(nj, show.tip=TRUE, cex=0.5)
+			add.scale.bar()
+			dev.off()						
+		}
+		#	get root to tip divergence on pol
 		nj				<- drop.tip(nj,'HXB2')
 		tmp				<- node.depth.edgelength(nj)
 		nj.info			<- data.table(LABEL=nj$tip.label, ROOT2TIP=tmp[seq_len(Ntip(nj))] )
@@ -963,13 +967,37 @@ project.PANGEA.TEST.SSApg.NJR2<- function()
 		tmp				<- lm(ROOT2TIP~CALENDAR_TIME, data=nj.info)		 
 		set( nj.info, NULL, 'ROOT2TIP_LM', predict(tmp, type='response') ) 	
 		tmp2			<- c( R2=round(summary(tmp)$r.squared,d=3), SLOPE= as.numeric(round(coef(tmp)['CALENDAR_TIME'],d=4)), TMRCA=as.numeric(round( -coef(tmp)['(Intercept)']/coef(tmp)['CALENDAR_TIME'], d=1 )) )
-		ggplot(nj.info, aes(x=CALENDAR_TIME, y=ROOT2TIP)) + geom_point(alpha=0.5) + geom_line(aes(y=ROOT2TIP_LM)) +
+		ggplot(nj.info, aes(x=CALENDAR_TIME, y=ROOT2TIP)) + geom_point(alpha=0.5, colour='Orange') + geom_line(aes(y=ROOT2TIP_LM)) +
 				#scale_x_continuous(breaks=seq(1980,2020,2)) +						
-				labs(x='Sequence sampling date', y='root-to-tip divergence\n(HIV-1 pol sequences)') +
+				labs(x='\nSequence sampling date\n(Year)', y='Genetic distance of pol sequences from root\n(subst/site)\n') +
 				annotate("text", x=nj.info[, min(CALENDAR_TIME)], y=nj.info[, 0.9*max(ROOT2TIP)], label=paste("R2=", tmp2['R2'],'\nSlope=',tmp2['SLOPE'],'\nTMRCA=',tmp2['TMRCA'], sep=''), hjust = 0, size = 4) +
 				theme(legend.position=c(0,1), legend.justification=c(0,1))		
-		file			<- paste( outdir, '/', substr(infile,1,nchar(infile)-20),'INFO_simu_NJpolR2.pdf', sep='' )
-		ggsave(file=file, w=10, h=6)		
+		file			<- paste( outdir, '/R2_', substr(infile,1,nchar(infile)-20),'_NJpol.pdf', sep='' )
+		ggsave(file=file, w=10, h=5)
+		#
+		seq				<- df.seq.env
+		seq				<- rbind(seq, outgroup.seq.env[, seq_len(ncol(seq))])
+		#	get NJ tree	
+		tmp				<- dist.dna(seq, model='raw')
+		nj				<- nj(tmp)
+		tmp				<- which(nj$tip.label=="HXB2")
+		nj				<- reroot(nj, tmp, nj$edge.length[which(nj$edge[,2]==tmp)])
+		nj				<- ladderize(nj)	
+		#	get root to tip divergence on pol
+		nj				<- drop.tip(nj,'HXB2')
+		tmp				<- node.depth.edgelength(nj)
+		nj.info			<- data.table(LABEL=nj$tip.label, ROOT2TIP=tmp[seq_len(Ntip(nj))] )
+		set(nj.info, NULL, 'CALENDAR_TIME', nj.info[, as.numeric(sapply(strsplit(LABEL, tree.id.labelsep, fixed=TRUE),'[[',tree.id.label.idx.ctime))] )
+		tmp				<- lm(ROOT2TIP~CALENDAR_TIME, data=nj.info)		 
+		set( nj.info, NULL, 'ROOT2TIP_LM', predict(tmp, type='response') ) 	
+		tmp2			<- c( R2=round(summary(tmp)$r.squared,d=3), SLOPE= as.numeric(round(coef(tmp)['CALENDAR_TIME'],d=4)), TMRCA=as.numeric(round( -coef(tmp)['(Intercept)']/coef(tmp)['CALENDAR_TIME'], d=1 )) )
+		ggplot(nj.info, aes(x=CALENDAR_TIME, y=ROOT2TIP)) + geom_point(alpha=0.5, colour='Orange') + geom_line(aes(y=ROOT2TIP_LM)) +
+				#scale_x_continuous(breaks=seq(1980,2020,2)) +						
+				labs(x='\nSequence sampling date\n(Year)', y='Genetic distance of env sequences from root\n(subst/site)\n') +
+				annotate("text", x=nj.info[, min(CALENDAR_TIME)], y=nj.info[, 0.9*max(ROOT2TIP)], label=paste("R2=", tmp2['R2'],'\nSlope=',tmp2['SLOPE'],'\nTMRCA=',tmp2['TMRCA'], sep=''), hjust = 0, size = 4) +
+				theme(legend.position=c(0,1), legend.justification=c(0,1))		
+		file			<- paste( outdir, '/R2_', substr(infile,1,nchar(infile)-20),'_NJenv.pdf', sep='' )
+		ggsave(file=file, w=10, h=5)			
 	}
 	#
 	#	get R2 for concatenated genome
@@ -6022,6 +6050,18 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 			theme_bw() + theme(legend.position='bottom')
 	file	<- file.path(outdir, '150715_R_Time2TransmissionSequencedByACSC.pdf')
 	ggsave(file=file, w=10, h=7)
+	#	plot CDF among all sequenced infected by data set
+	ggplot(subset(trms, !is.na(SAMPLED_REC) & TIME_TR>2005), aes(x=T2REC, colour=SCL, alpha=CONFIG)) + stat_ecdf() + 
+			facet_grid(.~INT) +  
+			labs(x='\ntime to transmission\nto all sampled individuals\n(years)',y='empirical CDF\n') +
+			scale_color_brewer(name='simulation data sets', palette='Paired') +
+			scale_x_continuous(expand=c(0,0)) +
+			scale_y_continuous(expand=c(0,0)) +
+			coord_cartesian(xlim=c(0,20)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(CONFIG))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(outdir, '150715_R_Time2TransmissionSequencedByACSC_noPERIOD.pdf')
+	ggsave(file=file, w=10, h=5)	
 	#	
 	#	gds
 	#
@@ -6038,6 +6078,20 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 			theme_bw() + theme(legend.position='bottom')
 	file	<- file.path(outdir, '150715_R_GeneticDistanceSequencedRecByACSC2.pdf')
 	ggsave(file=file, w=10, h=7)
+	#
+	ggplot(subset(gds, TIME_TR>2005), aes(x=GD, colour=SCL, alpha=CONFIG)) + stat_ecdf() +
+			facet_grid(.~INT) +  
+			#labs(x='\ntime spent diverging\nbetween phylogenetically closest individuals',y='empirical CDF') +
+			labs(x='\ngenetic distance between phylogenetically closest individuals (subst/site)',y='empirical CDF\n') +
+			scale_color_brewer(name='data sets', palette='Paired') +
+			scale_x_continuous(expand=c(0,0)) +
+			coord_cartesian(xlim=c(0,0.15)) +
+			scale_y_continuous(expand=c(0,0)) +
+			scale_alpha_manual(values=rep(1,trms[, length(unique(CONFIG))]), guide = FALSE) +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(outdir, '150715_R_GeneticDistanceSequencedRecByACSC2_noPERIOD.pdf')
+	ggsave(file=file, w=10, h=5)
+	
 	#
 	#	coal
 	#	
