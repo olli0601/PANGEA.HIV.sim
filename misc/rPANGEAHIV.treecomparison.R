@@ -3840,7 +3840,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_04PD.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( inherits(readAttempt, "try-error") )
+	if( 0 & inherits(readAttempt, "try-error") )
 	{	
 		#
 		#	path distance of complete trees
@@ -3899,7 +3899,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp[, TAXA_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_04PD.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_06PDLSD.rda',file))
 	}
 	
 	options(show.error.messages = FALSE)		
@@ -3910,7 +3910,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#	MSE between true time distances and reconstructed patristic distances in LSD tree
 		cat('\nMSE of edges on LSD trees')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y')
-		tmp				<- treedist.LSDdistances.wrapper(tmp, strs_lsd, tbrl, use.brl=FALSE)
+		tmp				<- treedist.MSE.wrapper(tmp, strs_lsd, tbrl, use.brl=FALSE)
 		tmp[, TAXA_NJ:=NULL]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
 		cat('\nMSE of edges on LSD clusters')
@@ -3918,6 +3918,8 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp				<- treedist.MSE.clusters.wrapper(tmp, strs_lsd, tbrl, tinfo, use.brl=FALSE)
 		tmp[, TAXA_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
+		#	save intermediate	
+		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD.rda',file))
 	}
 	#
 	#	ADD other summaries
