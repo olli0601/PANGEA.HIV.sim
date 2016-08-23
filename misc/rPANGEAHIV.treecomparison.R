@@ -109,7 +109,7 @@ treedist.pathdifference.clusters.wrapper<- function(df, ttrs, s, tinfo, use.brl=
 				tidx		<- ifelse(use.brl, SUB_IDX_T, TIME_IDX_T)
 				otree		<- ttrs[[tidx]]				
 				#	get all clusters of this true tree (with IDX_T) that are of size>=3 (use "tinfo" for that)
-				z			<- subset(tinfo, CLU_N>3 & IDX_T==z)	
+				z			<- subset(tinfo, CLU_N>3 & IDX_T==tidx)	
 				setkey(z, TAXA)
 				z			<- unique(z)				
 				z			<- merge(z, data.table(TAXA=stree$tip.label, IN_STREE=1), by='TAXA', all.x=1)
@@ -3845,10 +3845,12 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#
 		#	path distance of complete trees
 		#
+		cat('\nPath distances on rooted trees')
 		tmp				<- treedist.pathdifference.wrapper(submitted.info, ttrs, strs_rtt, use.weight=FALSE)
 		tmp[, TAXA_NJ:=NULL]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
 		#	path distance of clusters	
+		cat('\nPath distances on clusters')
 		tmp				<- subset(submitted.info, MODEL=='R')
 		tmp				<- treedist.pathdifference.clusters.wrapper(tmp, ttrs, strs_rtt, tinfo, use.weight=FALSE)
 		tmp[, TAXA_NC:=NULL]
@@ -3865,10 +3867,12 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#
 		#	quartet distances of complete trees
 		#
+		cat('\nQuartett distances on rooted trees')
 		tmp				<- treedist.quartetdifference.wrapper(submitted.info, ttrs, strs_rtt)
 		tmp[, TAXA_NJ:=NULL]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
-		#	quartet distance of clusters		
+		#	quartet distance of clusters
+		cat('\nQuartett distances on clusters')
 		tmp				<- treedist.quartetdifference.clusters.wrapper(submitted.info, ttrs, strs_rtt, tinfo)
 		tmp[, TAXA_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
@@ -3883,11 +3887,13 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#
 		#	path distance of complete LSD trees
 		#
+		cat('\nPath distances on LSD trees')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y')
 		tmp				<- treedist.pathdifference.wrapper(tmp, ttrs, strs_lsd, use.brl=FALSE, use.weight=TRUE)
 		tmp[, TAXA_NJ:=NULL]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
-		#	path distance of LSD clusters	
+		#	path distance of LSD clusters
+		cat('\nPath distances on LSD clusters')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y' & MODEL=='R')
 		tmp				<- treedist.pathdifference.clusters.wrapper(tmp, ttrs, strs_lsd, tinfo, use.brl=FALSE, use.weight=TRUE)
 		tmp[, TAXA_NC:=NULL]
@@ -3902,11 +3908,12 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	if( inherits(readAttempt, "try-error") )
 	{			
 		#	MSE between true time distances and reconstructed patristic distances in LSD tree
+		cat('\nMSE of edges on LSD trees')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y')
 		tmp				<- treedist.LSDdistances.wrapper(tmp, strs_lsd, tbrl, use.brl=FALSE)
 		tmp[, TAXA_NJ:=NULL]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
-		
+		cat('\nMSE of edges on LSD clusters')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y' & MODEL=='R')
 		tmp				<- treedist.MSE.clusters.wrapper(tmp, strs_lsd, tbrl, tinfo, use.brl=FALSE)
 		tmp[, TAXA_NC:=NULL]
