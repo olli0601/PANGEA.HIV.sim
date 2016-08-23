@@ -178,10 +178,10 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(0)	#submit various
+	if(1)	#submit various
 	{
 		cmd			<- cmd.various()
-		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="6000mb")
+		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=171, hpc.mem="6000mb")
 		cat(cmd)		
 		outdir		<- paste(HOME,"tmp",sep='/')
 		outfile		<- paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
@@ -189,7 +189,7 @@ pipeline.various<- function()
 		quit("no")		
 	}	
 	#	split into individual distances and run MVR on HPC because MDS needs a ton of RAM
-	if(1)
+	if(0)
 	{
 		require(big.phylo)
 		
