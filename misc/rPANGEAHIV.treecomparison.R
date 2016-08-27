@@ -30,7 +30,7 @@ treedist.pathdifference.wrapper<- function(df, ttrs, s, use.brl=FALSE, use.weigh
 treedist.MSE.wrapper<- function(df, s, tbrl, use.brl=TRUE)
 {		
 	ans	<- df[, {
-				#IDX<- 1; TIME_IDX_T<- 12
+				#IDX<- 724; TIME_IDX_T<- 13; SUB_IDX_T<- 2
 				cat('\nLSD distances IDX at', IDX)
 				tidx	<- ifelse(use.brl, SUB_IDX_T, TIME_IDX_T)				
 				stree	<- s[[IDX]]				
@@ -43,8 +43,9 @@ treedist.MSE.wrapper<- function(df, s, tbrl, use.brl=TRUE)
 				tmp3	<- subset(tmp3, !is.na(PD_SIM))
 				tmp2	<- subset(tbrl, BRL_T=='time' & IDX_T==tidx)
 				tmp2	<- merge(tmp3, tmp2, by=c('TAXA1','TAXA2'))
-				mse		<- tmp2[, mean((PD-PD_SIM)*(PD-PD_SIM))]			
-				list(MSE=mse, TAXA_NJ=Ntip(stree), EDGE_NJ=nrow(tmp2))				
+				mse		<- tmp2[, mean((PD-PD_SIM)*(PD-PD_SIM))]
+				mae		<- tmp2[, mean(abs(PD-PD_SIM))]
+				list(MSE=mse, MAE=mae, TAXA_NJ=Ntip(stree), EDGE_NJ=nrow(tmp2))				
 			}, by='IDX']
 	ans
 }
@@ -85,12 +86,13 @@ treedist.MSE.clusters.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 								tmp2	<- subset(tbrl, BRL_T=='time' & IDX_T==tidx)
 								#	this merges to the intersection of taxa in sclu and the corresponding observed clu
 								tmp2	<- merge(tmp3, tmp2, by=c('TAXA1','TAXA2'))
-								mse		<- tmp2[, mean((PD-PD_SIM)*(PD-PD_SIM))]			
-								list(MSE=mse, TAXA_NC=Ntip(sclu), EDGE_NC=nrow(tmp2))								
+								mse		<- tmp2[, mean((PD-PD_SIM)*(PD-PD_SIM))]
+								mae		<- tmp2[, mean(abs(PD-PD_SIM))]
+								list(MSE=mse, MAE=mae, TAXA_NC=Ntip(sclu), EDGE_NC=nrow(tmp2))								
 							}, by='IDCLU']	
 				}
 				if(!nrow(z))
-					ans		<- data.table(MSE=NA_real_, TAXA_NC=NA_integer_, EDGE_NC=NA_integer_)
+					ans		<- data.table(MSE=NA_real_, MAE=NA_real_, TAXA_NC=NA_integer_, EDGE_NC=NA_integer_)
 				ans			
 			}, by='IDX']	
 	ans	
@@ -2858,27 +2860,33 @@ treecomparison.gd.dev<- function()
 	set(tfiles, tfiles[, which(grepl('REG',SC) & grepl('SUBST',FILE_T))], 'BRL_T', 'subst')
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	tmp		<- data.table(FASTA_FILE=list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$'))	
-	tmp[, SC:= toupper(gsub('_SIMULATED.fa','',basename(RDAFILE)))]
+	tmp[, SC:= toupper(gsub('_SIMULATED.fa','',basename(FASTA_FILE)))]
 	tfiles	<- merge(tfiles, tmp, by='SC')
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+	tmp		<- data.table(MVR_FILE=list.files(indir, full.names=1, pattern='_SIMULATED_tps.rda$'))	
+	tmp[, SC:= toupper(gsub('_SIMULATED_tps.rda','',basename(MVR_FILE)))]
+	tfiles	<- merge(tfiles, tmp, by='SC', all.x=1)
 	ttrs	<- lapply(tfiles[, FILE_T], function(x)	read.tree(file=x) )
 	names(ttrs)	<- tfiles[, SC]	
-	for(z in c('VILL_99_APR15','150701_VILL_SCENARIO-C','150701_VILL_SCENARIO-D','150701_VILL_SCENARIO-E'))
-		ttrs[[z]]	<- root(ttrs[[z]], node=Ntip(ttrs[[z]])+2, resolve.root=1)	
 	tfiles[, IDX_T:=seq_along(ttrs)]
 	tfiles[, TAXAN_T:= sapply(ttrs, Ntip)]
 	#
 	#	read true patristic distances from true tree
 	#
-	tbrl	<- tfiles[, {
+	tbrl	<- subset(tfiles, BRL_T=='subst')[, {
 				#IDX_T	<- 1
 				ph		<- ttrs[[IDX_T]]
 				tmp		<- distTips(ph, seq_len(Ntip(ph)), method='patristic', useC=TRUE)
 				tmp		<- as.matrix(tmp)
-				tmp		<- as.data.table(melt(tmp))
-				setnames(tmp, c('Var1','Var2','value'),c('TAXA1','TAXA2','PD'))
-				tmp		<- subset(tmp, TAXA1!=TAXA2)
+				tmp[upper.tri(tmp, diag=TRUE)]	<- NA_real_
+				tmp		<- as.data.table(melt(tmp))								
+				setnames(tmp, c('Var1','Var2','value'),c('TAXA1','TAXA2','PD_T'))
+				tmp		<- subset(tmp, !is.na(PD_T))
 				tmp
 			}, by='IDX_T']
+	#	z[, table(IDX_T)]
+	#	1       3       5       7       9 
+	#	1279200 1279200 1279200 1279200 1279200
 	#
 	#	read true raw genetic distances from sequences
 	#	
@@ -2886,20 +2894,52 @@ treecomparison.gd.dev<- function()
 				#FASTA_FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa"
 				sq		<- read.dna(FASTA_FILE, format='fa')
 				tmp		<- dist.dna(sq, model='raw', as.matrix=TRUE, pairwise.deletion=TRUE)
-				tmp		<- as.data.table(melt(tmp))
-				setnames(tmp, c('Var1','Var2','value'),c('TAXA1','TAXA2','GD_RAW'))
-				tmp		<- subset(tmp, TAXA1!=TAXA2)
-				tmp
+				tmp		<- as.matrix(tmp)
+				tmp[upper.tri(tmp, diag=TRUE)]	<- NA_real_
+				tmp		<- as.data.table(melt(tmp))								
+				setnames(tmp, c('Var1','Var2','value'),c('TAXA1','TAXA2','ALL_GD_RAW_T'))
+				tmp		<- subset(tmp, !is.na(ALL_GD_RAW_T))
+				tmp				
 			}, by='IDX_T']
-	tbrl	<- merge(tbrl, tmp, by=c('IDX_T','TAXA1','TAXA2'))
+	tbrl	<- merge(tbrl, tmp, by=c('IDX_T','TAXA1','TAXA2'), all.x=1)
+	set(tbrl, NULL, 'TAXA1', tbrl[, as.character(TAXA1)])
+	set(tbrl, NULL, 'TAXA2', tbrl[, as.character(TAXA2)])
 	#
-	#	
+	#	read genetic distances that I calculated previously
 	#
-
+	tmp		<- unique(subset(tfiles, BRL_T=='subst' & !is.na(MVR_FILE), c(IDX_T, MVR_FILE)))
+	tmp		<- lapply(seq_len(nrow(tmp)), function(i){
+				#MVR_FILE<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr/150701_Regional_TRAIN2_SIMULATED_tps.rda'
+				MVR_FILE	<- tmp[i, MVR_FILE]
+				load(MVR_FILE)
+				z		<- subset(tp, REP==1, select=c(TAXA1, TAXA2, GENE, GD, DO, GD_MEAN, GD_SD))				
+				z[, IDX_T:= tmp[i, IDX_T]]
+				z
+			})
+	tmp		<- do.call('rbind',tmp)
+	tmp		<- dcast.data.table(melt(tmp, id.vars=c('IDX_T','TAXA1','TAXA2','GENE')), IDX_T+TAXA1+TAXA2~variable+GENE, value.var='value')
+	merge(tbrl, tmp, by=c('IDX_T','TAXA1','TAXA2'))
+	
+	subset(tbrl, IDX_T==3 & TAXA2=='IDPOP_100181|F|DOB_2000.1|2016.31')
+	subset(tbrl, IDX_T==3 & grepl('IDPOP_100181',TAXA2))
+	
+	tmp[, table(IDX_T)]
+	
+	tbrl	<- merge(tbrl, tmp, by=c('IDX_T','TAXA1','TAXA2'), all=1)
+	tbrl	<- subset(tbrl, !is.na(PD_T))
+	#
+	#	calculate MSEs
+	#
 	#	MSE from simple raw genetic distance approach
-	tmp		<- subset(tbrl, !is.na(GD_RAW))
-	z		<- tmp[, list( MSE=mean((PD-GD_RAW)*(PD-GD_RAW)) ), by='IDX_T']	
-
+	tmp		<- subset(tbrl, !is.na(ALL_GD_RAW_T) & (is.na(GENE) | GENE=='gag+pol+env'))
+	mse		<- tmp[, list( TYPE='ALL_GD_RAW_T', GENE='gag+pol+env', PAIR_N=length(PD_T), MSE=mean((PD_T-ALL_GD_RAW_T)*(PD_T-ALL_GD_RAW_T)) ), by='IDX_T']	
+	#	MSE from my previously calculated distances	
+	tmp		<- subset(tbrl, !is.na(GENE) & !is.na(GD))
+	tmp		<- tmp[, list(		TYPE='GD', PAIR_N=length(PD_T), MSE=mean((PD_T-GD)*(PD_T-GD))	), 	by=c('IDX_T','GENE')]	
+	mse		<- rbind(mse, tmp, use.names=TRUE, fill=TRUE)
+	
+			MSE_GD_MEAN=mean((PD_T-GD_MEAN)*(PD_T-GD_MEAN))
+			
 	tmp		<- tmp[, list(FULL_GAPS_P=mean(FULL_GAPS_P), GAG_GAPS_P=mean(GAG_GAPS_P), POL_GAPS_P=mean(POL_GAPS_P), ENV_GAPS_P=mean(ENV_GAPS_P)), by='SC']
 	tinfo	<- merge(tinfo, tmp, all.x=1, by='SC')	
 
@@ -3043,6 +3083,74 @@ treecomparison.create.metadata<- function()
 
 
 }
+##--------------------------------------------------------------------------------------------------------
+##
+##--------------------------------------------------------------------------------------------------------
+treecomparison.ana.160627.standardize.MSE<- function()
+{	
+	require(ggplot2)
+	require(data.table)
+	require(ape)
+	require(scales)	
+	require(ggtree)
+	require(phangorn)
+	
+	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	timetag			<- '160627'
+	load(file.path(edir,'submitted_160713_07MSELSD.rda'))
+	
+	sc		<- copy(sclu.info)
+	#
+	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N=CLU_N[1], MXGPS_CLU= max(GPS), MDGPS_CLU=median(GPS)), by=c('SC','IDCLU')]
+	sc		<- merge(sc, tmp, by=c('SC','IDCLU'))	
+	set(sc, NULL, 'MODEL', sc[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
+	set(sc, sc[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
+	set(sc, NULL, 'SC', sc[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
+							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+	set(sc, NULL, 'GAPS', sc[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for Botswana\nsequences','as for Uganda\nsequences'))])
+	set(sc, NULL, 'BEST', sc[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])									
+	set(sc, NULL, 'GENE', sc[, factor(GENE, levels=c('GAG','POL','GAG+POL+ENV'),labels=c('gag','pol','gag+pol+env'))])	
+	set(sc, NULL, 'TEAM', sc[, factor(TEAM, levels=sc[, sort(unique(TEAM))],labels=sc[, sort(unique(TEAM))])])
+	set(sc, NULL, 'EXT', sc[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
+	set(sc, NULL, 'ART', sc[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
+	sc		<- subset(sc, OTHER=='N')	
+	
+	
+	require(gamlss)
+	ggplot(subset(sc, TEAM!='MetaPIGA' & CLU_N<100), aes(x=CLU_N, y=MSE, colour=GENE, pch=TEAM)) + geom_point() + facet_grid(~SC)
+	ggplot(subset(sc, TEAM!='MetaPIGA' & SC=='sc 1'), aes(x=CLU_N, y=MSE, colour=GENE, pch=TEAM)) + geom_point()
+	ggplot(subset(sc, TEAM!='MetaPIGA'), aes(x=CLU_N, y=MSE, colour=GENE, pch=TEAM)) + geom_point() + coord_cartesian(ylim=c(0,1e4), xlim=c(0,100)) + facet_grid(~SC)
+	
+	
+	#
+	#	look reasonable to divive KC by CLU_N*(CLU_N-1)/2
+	#
+	kc.std.d	<- subset(sc, TEAM!='MetaPIGA' & SC=='sc 1')
+	kc.std.m1	<- gamlss(KC~CLU_N-1, data=kc.std.d)
+	kc.std.m2	<- gamlss(KC~poly(CLU_N,2, raw=TRUE), data=kc.std.d)	#this allows for a non-zero baseline, which gave much better fit	
+	#gamlss(KC~CLU_N+I(CLU_N^2)-1, data=kc.std.d)
+	kc.std.m3	<- gamlss(KC~I(CLU_N*(CLU_N-1)/2), data=kc.std.d)
+	kc.std.m4	<- gamlss(KC~poly(CLU_N,4, raw=TRUE), data=kc.std.d)
+	#kc.std.m4	<- gamlss(KC~I(sqrt(CLU_N*(CLU_N-1)/2))-1, data=kc.std.d)
+	kc.std.da	<- subset(sc, TEAM!='MetaPIGA' & SC%in%c('sc 1','sc 2','sc 4'))
+	tmp.m1		<- predict(kc.std.m1, data=kc.std.d, newdata=kc.std.da, type='response', se.fit=FALSE)
+	tmp.m2		<- predict(kc.std.m2, data=kc.std.d, newdata=kc.std.da,type='response', se.fit=FALSE)
+	tmp.m3		<- predict(kc.std.m3, data=kc.std.d, newdata=kc.std.da,type='response', se.fit=FALSE)
+	tmp.m4		<- predict(kc.std.m4, data=kc.std.d, newdata=kc.std.da,type='response', se.fit=FALSE)
+	kc.std.da[, KC.m1:=tmp.m1]
+	kc.std.da[, KC.m2:=tmp.m2]
+	kc.std.da[, KC.m3:=tmp.m3]
+	kc.std.da[, KC.m4:=tmp.m4]
+	kc.std.da	<- melt(kc.std.da, measure.vars=c('KC.m1','KC.m2','KC.m3','KC.m4'))
+	set(kc.std.da, NULL, 'variable', kc.std.da[, factor(variable, levels=c('KC.m1','KC.m2','KC.m3','KC.m4'), labels=c('KC~CLU_N-1','KC~poly(CLU_N,2, raw=TRUE)','KC~I(CLU_N*(CLU_N-1)/2)','KC~poly(CLU_N,4, raw=TRUE)'))])
+	ggplot(kc.std.da, aes(x=CLU_N)) + geom_point(aes(y=KC,colour=GENE, pch=TEAM)) + 
+			geom_line(aes(y=value, linetype=variable, group=variable)) +
+			#scale_linetype_manual(values=c('KC~CLU_N-1'='a','KC~poly(CLU_N,2, raw=TRUE)-1'='e','KC~I(CLU_N*(CLU_N-1)/2)-1'='f','KC~poly(CLU_N,4, raw=TRUE)-1'='j')) +
+			facet_grid(~SC)
+	ggsave(file.path(edir, paste(timetag,'_','dependence_KC_clustersize.pdf',sep='')), w=15, h=7)
+}
+##--------------------------------------------------------------------------------------------------------
+##
 ##--------------------------------------------------------------------------------------------------------
 treecomparison.ana.160627.standardize.KC<- function()
 {	
@@ -3890,12 +3998,14 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		cat('\nPath distances on LSD trees')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y')
 		tmp				<- treedist.pathdifference.wrapper(tmp, ttrs, strs_lsd, use.brl=FALSE, use.weight=TRUE)
+		setnames(tmp, c('PD','NPD','NPDSQ'), c('PD_LSD','NPD_LSD','NPDSQ_LSD'))		
 		tmp[, TAXA_NJ:=NULL]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
 		#	path distance of LSD clusters
 		cat('\nPath distances on LSD clusters')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y' & MODEL=='R')
 		tmp				<- treedist.pathdifference.clusters.wrapper(tmp, ttrs, strs_lsd, tinfo, use.brl=FALSE, use.weight=TRUE)
+		setnames(tmp, c('PD','NPD','NPDSQ'), c('PD_LSD','NPD_LSD','NPDSQ_LSD'))
 		tmp[, TAXA_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
@@ -4910,8 +5020,9 @@ treecomparison.ana.160627.strs<- function()
 	
 	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	#timetag		<- '160627'
-	timetag			<- '160713'	
-	load(paste(edir,'/','submitted_160713_05QD.rda',sep=''))
+	timetag			<- '160713'		
+	load(file.path(edir,'submitted_160713_07MSELSD.rda'))
+	
 	submitted.info[, RUNGGAPS:=NULL]
 	set(submitted.info, submitted.info[, which(grepl('gag+pol+env',FILE,fixed=1))], 'GENE', 'GAG+POL+ENV')
 	
@@ -5098,6 +5209,24 @@ treecomparison.ana.160627.strs<- function()
 			theme_bw() + theme(legend.position='bottom') 
 	file	<- file.path(edir, paste(timetag,'_','longbranches_p17full_by_rungaps_taxan1600_Acute10pc.pdf',sep=''))
 	ggsave(file=file, w=5, h=7)
+	#		
+	#	MSE by TEAM
+	#	
+	tmp		<- subset(sa, !is.na(TR_PAIR_rec) & ACUTE=='10%' & TEAM%in%c('IQ-TREE', 'PhyML', 'MetaPIGA', 'RAxML'))
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])	
+	ggplot(subset(tmp, !is.na(MSE)), aes(x=GAPS)) +
+			geom_jitter(aes(y=sqrt(MSE), colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
+			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_log10(limit=c(1,1e4)) +			
+			labs(	x='\nUnassembled sites in full-genome sequences', 
+					y='root mean squared error\nin dated branches\n(years)\n',					
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom') + facet_grid(~TEAM)
+	file	<- file.path(edir, paste(timetag,'_','RMSE_by_gaps_by_TEAM.pdf',sep=''))
+	ggsave(file=file, w=12, h=6)
 	#
 	#
 	#	plot simulated trees versus true tree
