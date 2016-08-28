@@ -31,6 +31,7 @@ treedist.MSE.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 {		
 	ans	<- df[, {
 				#IDX<- 724; TIME_IDX_T<- 13; SUB_IDX_T<- 2
+				#IDX<- 1316; TIME_IDX_T<- 15; SUB_IDX_T<- 4
 				cat('\nLSD distances IDX at', IDX)
 				tidx	<- ifelse(use.brl, SUB_IDX_T, TIME_IDX_T)				
 				stree	<- s[[IDX]]				
@@ -42,7 +43,7 @@ treedist.MSE.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 				tmp3	<- as.data.table(melt(tmp3))								
 				setnames(tmp3, c('Var1','Var2','value'),c('TAXA1','TAXA2','PD_SIM'))
 				tmp3	<- subset(tmp3, !is.na(PD_SIM))
-				tmp2	<- subset(tbrl, BRL_T=='time' & IDX_T==tidx)
+				tmp2	<- subset(tbrl, IDX_T==tidx)
 				set(tmp2,NULL,'TAXA1',tmp2[, as.character(TAXA1)])
 				set(tmp2,NULL,'TAXA2',tmp2[, as.character(TAXA2)])
 				set(tmp3,NULL,'TAXA1',tmp3[, as.character(TAXA1)])
@@ -90,7 +91,7 @@ treedist.MSE.clusters.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 				#	get all clusters of size >= 3 in both the simulated and true tree
 				z			<- subset(z, CLU_NS>3)
 				#	precompute what can be precomputed before next loop
-				tmp2	<- subset(tbrl, BRL_T=='time' & IDX_T==tidx)
+				tmp2	<- subset(tbrl, IDX_T==tidx)
 				set(tmp2,NULL,'TAXA1',tmp2[, as.character(TAXA1)])
 				set(tmp2,NULL,'TAXA2',tmp2[, as.character(TAXA2)])
 				set(tmp2,NULL,'IDPOP',tmp2[, as.integer(gsub('IDPOP_','',gsub('\\|.*','',as.character(TAXA1))))])
@@ -4073,12 +4074,37 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		cat('\nMSE of edges on LSD trees')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y')
 		tmp				<- treedist.MSE.wrapper(tmp, strs_lsd, tbrl, tinfo, use.brl=FALSE)
+		setnames(tmp, c('MSE','MAE','MSE_TP','MAE_TP'), c('MSE_LSD','MAE_LSD','MSE_TP_LSD','MAE_TP_LSD'))
 		tmp[, TAXA_NJ:=NULL]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
 		cat('\nMSE of edges on LSD clusters')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y' & MODEL=='R')
 		tmp				<- treedist.MSE.clusters.wrapper(tmp, strs_lsd, tbrl, tinfo, use.brl=FALSE)
+		setnames(tmp, c('MSE','MAE','MSE_TP','MAE_TP'), c('MSE_LSD','MAE_LSD','MSE_TP_LSD','MAE_TP_LSD'))
 		tmp[, TAXA_NC:=NULL]
+		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
+		#	save intermediate	
+		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD.rda',file))
+	}
+	
+	options(show.error.messages = FALSE)		
+	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_08MSEGD.rda',file))))
+	options(show.error.messages = TRUE)			
+	if( inherits(readAttempt, "try-error") )
+	{			
+		#	MSE between true time distances and reconstructed patristic distances in LSD tree
+		cat('\nMSE of edges on SUB trees')
+		tmp				<- treedist.MSE.wrapper(submitted.info, strs_rtt, tbrl, tinfo, use.brl=TRUE)
+		setnames(tmp, c('MSE','MAE','MSE_TP','MAE_TP'), c('MSE_GD','MAE_GD','MSE_TP_GD','MAE_TP_GD'))
+		tmp[, TAXA_NJ:=NULL]
+		tmp[, EDGE_NJ:=NULL]
+		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
+		cat('\nMSE of edges on SUB clusters')
+		tmp				<- subset(submitted.info, MODEL=='R')
+		tmp				<- treedist.MSE.clusters.wrapper(tmp, strs_rtt, tbrl, tinfo, use.brl=TRUE)
+		setnames(tmp, c('MSE','MAE','MSE_TP','MAE_TP'), c('MSE_GD','MAE_GD','MSE_TP_GD','MAE_TP_GD'))
+		tmp[, TAXA_NC:=NULL]
+		tmp[, EDGE_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
 		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD.rda',file))
