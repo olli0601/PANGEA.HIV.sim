@@ -27,25 +27,44 @@ treedist.pathdifference.wrapper<- function(df, ttrs, s, use.brl=FALSE, use.weigh
 #--------------------------------------------------------------------------------------------------------
 #	MSE between true distances and patristic distances (units time) in reconstructed tree
 #--------------------------------------------------------------------------------------------------------
-treedist.MSE.wrapper<- function(df, s, tbrl, use.brl=TRUE)
+treedist.MSE.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 {		
 	ans	<- df[, {
 				#IDX<- 724; TIME_IDX_T<- 13; SUB_IDX_T<- 2
 				cat('\nLSD distances IDX at', IDX)
 				tidx	<- ifelse(use.brl, SUB_IDX_T, TIME_IDX_T)				
 				stree	<- s[[IDX]]				
-				#	mean squared error of all pairwise distances
-				tmp3	<- distTips(stree, seq_len(Ntip(stree)), method='patristic', useC=TRUE)
-				tmp3	<- as.matrix(tmp3)
+				#	mean squared error and mean absolute error of all pairwise distances
+				tmp3	<- cophenetic.phylo(stree)
+				#tmp3	<- distTips(stree, seq_len(Ntip(stree)), method='patristic', useC=TRUE)				
+				#tmp3	<- as.matrix(tmp3)
 				tmp3[upper.tri(tmp3, diag=TRUE)]	<- NA_real_
 				tmp3	<- as.data.table(melt(tmp3))								
 				setnames(tmp3, c('Var1','Var2','value'),c('TAXA1','TAXA2','PD_SIM'))
 				tmp3	<- subset(tmp3, !is.na(PD_SIM))
 				tmp2	<- subset(tbrl, BRL_T=='time' & IDX_T==tidx)
+				set(tmp2,NULL,'TAXA1',tmp2[, as.character(TAXA1)])
+				set(tmp2,NULL,'TAXA2',tmp2[, as.character(TAXA2)])
+				set(tmp3,NULL,'TAXA1',tmp3[, as.character(TAXA1)])
+				set(tmp3,NULL,'TAXA2',tmp3[, as.character(TAXA2)])
 				tmp2	<- merge(tmp3, tmp2, by=c('TAXA1','TAXA2'))
+				stopifnot(nrow(tmp2)==Ntip(stree)*(Ntip(stree)-1)/2)
 				mse		<- tmp2[, mean((PD-PD_SIM)*(PD-PD_SIM))]
 				mae		<- tmp2[, mean(abs(PD-PD_SIM))]
-				list(MSE=mse, MAE=mae, TAXA_NJ=Ntip(stree), EDGE_NJ=nrow(tmp2))				
+				#	mean squared error and mean absolute error of pairwise distances of sampled transmission pairs
+				set(tmp2,NULL,'TAXA1',tmp2[, as.integer(gsub('IDPOP_','',gsub('\\|.*','',as.character(TAXA1))))])
+				set(tmp2,NULL,'TAXA2',tmp2[, as.integer(gsub('IDPOP_','',gsub('\\|.*','',as.character(TAXA2))))])
+				setnames(tmp2,c('TAXA1','TAXA2'),c('IDPOP','IDTR'))				
+				tmp3	<- unique(subset(tinfo, IDX_T==tidx & IDTR_SAMPLED=='Y', select=c(IDPOP, IDTR)))
+				tmp		<- copy(tmp3)
+				setnames(tmp, c('IDPOP','IDTR'), c('IDTR','IDPOP'))
+				tmp3	<- rbind(tmp3, tmp, use.names=TRUE)
+				set(tmp3,NULL,'IDPOP',tmp3[, as.integer(gsub('IDPOP_','',IDPOP))])
+				set(tmp3,NULL,'IDTR',tmp3[, as.integer(gsub('IDPOP_','',IDTR))])					
+				tmp2	<- merge(tmp2,tmp3,by=c('IDPOP','IDTR'))
+				mse.tp	<- tmp2[, mean((PD-PD_SIM)*(PD-PD_SIM))]
+				mae.tp	<- tmp2[, mean(abs(PD-PD_SIM))]
+				list(MSE=mse, MAE=mae, MSE_TP=mse.tp, MAE_TP=mae.tp, TAXA_NJ=Ntip(stree), EDGE_NJ=nrow(tmp2))				
 			}, by='IDX']
 	ans
 }
@@ -58,7 +77,7 @@ treedist.MSE.clusters.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 	setkey(tinfo, IDX_T)	
 	ans		<- df[, {
 				cat('\nAt IDX', IDX)
-				#	IDX<- 1; TIME_IDX_T<- 1
+				#	IDX<- 724; TIME_IDX_T<- 13; SUB_IDX_T<- 2
 				tidx		<- ifelse(use.brl, SUB_IDX_T, TIME_IDX_T)
 				stree		<- s[[IDX]]								
 				#	get all clusters of this true tree (with IDX_T) that are of size>=3 (use "tinfo" for that)
@@ -70,29 +89,46 @@ treedist.MSE.clusters.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 				z			<- merge(z, z[, list(CLU_NS= length(which(IN_STREE==1))), by='IDCLU'], by='IDCLU')
 				#	get all clusters of size >= 3 in both the simulated and true tree
 				z			<- subset(z, CLU_NS>3)
+				#	precompute what can be precomputed before next loop
+				tmp2	<- subset(tbrl, BRL_T=='time' & IDX_T==tidx)
+				set(tmp2,NULL,'TAXA1',tmp2[, as.character(TAXA1)])
+				set(tmp2,NULL,'TAXA2',tmp2[, as.character(TAXA2)])
+				set(tmp2,NULL,'IDPOP',tmp2[, as.integer(gsub('IDPOP_','',gsub('\\|.*','',as.character(TAXA1))))])
+				set(tmp2,NULL,'IDTR',tmp2[, as.integer(gsub('IDPOP_','',gsub('\\|.*','',as.character(TAXA2))))])
+				#
+				tmp4		<- unique(subset(tinfo, IDX_T==tidx & IDTR_SAMPLED=='Y', select=c(IDPOP, IDTR)))
+				tmp			<- copy(tmp4)
+				setnames(tmp, c('IDPOP','IDTR'), c('IDTR','IDPOP'))
+				tmp4		<- rbind(tmp4, tmp, use.names=TRUE)	
+				set(tmp4,NULL,'IDPOP',tmp4[, as.integer(gsub('IDPOP_','',IDPOP))])
+				set(tmp4,NULL,'IDTR',tmp4[, as.integer(gsub('IDPOP_','',IDTR))])									
 				#	if there any such clusters, calculate the quartet distance
 				if(nrow(z))
 				{
-					#IDCLU	<- 8; TAXA	<- subset(z, IDCLU==8)[, TAXA]
+					#IDCLU	<- 3; TAXA	<- subset(z, IDCLU==3)[, TAXA]
 					ans		<- z[, {								
 								sclu	<- drop.tip(stree, setdiff(stree$tip.label,TAXA))								
 								#	mean squared error of all pairwise distances
-								tmp3	<- distTips(sclu, seq_len(Ntip(sclu)), method='patristic', useC=TRUE)
-								tmp3	<- as.matrix(tmp3)
+								tmp3	<- cophenetic.phylo(sclu)
 								tmp3[upper.tri(tmp3, diag=TRUE)]	<- NA_real_
 								tmp3	<- as.data.table(melt(tmp3))								
 								setnames(tmp3, c('Var1','Var2','value'),c('TAXA1','TAXA2','PD_SIM'))
 								tmp3	<- subset(tmp3, !is.na(PD_SIM))
-								tmp2	<- subset(tbrl, BRL_T=='time' & IDX_T==tidx)
+								set(tmp3,NULL,'TAXA1',tmp3[, as.character(TAXA1)])
+								set(tmp3,NULL,'TAXA2',tmp3[, as.character(TAXA2)])								
 								#	this merges to the intersection of taxa in sclu and the corresponding observed clu
-								tmp2	<- merge(tmp3, tmp2, by=c('TAXA1','TAXA2'))
-								mse		<- tmp2[, mean((PD-PD_SIM)*(PD-PD_SIM))]
-								mae		<- tmp2[, mean(abs(PD-PD_SIM))]
-								list(MSE=mse, MAE=mae, TAXA_NC=Ntip(sclu), EDGE_NC=nrow(tmp2))								
+								tmp3	<- merge(tmp3, tmp2, by=c('TAXA1','TAXA2'))								
+								mse		<- tmp3[, mean((PD-PD_SIM)*(PD-PD_SIM))]
+								mae		<- tmp3[, mean(abs(PD-PD_SIM))]
+								#	mean squared error and mean absolute error of pairwise distances of sampled transmission pairs																				
+								tmp3	<- merge(tmp3,tmp4,by=c('IDPOP','IDTR'))
+								mse.tp	<- tmp3[, mean((PD-PD_SIM)*(PD-PD_SIM))]
+								mae.tp	<- tmp3[, mean(abs(PD-PD_SIM))]
+								list(MSE=mse, MAE=mae, MSE_TP=mse.tp, MAE_TP=mae.tp, TAXA_NC=Ntip(sclu), EDGE_NC=nrow(tmp2))								
 							}, by='IDCLU']	
 				}
 				if(!nrow(z))
-					ans		<- data.table(MSE=NA_real_, MAE=NA_real_, TAXA_NC=NA_integer_, EDGE_NC=NA_integer_)
+					ans		<- data.table(MSE=NA_real_, MAE=NA_real_, MSE_TP=NA_real_, MAE_TP=NA_real_, TAXA_NC=NA_integer_, EDGE_NC=NA_integer_)
 				ans			
 			}, by='IDX']	
 	ans	
@@ -3289,16 +3325,20 @@ treecomparison.submissions.160627<- function()
 	tfiles[, IDX_T:=seq_along(ttrs)]
 	tfiles[, TAXAN_T:= sapply(ttrs, Ntip)]
 	#	patristic distances on true trees (by time and subst/site)
-	tbrl	<- tfiles[, {
-				#IDX_T	<- 1
-				ph		<- ttrs[[IDX_T]]
-				tmp		<- distTips(ph, seq_len(Ntip(ph)), method='patristic', useC=TRUE)
-				tmp		<- as.matrix(tmp)
-				tmp		<- as.data.table(melt(tmp))
-				setnames(tmp, c('Var1','Var2','value'),c('TAXA1','TAXA2','PD'))
-				tmp		<- subset(tmp, TAXA1!=TAXA2)
-				tmp
-			}, by=c('IDX_T','SC','BRL_T','TAXAN_T')]	
+	tbrl	<- lapply(seq_len(nrow(tfiles)), function(i)
+					{
+						ph		<- ttrs[[tfiles[i, IDX_T]]]
+						tmp		<- cophenetic.phylo(ph)				
+						tmp		<- as.data.table(melt(tmp))
+						setnames(tmp, c('Var1','Var2','value'),c('TAXA1','TAXA2','PD'))
+						tmp		<- subset(tmp, TAXA1!=TAXA2)
+						tmp[, IDX_T:= tfiles[i, IDX_T]]
+						tmp[, SC:= tfiles[i, SC]]
+						tmp[, BRL_T:= tfiles[i, BRL_T]]
+						tmp[, TAXAN_T:= tfiles[i, TAXAN_T]]
+						tmp
+					})
+	tbrl	<- do.call('rbind',tbrl)		
 	#	info on true trees
 	tinfo	<- merge(tfiles, do.call('rbind',lapply(seq_along(ttrs), function(i) data.table(TAXA=ttrs[[i]]$tip.label, IDX_T=i))), by='IDX_T')	
 	tinfo[, IDPOP:=NA_character_]
@@ -3464,7 +3504,7 @@ treecomparison.submissions.160627<- function()
 	#
 	# compute closest individual on true trees
 	#
-	tmp				<- unique(subset(tinfo, select=c(SC, BRL_T, IDX_T)))
+	tmp				<- unique(subset(tinfo, select=c(SC, BRL_T, IDX_T)))	
 	tmp				<- tmp[, {
 				print(IDX_T)
 				ph			<- ttrs[[IDX_T]]
@@ -3473,6 +3513,18 @@ treecomparison.submissions.160627<- function()
 			}, by=c('SC','BRL_T','IDX_T')]
 	tinfo			<- merge(tinfo, tmp, by=c('SC','BRL_T','IDX_T','IDPOP'))
 	set(tinfo, NULL, 'IDPOP_CL', tinfo[, gsub('IDPOP_','',IDPOP_CL)])	
+	#
+	#	add if transmitter sampled
+	#
+	tmp				<- subset(tinfo, grepl('REGIONAL',SC))	
+	set(tmp, NULL, 'IDPOP', tmp[,as.integer(gsub('IDPOP_','',IDPOP))])
+	setkey(tmp, IDX_T, IDPOP)
+	tmp	<- unique(tmp)[, {
+				z	<- IDX_T
+				list(IDTR_SAMPLED=ifelse(IDTR%in%subset(tmp, IDX_T==z)[['IDPOP']], 'Y', 'N'))
+			}, by=c('IDX_T','IDPOP')]
+	set(tmp, NULL, 'IDPOP', tmp[, paste('IDPOP_',IDPOP,sep='')])
+	tinfo	<- merge(tinfo, tmp, by=c('IDX_T','IDPOP'),all.x=1)
 	#
 	#	get submitted trees
 	#	
@@ -3870,7 +3922,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_01rerooted.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( inherits(readAttempt, "try-error") )
+	if( 0 & inherits(readAttempt, "try-error") )
 	{
 		options(warn=2)
 		strs_rtt	<- lapply(seq_along(strs), function(i)
@@ -3898,7 +3950,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_03RF.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( inherits(readAttempt, "try-error") )
+	if( 0 & inherits(readAttempt, "try-error") )
 	{		
 		#
 		#	long branch attraction
@@ -3970,7 +4022,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_05QD.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( inherits(readAttempt, "try-error") )
+	if( 0 & inherits(readAttempt, "try-error") )
 	{		
 		#
 		#	quartet distances of complete trees
@@ -4020,7 +4072,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#	MSE between true time distances and reconstructed patristic distances in LSD tree
 		cat('\nMSE of edges on LSD trees')
 		tmp				<- subset(submitted.info, WITH_LSD=='Y')
-		tmp				<- treedist.MSE.wrapper(tmp, strs_lsd, tbrl, use.brl=FALSE)
+		tmp				<- treedist.MSE.wrapper(tmp, strs_lsd, tbrl, tinfo, use.brl=FALSE)
 		tmp[, TAXA_NJ:=NULL]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
 		cat('\nMSE of edges on LSD clusters')
