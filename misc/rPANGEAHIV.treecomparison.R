@@ -31,7 +31,7 @@ treedist.MSE.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 {		
 	ans	<- df[, {
 				#IDX<- 724; TIME_IDX_T<- 13; SUB_IDX_T<- 2
-				#IDX<- 1316; TIME_IDX_T<- 15; SUB_IDX_T<- 4
+				#IDX<- 241; TIME_IDX_T<- 6; SUB_IDX_T<- 4
 				cat('\nLSD distances IDX at', IDX)
 				tidx	<- ifelse(use.brl, SUB_IDX_T, TIME_IDX_T)				
 				stree	<- s[[IDX]]				
@@ -4094,7 +4094,8 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	{			
 		#	MSE between true time distances and reconstructed patristic distances in LSD tree
 		cat('\nMSE of edges on SUB trees')
-		tmp				<- treedist.MSE.wrapper(submitted.info, strs_rtt, tbrl, tinfo, use.brl=TRUE)
+		tmp				<- subset(submitted.info, MODEL=='R')
+		tmp				<- treedist.MSE.wrapper(tmp, strs_rtt, tbrl, tinfo, use.brl=TRUE)
 		setnames(tmp, c('MSE','MAE','MSE_TP','MAE_TP'), c('MSE_GD','MAE_GD','MSE_TP_GD','MAE_TP_GD'))
 		tmp[, TAXA_NJ:=NULL]
 		tmp[, EDGE_NJ:=NULL]
