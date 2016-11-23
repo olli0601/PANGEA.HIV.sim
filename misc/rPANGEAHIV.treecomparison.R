@@ -594,7 +594,8 @@ treedist.closest.ind.obs<- function(tinfo, gd.thresh=Inf, rtn.pairs=FALSE)
 				if(!rtn.pairs)
 				{
 					#	calculate proportion of phylog closest pairs that are true transmission pairs					
-					ans		<- list(TR_REC_perc_T= ans[, mean(as.numeric(TRUE_PAIR))]  )	
+					#ans		<- list(TR_REC_perc_T= ans[, mean(as.numeric(TRUE_PAIR))]  )
+					ans		<- list(TPAIR_PHCL_T= ans[, length(which(TRUE_PAIR))], NTPAIR_PHCL_T= ans[, length(which(!TRUE_PAIR))])
 				}
 				ans
 			}, by='IDX_T']
@@ -613,6 +614,7 @@ treedist.closest.ind.reconstructed<- function(submitted.info, tinfo, strs, gd.th
 				model.reg	<- grepl('REGIONAL',SC)
 				gds			<- treedist.closest.ind(ph, model.reg)
 				gds			<- subset(gds, IDPOP_CL_GD<=gd.thresh)
+				ans			<- list(TPAIR_PHCL=NA_integer_, NTPAIR_PHCL=NA_integer_)
 				if(nrow(gds)>0)
 				{
 					tmp			<- subset(tinfo, IDX_T==SUB_IDX_T, c(IDPOP, IDTR, IDREC))
@@ -645,12 +647,10 @@ treedist.closest.ind.reconstructed<- function(submitted.info, tinfo, strs, gd.th
 					tmp		<- ans[, which(!is.na(IDREC) & !IN)]
 					set(ans, tmp, 'IN', ans[tmp, CL_PH_PAIR==REC_PAIR])
 					#	calculate proportion of phylog closest pairs that are true transmission pairs
-					ans		<- ans[, list(IN=any(IN)), by='CL_PH_PAIR']
-					ans		<- ans[, mean(as.numeric(IN))] 
+					ans		<- ans[, list(TRUE_PAIR=any(IN)), by='CL_PH_PAIR']
+					ans		<- list(TPAIR_PHCL= ans[, length(which(TRUE_PAIR))], NTPAIR_PHCL= ans[, length(which(!TRUE_PAIR))])					 
 				}
-				if(!nrow(gds))
-					ans		<- NA_real_				
-				list(TR_REC_perc= ans  )				
+				ans				
 			}, by=c('IDX')]
 	sucl
 }
@@ -1338,16 +1338,13 @@ treecomparison.samplecharacteristics.160817<- function()
 	#
 	#	table on sequence characteristics by cohort
 	#
-	pngi	<- subset(dpand, grepl('^PG[0-9]+|^R[0-9]+', TAXA) & PR=='1R' & POS=='PR_1')
-	setkey(pngi, TAXA)
-	pngi	<- unique(pngi)	
-	pngi[, COUNTRY:= substr(PANGEA_ID, 6,7)]
-	#	complete COHORT
-	pngi[, table(COUNTRY, COHORT, useNA='if')]
-	set(pngi, pngi[, which(COUNTRY=='UG' & is.na(COHORT))], 'COHORT', 'UG-MRC')
-	set(pngi, pngi[, which(COUNTRY=='ZA' & is.na(COHORT))], 'COHORT', 'AC missing')
-	#	exclude missing AC
-	pngi	<- subset(pngi, COHORT!='AC missing')
+	pngi	<- dpand[, list(NT_DIFF_SUM=sum(NT_DIFF)), by=c('TAXA','PR')]
+	set(pngi, NULL, 'PR', pngi[, paste('NT_DIFF_',PR,sep='')])	
+	set(pngi, pngi[, which(NT_DIFF_SUM>=1)], 'NT_DIFF_SUM', 1L)
+	set(pngi, pngi[, which(is.na(NT_DIFF_SUM))], 'NT_DIFF_SUM', 2L)
+	set(pngi, NULL, 'PR_NTDIFFc', pngi[, as.character(factor(NT_DIFF_SUM, levels=c(2,0,1), labels=c('unassembled','no mutation','at least one mutation')))])	
+	pngi	<- dcast.data.table(pngi, TAXA~PR, value.var='PR_NTDIFFc')	
+	pngi	<- merge(pngi, dm, by='TAXA')
 	#	sex by cohort
 	set(pngi, pngi[, which(is.na(SEX))], 'SEX', 'missing')
 	pngs	<- pngi[, {
@@ -1372,13 +1369,13 @@ treecomparison.samplecharacteristics.160817<- function()
 	#	recent viral load around sampling time
 	pngi[, DUMMY:= 'missing']
 	tmp		<- pngi[, which(!is.na(RECENTVLDATE) & !is.na(SAMPLEDATE) & abs(RECENTVLDATE-SAMPLEDATE)<1)]
-	set(pngi, tmp, 'DUMMY', pngi[tmp, cut(as.numeric(RECENTVL), right=FALSE, breaks=c(-Inf, 1e3, 1e4, 1e5, Inf), labels=c('<1,000','<10,000','<100,000','>=100,000'))])
+	set(pngi, tmp, 'DUMMY', pngi[tmp, cut(as.numeric(RECENTVL), right=FALSE, breaks=c(-Inf, 1e4, 2e4, 4e4, 1e5, Inf), labels=c('<10,000','10,000-19,999','20,000-39,999','40,000-99,999','>=100,000'))])
 	tmp		<- pngi[, {
 				z<- table(DUMMY)
 				list(STAT='RECENTVL', N= as.numeric(z), LABEL= attr(z, 'dimnames')[[1]])
 			}, by='COHORT']
 	tmp		<- merge(tmp, as.data.table(expand.grid(COHORT=tmp[, unique(COHORT)], STAT='RECENTVL', LABEL= tmp[, unique(LABEL)], stringsAsFactors=FALSE)), by=c('COHORT','STAT','LABEL'), all=1)
-	set(tmp, NULL, 'LABEL', tmp[, factor(LABEL, levels=c('<1,000','<10,000','<100,000','>=100,000',"missing"))])
+	set(tmp, NULL, 'LABEL', tmp[, factor(LABEL, levels=c('<10,000','10,000-19,999','20,000-39,999','40,000-99,999','>=100,000',"missing"))])
 	pngs	<- rbind(pngs, tmp)		
 	#	ART
 	pngi[, DUMMY:= NULL]
@@ -1413,6 +1410,22 @@ treecomparison.samplecharacteristics.160817<- function()
 	tmp		<- merge(tmp, as.data.table(expand.grid(COHORT=tmp[, unique(COHORT)], STAT='AGE', LABEL= tmp[, unique(LABEL)], stringsAsFactors=FALSE)), by=c('COHORT','STAT','LABEL'), all=1)
 	set(tmp, NULL, 'LABEL', tmp[, factor(LABEL, levels=c('<25','<30','<35','<40','>=40',"missing"))])
 	pngs	<- rbind(pngs, tmp)	
+	#	Subtype
+	tmp		<- pngi[, {
+			z<- table(COMET_CONS)
+			list(STAT='SUBTYPE', N= as.numeric(z), LABEL= attr(z, 'dimnames')[[1]])
+		}, by='COHORT']	
+	tmp		<- merge(tmp, as.data.table(expand.grid(COHORT=tmp[, unique(COHORT)], STAT='SUBTYPE', LABEL= tmp[, unique(LABEL)], stringsAsFactors=FALSE)), by=c('COHORT','STAT','LABEL'), all=1)
+	pngs	<- rbind(pngs, tmp)
+	#	Primer assembled
+	tmp		<- melt(subset(pngi, select=c('COHORT',colnames(pngi)[grepl('NT_DIFF',colnames(pngi))])), id.vars='COHORT')
+	tmp		<- tmp[, {
+				z<- table(value)
+				list(STAT='PRIMER', N= as.numeric(z), LABEL= attr(z, 'dimnames')[[1]])	
+			}, by=c('COHORT','variable')]
+	set(tmp, NULL, 'STAT', tmp[, paste(STAT,gsub('NT_DIFF','',variable),sep='')])
+	tmp[, variable:=NULL]	
+	pngs	<- rbind(pngs, tmp)
 	#
 	#	add proportions
 	#
@@ -1431,6 +1444,12 @@ treecomparison.samplecharacteristics.160817<- function()
 	#
 	save(pngi, pngs, pngst, file=file.path(wdir, gsub('\\.rda','_samplecharacteristics.rda', wfile)))
 	write.csv(pngst, row.names=FALSE, file=file.path(wdir, gsub('\\.rda','_samplecharacteristics.csv', wfile)))
+	#
+	#	primers, assembled
+	#
+	tmp		<- subset(pngs, grepl('PRIMER',STAT) & LABEL!='unassembled')[, list(LABEL=LABEL, PCA= round(N/sum(N),d=3)), by=c('STAT','COHORT')] 
+	tmp		<- dcast.data.table(tmp, STAT+LABEL~COHORT, value.var='PCA')
+	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 25.07.16
@@ -1444,20 +1463,33 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 	
 	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
-	load(file.path(wdir, wfile))
+	load(file.path(wdir, wfile))	
 	#
 	#	compare mutations of taxa that amplified to those that did not
 	#	
 	z		<- merge(dgd, dm, by='TAXA')	
-	dsmut	<- subset(z, (GENE=='1R-3F-firsthalf'|GENE=='1R-3F-secondhalf') & UNASS<0.1 , select=c(TAXA, GENE, COHORT))
+	dsmut	<- subset(z, GENE%in%c('1R-3F-firsthalf','1R-3F-secondhalf','2F-1R','2R-4F','4F-3R-firsthalf') & UNASS<0.1 , select=c(TAXA, GENE, COHORT))
 	dsmut[, TYPE:= 'Coverage_>90pc']
-	tmp		<- subset(z, (GENE=='1R-3F-firsthalf'|GENE=='1R-3F-secondhalf') & UNASS>0.95 , select=c(TAXA, GENE, COHORT))
+	tmp		<- subset(z, GENE%in%c('1R-3F-firsthalf','1R-3F-secondhalf','2F-1R','2R-4F','4F-3R-firsthalf') & UNASS>0.95 , select=c(TAXA, GENE, COHORT))
 	tmp[, TYPE:= 'Coverage_<5pc']
 	dsmut	<- rbind(dsmut, tmp)
+	tmp		<- subset(z, GENE%in%c('1R-3F-firsthalf','1R-3F-secondhalf','2F-1R','2R-4F','4F-3R-firsthalf') & UNASS>0.95 & COMET_Region1=='A1', select=c(TAXA, GENE, COHORT))
+	tmp[, TYPE:= 'Coverage_<5pc_A1']
+	dsmut	<- rbind(dsmut, tmp)
+	tmp		<- subset(z, GENE%in%c('1R-3F-firsthalf','1R-3F-secondhalf','2F-1R','2R-4F','4F-3R-firsthalf') & UNASS>0.95 & COMET_Region1=='D', select=c(TAXA, GENE, COHORT))
+	tmp[, TYPE:= 'Coverage_<5pc_D']
+	dsmut	<- rbind(dsmut, tmp)
+	tmp		<- subset(z, GENE%in%c('1R-3F-firsthalf','1R-3F-secondhalf','2F-1R','2R-4F','4F-3R-firsthalf') & UNASS>0.95 & COMET_Region1=='C', select=c(TAXA, GENE, COHORT))
+	tmp[, TYPE:= 'Coverage_<5pc_C']
+	dsmut	<- rbind(dsmut, tmp)
 	#	merge with primer mutations
-	dsmut	<- merge(dsmut, subset(dpand, PR=='2F'|PR=='2R'), by='TAXA',allow.cartesian=TRUE)
+	dsmut	<- merge(dsmut, subset(dpand, PR%in%c('1R','2F','2R','3F','4F')), by='TAXA',allow.cartesian=TRUE)
 	#	
-	dsmut	<- subset(dsmut, (GENE=='1R-3F-firsthalf' & PR=='2F') | (GENE=='1R-3F-secondhalf' & PR=='2R'))
+	dsmut	<- subset(dsmut, 	(GENE=='1R-3F-firsthalf' & PR=='2F') | 
+								(GENE=='1R-3F-secondhalf' & PR=='2R') |
+								(GENE=='2F-1R' & PR=='1R') |
+								(GENE=='2R-4F' & PR=='3F') |
+								(GENE=='4F-3R-firsthalf' & PR=='4F'))
 	set(dsmut, NULL, 'POS', dsmut[,as.integer(gsub('PR_','',POS))])
 	set(dsmut, NULL, 'PR', dsmut[, paste('PR_',PR, sep='')])
 	#	plot	
@@ -1465,13 +1497,16 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 							z	<- round(as.numeric(binconf(length(which(NT_DIFF==1)), length(which(!is.na(NT_DIFF))))), d=3)
 							list(EST=c('central','l95','u95'), VAL= z)				
 						}, by=c('GENE','TYPE','COHORT','PR','POS')]
-	tmp		<- dcast.data.table(tmp, PR+POS+TYPE+COHORT~EST, value.var='VAL')	
-	#set(tmp, NULL, 'TYPE', tmp[, factor(TYPE, levels=c("PANGEA_All","Rakai_All","Rakai_Coverage_>90pc","Rakai_Coverage_<5pc","Rakai_VL_<2e4_Coverage_>90pc", "Rakai_VL_>4e4_Coverage_<5pc","Rakai_D_Coverage_<5pc", "Rakai_A1_Coverage_<5pc", "Rakai_C_Coverage_<5pc"))])
-	
+	tmp		<- dcast.data.table(tmp, PR+POS+TYPE+COHORT~EST, value.var='VAL')
+	tmp		<- merge(tmp, as.data.table(expand.grid(PR=tmp[, unique(PR)], POS=tmp[, unique(POS)], TYPE=tmp[, unique(TYPE)], COHORT=tmp[, unique(COHORT)], stringsAsFactors=FALSE)), by=c('PR','POS','TYPE','COHORT'), all=1, allow.cartesian=TRUE)
+	set(tmp, tmp[, which(is.na(central) | central<=0.001)],'l95',NA_real_)
+	set(tmp, tmp[, which(is.na(central) | central<=0.001)],'u95',NA_real_)
+	set(tmp, tmp[, which(is.na(central) | central<=0.001)],'central',0)
+	#set(tmp, NULL, 'TYPE', tmp[, factor(TYPE, levels=c("PANGEA_All","Rakai_All","Rakai_Coverage_>90pc","Rakai_Coverage_<5pc","Rakai_VL_<2e4_Coverage_>90pc", "Rakai_VL_>4e4_Coverage_<5pc","Rakai_D_Coverage_<5pc", "Rakai_A1_Coverage_<5pc", "Rakai_C_Coverage_<5pc"))])	
 	#ggplot(subset(tmp, TYPE%in%c('PANGEA_All',"Rakai_Coverage_>90pc","Rakai_Coverage_<5pc","Rakai_D_Coverage_<5pc", "Rakai_A1_Coverage_<5pc", "Rakai_C_Coverage_<5pc")), aes(x=POS, fill=TYPE)) +
 	setkey(tmp, COHORT, TYPE)
-	set(tmp, NULL, 'COHORT', tmp[, factor(COHORT, levels=c("AC_Resistance","BW-Mochudi","RCCS","UG-MRC"), labels=c("Africa Centre\nResistance Cohort","Botswana\nMochudi","Rakai","Uganda\nMRC"))])
-	ggplot(subset(tmp, central>0.001 & COHORT!="Africa Centre\nResistance Cohort"), aes(x=POS, fill=TYPE)) + 
+	set(tmp, NULL, 'COHORT', tmp[, factor(COHORT, levels=c("AC_Resistance","BW-Mochudi","RCCS","UG-MRC"), labels=c("South Africa\nResistance Cohort","Mochudi Prevention\nProject","Rakai Community\nCohort Study","Uganda\nMRC"))])
+	ggplot(subset(tmp, TYPE%in%c('Coverage_>90pc','Coverage_<5pc') & COHORT!="South Africa\nResistance Cohort"), aes(x=POS, fill=TYPE)) + 
 			geom_bar(aes(y=central), stat='identity', width=0.7, position=position_dodge(0.8)) + 
 			facet_grid(PR+COHORT~., scales='free_y') + 
 			geom_errorbar(aes(ymin= l95, ymax=u95), position=position_dodge(0.8), width=0.3, size=0.4) +
@@ -1482,8 +1517,19 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 			scale_alpha_manual(values=c('Coverage_<5pc'=1, 'Coverage_>90pc'=0.7)) +
 			#coord_cartesian(ylim=c(0,.2)) +
 			labs(x='\nNucleotide position in primer (always forward sense)', y='proportion of assembled sequences with mutation from primer\n', fill='group of\nsequences') 
-	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_2F2R_eval1.pdf',wfile)), h=12, w=10, limitsize = FALSE)
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_1R2F2R3F4F_eval1.pdf',wfile)), h=25, w=10, limitsize = FALSE)
 	
+	ggplot(subset(tmp, PR%in%c('PR_2F','PR_2R') & TYPE%in%c('Coverage_>90pc','Coverage_<5pc_A1','Coverage_<5pc_C','Coverage_<5pc_D') & COHORT!="Africa Centre\nResistance Cohort"), aes(x=POS, fill=TYPE)) + 
+			geom_bar(aes(y=central), stat='identity', width=0.7, position=position_dodge(0.8)) + 
+			facet_grid(PR+COHORT~., scales='free_y') + 
+			geom_errorbar(aes(ymin= l95, ymax=u95), position=position_dodge(0.8), width=0.3, size=0.4) +
+			theme_bw() + theme(legend.position='bottom') +
+			scale_x_continuous(breaks=tmp[, seq_len(max(POS))]) +
+			scale_y_continuous(labels=percent) +
+			scale_fill_brewer(palette='Set1') +			
+			#coord_cartesian(ylim=c(0,.2)) +
+			labs(x='\nNucleotide position in primer (always forward sense)', y='proportion of assembled sequences with mutation from primer\n', fill='group of\nsequences') 
+	ggsave(file=file.path(wdir,gsub('.rda','_gapsprimers_2F2R_eval2.pdf',wfile)), h=10, w=10, limitsize = FALSE)
 	#
 	#
 	#	old stuff
@@ -1663,33 +1709,25 @@ treecomparison.explaingaps.regressions.160804<- function()
 	#dr[, length(TAXA), by='PR']
 	set(dr, NULL, 'PR', dr[, paste('NT_DIFF_',PR,sep='')])
 	#	merge with gene regions
-	#	with halves, use <20% vs >80%
-	tmp		<- subset(dgd, grepl('half',GENE) & (UNASS<.2 | UNASS>.8))
-	tmp[, ASS:= as.numeric(as.character(cut(UNASS, breaks=c(-1, 0.2, 0.8, 2), labels=c('1','-1','0'))))]
-	set(tmp, NULL, c('START','END','UNASS'), NULL)
-	#	with full, use <60% vs >80%
-	tmp2	<- subset(dgd, !grepl('GAG|POL|ENV',GENE) & !grepl('half',GENE) & (UNASS<.6 | UNASS>.8))
-	tmp2[, ASS:= as.numeric(as.character(cut(UNASS, breaks=c(-1, 0.6, 0.8, 2), labels=c('1','-1','0'))))]
-	set(tmp2, NULL, c('START','END','UNASS'), NULL)
-	tmp		<- rbind(tmp, tmp2)	
+	tmp	<- subset(dgd, grepl('half',GENE) | (!grepl('GAG|POL|ENV',GENE) & !grepl('half',GENE)))
+	set(tmp, NULL, c('START','END','ACTG'), NULL)	
 	dr		<- merge(dr, tmp, by='TAXA',allow.cartesian=TRUE)
 	#	select only meaningful comparisons between primer and gene region
-	dr		<- subset(dr, 	(PR=="NT_DIFF_2F"&GENE=='1R-3F-firsthalf') | 
-							(PR=="NT_DIFF_2R"&GENE=='1R-3F-secondhalf') |
-							(PR%in%c("NT_DIFF_2R","NT_DIFF_2F")&GENE=='1R-3F')	)#| 
-							#(PR=="NT_DIFF_3F"&GENE=='2R-4F-firsthalf') |
-							#(PR=="NT_DIFF_4F"&GENE=='4F-3R-firsthalf') | 
+	dr		<- subset(dr, 	(PR%in%c("NT_DIFF_2R","NT_DIFF_2F")&GENE=='1R-3F')	| 
+							(PR=="NT_DIFF_1R"&GENE=='2F-1R') |
+							(PR=="NT_DIFF_3F"&GENE=='2R-4F')) #| 
 							#(PR=="NT_DIFF_3R"&GENE=='4F-3R-secondhalf'))
 	#
 	#	prepare regression factors
 	#	
-	tmp		<- subset(dm, select=c(PANGEA_ID, TAXA, STUDY_ID, SANGER_ID, SAMPLEDATE, ARTSTART, selfReportArt, everSelfReportArt, FirstSelfReportArt, CURRENTLYONART, RECENTVL, RECENTVLDATE, COMET_Region1, COHORT, LOC, COMM_NUM))
+	tmp		<- subset(dm, select=c(PANGEA_ID, TAXA, STUDY_ID, EXTRACT_ID, SANGER_ID, SAMPLEDATE, ARTSTART, selfReportArt, everSelfReportArt, FirstSelfReportArt, CURRENTLYONART, RECENTVL, RECENTVLDATE, COMET_1F1R, COMET_3F4F, COMET_4F3R, COMET_CONS, COMET_1F1R_N, COMET_3F4F_N, COMET_4F3R_N, COMET_CONS_N, COHORT, LOC, COMM_NUM))
 	set(tmp, NULL, 'RECENTVL', tmp[, as.numeric(RECENTVL)])
 	dr		<- merge(dr, tmp, by='TAXA')
 	#	batches
 	dr[, BATCH:=NA_character_]
 	tmp		<- dr[, which(!is.na(SANGER_ID))]
-	set(dr, tmp, 'BATCH', dr[tmp, regmatches(SANGER_ID,regexpr('^[0-9]+', SANGER_ID))])	
+	set(dr, tmp, 'BATCH', dr[tmp, regmatches(SANGER_ID,regexpr('^[0-9]+', SANGER_ID))])
+	dr[, BATCH2:= as.integer(BATCH)]
 	#	add locations to BATCH id
 	tmp		<- dr[, list(BATCH_LABEL=paste(BATCH, ' (', paste(unique(COHORT),collapse='+'), ')',sep='')), by='BATCH']
 	dr		<- merge(dr, tmp, by='BATCH')
@@ -1698,7 +1736,7 @@ treecomparison.explaingaps.regressions.160804<- function()
 	#	to every batch add one 0 and one 1
 	if(1)
 	{
-		tmp		<- dr[, list(TAXA='PRIOR', PANGEA_ID='PRIOR', STUDY_ID='PRIOR', SANGER_ID='PRIOR', ASS=c(0,1), COHORT=COHORT[1] ), by=c('BATCH','PR')]
+		tmp		<- dr[, list(TAXA=c('PRIOR1','PRIOR2'), PANGEA_ID=c('PRIOR1','PRIOR2'), STUDY_ID=c('PRIOR1','PRIOR2'), SANGER_ID=c('PRIOR1','PRIOR2'), UNASS=c(0,1), COHORT=COHORT[1] ), by=c('BATCH','PR')]
 		dr		<- rbind(dr, tmp, use.names=TRUE, fill=TRUE)			
 	}
 	#	average viral load per batch
@@ -1723,26 +1761,35 @@ treecomparison.explaingaps.regressions.160804<- function()
 	#	recent viral load per individual
 	dr[, VL:='No VL measured']
 	tmp		<- dr[, which((COHORT=='BW-Mochudi' & !is.na(RECENTVL)) | abs(RECENTVLDATE-SAMPLEDATE)<1)]
-	set(dr, tmp, 'VL', dr[tmp, cut(RECENTVL, breaks=c(0, 1e4, 2e4, 4e4, 1e5, Inf), labels=c('<1e4','1e4-2e4','2e4-4e4','4e4-1e5','>1e5'))])
+	set(dr, tmp, 'VL', dr[tmp, cut(RECENTVL, breaks=c(-1, 1e4, 2e4, 4e4, 1e5, Inf), labels=c('<1e4','1e4-2e4','2e4-4e4','4e4-1e5','>1e5'))])
 	#	subtype
-	dr[, ST:='Other or Unassigned']
-	set(dr, dr[, which(COMET_Region1=='A1')], 'ST', 'A1')
-	set(dr, dr[, which(COMET_Region1=='D')], 'ST', 'D')
-	set(dr, dr[, which(COMET_Region1%in%c('B','C'))], 'ST', 'B or C')
+	#	keep as is
+	#set(dr, dr[, which(COMET_Region1%in%c('B','C'))], 'ST', 'B or C')
 	#	nucleotide mutations
 	dr[, NT_DIFFc:= as.character(NT_DIFF_SUM)] 
 	set(dr, dr[, which(is.na(NT_DIFFc))], 'NT_DIFFc', 'Unassembled')
 	set(dr, dr[, which(!NT_DIFFc%in%c('0','Unassembled'))], 'NT_DIFFc', 'at least one mutation')
+	#	primer assembled
+	dr[, ASSEMBLED:= 'Yes'] 
+	set(dr, dr[, which(is.na(NT_DIFF_SUM))], 'ASSEMBLED', 'No')		
 	#	primers
 	set(dr, NULL, 'PR', dr[, gsub('NT_DIFF_','',PR)])
 	#	primers + nt_diff
 	set(dr, NULL, 'PR_NTDIFFc', dr[, paste(PR,'-',NT_DIFFc,sep='')])
 	#	region, community number, household number
-	tmp		<- dr[, which(TAXA!='PRIOR' & is.na(LOC))]
+	tmp		<- dr[, which(!grepl('PRIOR',TAXA) & is.na(LOC))]
 	set(dr, tmp, 'LOC', dr[tmp, COHORT])
 	set(dr, NULL, 'COMM_NUM', dr[, as.character(COMM_NUM)])
-	tmp		<- dr[, which(TAXA!='PRIOR' & is.na(COMM_NUM))]
+	tmp		<- dr[, which(!grepl('PRIOR',TAXA) & is.na(COMM_NUM))]
 	set(dr, tmp, 'COMM_NUM', dr[tmp, COHORT])
+	#	extraction IDs
+	set(dr, NULL, 'EXTRACT_ID', dr[,as.integer(gsub('^0+','',EXTRACT_ID))])
+	#	sample date
+	dr[, SAMPLEDATEc:= cut(SAMPLEDATE, breaks=seq(2010.25, 2015, 0.25), labels=seq(2010.25, 2015-0.25, 0.25))]
+	#	amplicon
+	dr[, AMPLICON:='two']
+	set(dr, dr[, which(PR=='1R')], 'AMPLICON', 'one')
+	set(dr, dr[, which(PR=='3F')], 'AMPLICON', 'three')
 	#
 	#	exclude AfricaCentre because pre-selected after amplification
 	#
@@ -1750,8 +1797,10 @@ treecomparison.explaingaps.regressions.160804<- function()
 	#
 	#	re-level so that 'presumably good' factors are the reference
 	#
-	set(dr, NULL, 'PR', dr[, relevel(factor(PR), ref='2F')])
-	set(dr, NULL, 'PR_NTDIFFc', dr[, relevel(factor(PR_NTDIFFc), ref='2F-0')])
+	set(dr, NULL, 'AMPLICON', dr[, relevel(factor(AMPLICON), ref='one')])
+	set(dr, NULL, 'PR', dr[, relevel(factor(PR), ref='1R')])
+	set(dr, NULL, 'PR_NTDIFFc', dr[, relevel(factor(PR_NTDIFFc), ref='1R-0')])
+	set(dr, NULL, 'ASSEMBLED', dr[, relevel(factor(ASSEMBLED), ref='Yes')])
 	#	defining the reference level for batches is tricky:
 	#	if it s a very good batch, then this could simply be down to high VL
 	#	if it s an RCCS batch with average viral load, then it could still be down to community?
@@ -1763,15 +1812,30 @@ treecomparison.explaingaps.regressions.160804<- function()
 	set(dr, NULL, 'VL', dr[, relevel(factor(VL), ref='>1e5')])
 	set(dr, NULL, 'BATCHVL', dr[, relevel(factor(BATCHVL), ref='4e4-1e5')])
 	set(dr, NULL, 'ART', dr[, relevel(ART, ref='no ART')])
-	set(dr, NULL, 'ST', dr[, relevel(factor(ST), ref='A1')])
+	set(dr, NULL, 'COMET_1F1R', dr[, relevel(factor(COMET_1F1R), ref='A1')])
+	set(dr, NULL, 'COMET_3F4F', dr[, relevel(factor(COMET_3F4F), ref='A1')])
+	set(dr, NULL, 'COMET_4F3R', dr[, relevel(factor(COMET_4F3R), ref='A1')])
+	set(dr, NULL, 'COMET_CONS', dr[, relevel(factor(COMET_CONS), ref='A1')])
 	set(dr, NULL, 'NT_DIFFc', dr[, relevel(factor(NT_DIFFc), ref='0')])
 	set(dr, NULL, 'LOC', dr[, relevel(factor(LOC), ref='13')])
-	set(dr, NULL, 'COMM_NUM', dr[, relevel(factor(COMM_NUM), ref='106')])
+	#set(dr, NULL, 'COMM_NUM', dr[, relevel(factor(COMM_NUM), ref='106')])
+	set(dr, NULL, 'COMM_NUM', dr[, relevel(factor(COMM_NUM), ref='BW-Mochudi')])
+	set(dr, NULL, 'SAMPLEDATEc', dr[, relevel(factor(SAMPLEDATEc), ref='2010.25')])
+	#
+	#	select data
+	#
+	#	use <60% vs >80%
+	dr[, ASS:= as.numeric(as.character(cut(UNASS, breaks=c(-1, 0.6, 0.8, 2), labels=c('1','0.5','0'))))]	
+	dr		<- subset(dr, ASS!=.5)
+	dr[, UNASS:= 1-ASS]
 	#
 	#	prepare data sets for logistic regression
-	#
-	dr[, UNASS:= 1-ASS]
-	drs		<- subset(dr, select=c("ASS", "TAXA", "PR", "GENE", "PR_NTDIFFc", "PANGEA_ID", "BATCH", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "ST", "NT_DIFFc"))	
+	#	
+	drs		<- subset(dr, select=c("ASS", "UNASS", "TAXA", "PR", "GENE", "PR_NTDIFFc", "ASSEMBLED", "AMPLICON", "EXTRACT_ID", "PANGEA_ID", "BATCH", "BATCH2", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "COMET_1F1R", "COMET_3F4F", "COMET_4F3R", "COMET_CONS", "NT_DIFFc"))	
+	drs1r	<- subset(drs, !grepl('PRIOR',TAXA) & PR=='1R' & GENE=='2F-1R')
+	set(drs1r, NULL, 'PR_NTDIFFc', drs1r[,as.character(factor(as.character(PR_NTDIFFc), levels=c('1R-0','1R-Unassembled','1R-at least one mutation'),labels=c('1R no mutation','1R unassembled','1R at least one mutation')))])		
+	drs3f	<- subset(drs, !grepl('PRIOR',TAXA) & PR=='3F' & GENE=='2R-4F')
+	set(drs3f, NULL, 'PR_NTDIFFc', drs3f[,as.character(factor(as.character(PR_NTDIFFc), levels=c('3F-0','3F-Unassembled','3F-at least one mutation'),labels=c('3F no mutation','3F unassembled','3F at least one mutation')))])		
 	drs2f	<- subset(drs, PR=='2F' & GENE=='1R-3F-firsthalf')	
 	drs2r	<- subset(drs, PR=='2R' & GENE=='1R-3F-secondhalf')	
 	tmp		<- subset(dr, is.na(GENE) | GENE=='1R-3F')
@@ -1780,51 +1844,559 @@ treecomparison.explaingaps.regressions.160804<- function()
 	tmp2[, PR_NTDIFFc:='2F or 2R unassembled']
 	set(tmp2, tmp2[, which(p2F=='0' & p2R=='0')], 'PR_NTDIFFc', '0')
 	set(tmp2, tmp2[, which(p2F=='at least one mutation' & p2R=='0')], 'PR_NTDIFFc', '2F at least one mutation')
-	set(tmp2, tmp2[, which(p2F=='0' & p2R=='at least one mutation')], 'PR_NTDIFFc', '2R at least one mutation')
-	set(tmp2, tmp2[, which(p2F=='at least one mutation' & p2R=='at least one mutation')], 'PR_NTDIFFc', '2R, 2F at least one mutation')
+	set(tmp2, tmp2[, which(p2F=='0' & p2R=='at least one mutation')], 'PR_NTDIFFc', '2R at least one mutation, 2F no mutation')
+	set(tmp2, tmp2[, which(p2F=='at least one mutation' & p2R=='at least one mutation')], 'PR_NTDIFFc', '2F at least one mutation')
+	tmp2[, ASSEMBLED:='Yes']
+	set(tmp2, tmp2[, which(PR_NTDIFFc=='2F or 2R unassembled')], 'ASSEMBLED', 'No')
 	set(tmp2, NULL, 'PR_NTDIFFc', tmp2[, relevel(factor(PR_NTDIFFc), ref='0')])
-	tmp		<- subset(tmp, PR=='2F') 
-	set(tmp, NULL, 'PR_NTDIFFc', NULL)
-	drs2a	<- merge(tmp, subset(tmp2,select=c(BATCH,TAXA,ASS,UNASS,PR_NTDIFFc)), by=c('BATCH','TAXA','ASS','UNASS'))	
-	drs2	<- subset(drs2a, select=c("ASS", "UNASS", "TAXA", "PANGEA_ID", "BATCH", "PR_NTDIFFc", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "ST"))
+	set(tmp2, NULL, 'ASSEMBLED', tmp2[, relevel(factor(ASSEMBLED), ref='Yes')])
+	tmp2[, AMPLICON:='two']
+	tmp		<- subset(tmp, PR=='2F', select=setdiff(colnames(tmp),c('PR','NT_DIFFc','PR_NTDIFFc','UNASS','ASS','NT_DIFF_SUM','ASSEMBLED','GENE','LEN','ACTG','AMPLICON')))
+	drs1r	<- merge(tmp, subset(drs1r,select=c(TAXA,BATCH,ASS,UNASS,AMPLICON,PR_NTDIFFc,ASSEMBLED)), by=c('TAXA','BATCH'))
+	drs2a	<- merge(tmp, subset(tmp2,select=c(TAXA,BATCH,ASS,UNASS,AMPLICON,PR_NTDIFFc,ASSEMBLED)), by=c('TAXA','BATCH'))	
+	drs3f	<- merge(tmp, subset(drs3f,select=c(TAXA,BATCH,ASS,UNASS,AMPLICON,PR_NTDIFFc,ASSEMBLED)), by=c('TAXA','BATCH'))	
+	drs12a	<- rbind(drs2a, drs1r, use.names=TRUE)
+	drs23a	<- rbind(drs2a, drs3f, use.names=TRUE)	
+	drs2	<- subset(drs2a, select=c("ASS", "UNASS", "TAXA", "EXTRACT_ID", "PANGEA_ID", "BATCH", "BATCH2", "PR_NTDIFFc", "AMPLICON", "ASSEMBLED", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "COMET_1F1R", "COMET_3F4F", "COMET_4F3R", "COMET_CONS"))
+	drs2t	<- subset(drs2a, select=c("ASS", "UNASS", "TAXA", "EXTRACT_ID", "PANGEA_ID", "BATCH", "BATCH2", "PR_NTDIFFc", "AMPLICON","ASSEMBLED", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "COMET_1F1R", "COMET_3F4F", "COMET_4F3R", "COMET_CONS", "SAMPLEDATEc", 'SAMPLEDATE'))
+	set(drs2t, NULL, 'SAMPLEDATEc', drs2t[, relevel(factor(SAMPLEDATEc), ref='2011.5')])
 	drs2npr	<- subset(drs2, !is.na(LOC))
+	drs12	<- subset(drs12a, select=c("ASS", "UNASS", "TAXA", "EXTRACT_ID", "PANGEA_ID", "BATCH", "BATCH2", "PR_NTDIFFc", "AMPLICON", "ASSEMBLED", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "COMET_1F1R", "COMET_3F4F", "COMET_4F3R", "COMET_CONS"))
+	drs12npr<- subset(drs12, !is.na(LOC))
+	drs12t	<- subset(drs12a, select=c("ASS", "UNASS", "TAXA", "EXTRACT_ID", "PANGEA_ID", "BATCH", "BATCH2", "PR_NTDIFFc", "AMPLICON","ASSEMBLED", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "COMET_1F1R", "COMET_3F4F", "COMET_4F3R", "COMET_CONS", "SAMPLEDATEc", 'SAMPLEDATE'))
+	set(drs12t, NULL, 'SAMPLEDATEc', drs12t[, relevel(factor(SAMPLEDATEc), ref='2011.5')])	
+	drs23	<- subset(drs23a, select=c("ASS", "UNASS", "TAXA", "EXTRACT_ID", "PANGEA_ID", "BATCH", "BATCH2", "PR_NTDIFFc", "AMPLICON", "ASSEMBLED", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "COMET_1F1R", "COMET_3F4F", "COMET_4F3R", "COMET_CONS"))
+	drs23npr<- subset(drs23, !is.na(LOC))	
 	#
 	#	look at the full region 1R-3F <60% vs >80%
 	#	
-	m2.1		<- glm(data=drs2, UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCHVL + BATCH, family='binomial')
-	summary(m2.1)
+	m2.1		<- glm(data=drs2, UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCHVL + BATCH , family='binomial')
+	m12.1		<- glm(data=drs12, UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCHVL + BATCH , family='binomial')
+	#	sub-analyses to calculate AIC
+	m2.1b		<- glm(data=drs2npr, UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCHVL + BATCH, family='binomial')
+	m2.1c		<- glm(data=subset(drs2npr, COMET_1F1R!='check' & VL!='No VL measured'), UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCH, family='binomial')
+	#	odds ratios
+	m2.1.or		<- cbind(data.table(COEF=names(coef(m2.1))), as.data.table( exp(cbind(OR = coef(m2.1), confint(m2.1))) ) )
+	setnames(m2.1.or, c('2.5 %','97.5 %'), c('l95','u95'))
+	m12.1.or	<- cbind(data.table(COEF=names(coef(m12.1))), as.data.table( exp(cbind(OR = coef(m12.1), confint(m12.1))) ) )
+	setnames(m12.1.or, c('2.5 %','97.5 %'), c('l95','u95'))	
+	#subset(m2.1.or, l95>1)
+	#subset(m12.1.or, l95>1)
+	#	exclude sig plates
+	tmp			<- subset(m12.1.or, l95>1 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	m2.1e		<- glm(data=subset(drs2npr,!BATCH2%in%tmp), UNASS ~ VL + COHORT + PR_NTDIFFc + ART, family='binomial')
+	summary(m2.1e)
+	m2.1e.or	<- cbind(data.table(COEF=names(coef(m2.1e))), as.data.table( exp(cbind(OR = coef(m2.1e), confint(m2.1e))) ) )
+	setnames(m2.1e.or, c('2.5 %','97.5 %'), c('l95','u95'))
+	#	exclude also those that did not assemble	
+	m2.1f		<- glm(data=subset(drs2npr,!BATCH2%in%tmp & !grepl('unassembled',PR_NTDIFFc)), UNASS ~ VL + COHORT + PR_NTDIFFc + ART, family='binomial')
+	summary(m2.1f)
+	m2.1f.or	<- cbind(data.table(COEF=names(coef(m2.1f))), as.data.table( exp(cbind(OR = coef(m2.1f), confint(m2.1f))) ) )
+	setnames(m2.1f.or, c('2.5 %','97.5 %'), c('l95','u95'))
+	#subset(m2.1e.or, l95>1)
+	#	how many batches w significant odds ratio?
+	tmp		<- subset(m12.1.or, grepl('BATCH',COEF) & l95>1)	
+	nrow(tmp) / ( nrow(subset(m12.1.or, grepl('BATCH',COEF)))+1 )
+	#	21.9%  21/25 (84%) from RCCS		
+	# 	where from?
+	tmp		<- subset(m12.1.or, l95>1 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	subset(dm, as.integer(gsub('_.*','',SANGER_ID))%in%tmp )
 	#	I like this model in the end!
 	#	- 2F comes out sig and not 2R as in the individual analysis
 	#	- UG-MRC worse than RCCS, batches offer better explanation than study for RCCS
 	#	- there is a nice series of batches that fail, from 15886 to 15964
+
+	#	repeat with amplicon 1 included
+	tmp			<- subset(m12.1.or, l95>1 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	m12.1e		<- glm(data=subset(drs12npr,!BATCH2%in%tmp), UNASS ~ VL + COHORT + PR_NTDIFFc + ART, family='binomial')
+	summary(m12.1e)
+	m12.1e.or	<- cbind(data.table(COEF=names(coef(m12.1e))), as.data.table( exp(cbind(OR = coef(m12.1e), confint(m12.1e))) ) )
+	setnames(m12.1e.or, c('2.5 %','97.5 %'), c('l95','u95'))	
+	#m12.1g		<- glm(data=subset(drs12npr,!BATCH2%in%tmp), UNASS ~ VL + COHORT + AMPLICON:ASSEMBLED + ART, family='binomial')
+	#summary(m12.1g)
+	#m12.1g.or	<- cbind(data.table(COEF=names(coef(m12.1g))), as.data.table( exp(cbind(OR = coef(m12.1g), confint(m12.1g))) ) )
+	#setnames(m12.1g.or, c('2.5 %','97.5 %'), c('l95','u95'))	
+	#
+	#	repeat with amplicon 3 included
+	tmp			<- subset(m12.1.or, l95>1 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	m23.1e		<- glm(data=subset(drs23npr,!BATCH2%in%tmp & !grepl('unassembled',PR_NTDIFFc)), UNASS ~ VL + COHORT + PR_NTDIFFc + ART, family='binomial')
+	summary(m23.1e)
+	m23.1e.or	<- cbind(data.table(COEF=names(coef(m23.1e))), as.data.table( exp(cbind(OR = coef(m23.1e), confint(m23.1e))) ) )
+	setnames(m23.1e.or, c('2.5 %','97.5 %'), c('l95','u95'))	
 	#	- see if batch VL can be dropped..
 	m2.2		<- glm(data=drs2, UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCH, family='binomial')
+	m2.2b		<- glm(data=drs2npr, UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCH, family='binomial')
 	summary(m2.2)
 	#	Hmmm
 	#	- the batch effect from 15892 to 15964 are not present any more
-	m2.3		<- glm(data=drs2, UNASS ~ VL + COHORT + PR_NTDIFFc + ART, family='binomial')
+	m2.3		<- glm(data=drs2npr, UNASS ~ VL + COHORT + PR_NTDIFFc + ART, family='binomial')	
 	summary(m2.3)
 	#	- without batches, RCCS worse than UG-MRC: batches offer better explanation than study for RCCS
 	#	- 2R one mutation also not sig
-	m2.4		<- glm(data=drs2npr, UNASS ~ VL + PR_NTDIFFc + ART + COMM_NUM, family='binomial')
+	m2.4		<- glm(data=drs2npr, UNASS ~ VL + PR_NTDIFFc + ART + COMM_NUM, family='binomial')	
 	summary(m2.4)
+	#
+	#	combined model communities + batches. 
+	#	just a few communities with borderline significant coefficients
+	#	AIC worse than for batch models, but not terribly worse
+	#	the problem is that the prior is deleted because communities are missing, and so there are singularities
+	m2.6		<- glm(data=drs2, UNASS ~ VL + COMM_NUM + PR_NTDIFFc + ART + BATCHVL + BATCH, family='binomial')
+	summary(m2.6)
+	tmp			<- subset(drs2t, !grepl('PRIOR',TAXA))
+	tmp2		<- subset(m12.1.or, l95>1 & OR<=3 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	tmp2		<- tmp[, which(BATCH2%in%tmp2)]
+	set(tmp, tmp2, 'BATCH', tmp[tmp2,paste(BATCH,' *',sep='')])
+	tmp2		<- subset(m12.1.or, l95>1 & OR>3 & OR<=10 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	tmp2		<- tmp[, which(BATCH2%in%tmp2)]
+	set(tmp, tmp2, 'BATCH', tmp[tmp2,paste(BATCH,' **',sep='')])
+	tmp2		<- subset(m12.1.or, l95>1 & OR>10 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	tmp2		<- tmp[, which(BATCH2%in%tmp2)]
+	set(tmp, tmp2, 'BATCH', tmp[tmp2,paste(BATCH,' ***',sep='')])
+	tmp2		<- tmp[, which(COHORT=='RCCS')]
+	set(tmp, tmp2, 'COMM_NUM', tmp[tmp2,paste('Rakai-',COMM_NUM,sep='')])		
+	tmp2		<- tmp[, list(EXTRACT_MED=median(EXTRACT_ID)), by=c('BATCH')]	
+	setkey(tmp2, EXTRACT_MED)
+	set(tmp2, NULL, 'BATCH3', tmp2[, factor(EXTRACT_MED, levels=EXTRACT_MED, labels=BATCH)])
+	tmp			<- tmp[, list(N=length(TAXA), P=mean(UNASS==1), SD= ifelse(all(is.na(SAMPLEDATE)), -1L, as.integer(mean(SAMPLEDATE, na.rm=1)<2012.25))), by=c('BATCH','BATCH2','COMM_NUM')]	
+	tmp			<- merge(tmp, tmp2, by='BATCH')
+	ggplot( tmp, aes(x=BATCH3, y=COMM_NUM, size=N, colour=P, pch=factor(SD, levels=c(-1,0,1),labels=c('Unknown','No','Yes')))) + 
+			geom_point() + 
+			scale_colour_gradient(low='blue', high='orange') +
+			theme_bw() + theme(axis.text.x=element_text(angle=90, vjust=1)) +
+			labs(x='sequencing plate (ordered by sample extraction at UCLH)', y='sampling location', colour='proportion of\nsamples with\n<20% assembled sites\nin 1R-3F', size='number of\nsamples', pch='Average\nsample date\nbefore 2012.25')
+	ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_batch_vs_community.pdf'), w=25, h=10, useDingbats=FALSE)
+	#
+	#	sub analysis: is there an interaction with extraction ID?
+	#	
+	if(0)
+	{
+		setkey(drs2npr, EXTRACT_ID)
+		drs2npr[, UNASS_ROLL_EXTRACT:= drs2npr[,rollapply(UNASS, width=20, FUN=mean, align="center", partial=TRUE)]]
+		tmp			<- subset(m12.1.or, l95>1 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+		ggplot(drs2npr, aes(x=EXTRACT_ID, y=BATCH, fill=UNASS_ROLL_EXTRACT, pch=COHORT, colour=factor(BATCH2%in%tmp, levels=c(FALSE,TRUE),labels=c('N','Y'))))  + 
+				geom_point(pch=21, size=2, stroke=0.1) + 
+				scale_x_continuous(breaks=seq(0,1e4,200)) +
+				scale_colour_manual(values=c('Y'='black','N'='transparent')) +
+				scale_fill_gradient(low='blue', high='orange') +
+				labs(x='\nUCLH extraction ID', y='Sanger plate\n', colour='significant plate effect', fill='rolling mean\nover 20 consecutive samples of\nsequence with >80% not assembled in 1R3F') +
+				theme_bw()
+		ggsave(file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_batch_vs_extraction.pdf'), w=20, h=20)	
+		ggplot(drs2npr, aes(x=EXTRACT_ID, y=UNASS_ROLL_EXTRACT, colour=COHORT)) + 
+				geom_line() +
+				facet_grid(COHORT~.)
+	}
+	#
+	#	sub analysis: is there an interaction between missingVL and cohort ID?
+	#
+	dvl			<- copy(drs2npr)
+	tmp			<- dvl[, which(VL=='No VL measured')]
+	set(dvl, tmp, 'VL', dvl[tmp, paste(VL,COHORT,sep='_')])
+	set(dvl, NULL, 'VL', dvl[, relevel(factor(as.character(VL)), ref='>1e5')])
+	tmp			<- subset(m12.1.or, l95>1 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	m2.9		<- glm(data=subset(dvl,!BATCH2%in%tmp), UNASS ~ VL + COHORT + PR_NTDIFFc + ART, family='binomial')
+	summary(m2.9)
+	m2.9.or		<- cbind(data.table(COEF=names(coef(m2.9))), as.data.table( exp(cbind(OR = coef(m2.9), confint(m2.9))) ) )
+	#
+	#	sub analysis: 	does subtype explain plates and study effects?
+	#					exclude no VL
+	m2.8		<- glm(data=subset(drs2npr, COMET_1F1R!='check' & VL!='No VL measured'), UNASS ~ VL + COMET_1F1R:COHORT + PR_NTDIFFc + ART, family='binomial')
+	#	don t use above: there is a strong study effect, and this should not be attributed to  
+	m2.8		<- glm(data=subset(drs2npr, COMET_1F1R!='check' & VL!='No VL measured'), UNASS ~ VL + COHORT + COMET_1F1R + PR_NTDIFFc + ART, family='binomial')
+	#	with no VL excluded, there is only two cohorts and the model can adjust for study effect and subtype, 
+	#	because all BW sequs are C 
+	#	short not sig because the mutations are included
+	summary(m2.8)	
+	sapply(list(m2.1c, m2.8), AIC)	#AIC comparable but this excludes the odd batches.. ..so what s the point?
+	sapply(list(m2.1c, m2.8), BIC)	#BIC prefers m2.8!	
+	#	sub on RCCS
+	#	TODO: include MRC once we have viral loads
+	tmp			<- subset(m12.1.or, l95>1 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))]
+	drs12st		<- subset(drs12npr, COHORT%in%c('RCCS','UG-MRC','BW-Mochudi') & COMET_1F1R!='short' & !BATCH2%in%tmp)	
+	m2.5.1F1R	<- glm(data=drs12st, UNASS ~ VL + COHORT + ART + PR_NTDIFFc + COMET_1F1R, family='binomial')	
+	m2.5.3F4F	<- glm(data=subset(drs12npr, COHORT%in%c('RCCS','UG-MRC','BW-Mochudi') & COMET_3F4F!='short' & !BATCH2%in%tmp), UNASS ~ VL + COHORT + ART + PR_NTDIFFc + COMET_3F4F, family='binomial')
+	m2.5.4F3R	<- glm(data=subset(drs12npr, COHORT%in%c('RCCS','UG-MRC','BW-Mochudi') & COMET_4F3R!='short' & !BATCH2%in%tmp), UNASS ~ VL + COHORT + ART + PR_NTDIFFc + COMET_4F3R, family='binomial')
+	m2.5.CONS	<- glm(data=subset(drs12npr, COHORT%in%c('RCCS','UG-MRC','BW-Mochudi') & COMET_CONS!='short' & !BATCH2%in%tmp), UNASS ~ VL + COHORT + ART + PR_NTDIFFc + COMET_CONS, family='binomial')
+	summary(m2.5.1F1R)
+	summary(m2.5.3F4F)	
+	summary(m2.5.4F3R)	
+	summary(m2.5.CONS)	
+	tmp			<- m2.5.1F1R
+	m2.5.1F1R.or<- cbind(data.table(COEF=names(coef(tmp))), as.data.table( exp(cbind(OR = coef(tmp), confint(tmp))) ) )
+	setnames(m2.5.1F1R.or, c('2.5 %','97.5 %'), c('l95','u95'))		
+	tmp			<- m2.5.3F4F
+	m2.5.3F4F.or<- cbind(data.table(COEF=names(coef(tmp))), as.data.table( exp(cbind(OR = coef(tmp), confint(tmp))) ) )
+	setnames(m2.5.3F4F.or, c('2.5 %','97.5 %'), c('l95','u95'))		
+	tmp			<- m2.5.4F3R
+	m2.5.4F3R.or<- cbind(data.table(COEF=names(coef(tmp))), as.data.table( exp(cbind(OR = coef(tmp), confint(tmp))) ) )
+	setnames(m2.5.4F3R.or, c('2.5 %','97.5 %'), c('l95','u95'))
+	tmp			<- m2.5.CONS
+	m2.5.CONS.or<- cbind(data.table(COEF=names(coef(tmp))), as.data.table( exp(cbind(OR = coef(tmp), confint(tmp))) ) )
+	setnames(m2.5.CONS.or, c('2.5 %','97.5 %'), c('l95','u95'))
+	
+	
+	drs2stvl	<- copy(drs2st)
+	tmp			<- drs2stvl[, which(VL=='No VL measured')]
+	set(drs2stvl, tmp, 'VL', drs2stvl[tmp, paste(VL,COHORT,sep='_')])
+	set(drs2stvl, NULL, 'VL', drs2stvl[, relevel(factor(as.character(VL)), ref='>1e5')])	
+	m2.10		<- glm(data=drs2stvl, UNASS ~ VL + COHORT + COMET_CONS + PR_NTDIFFc + ART, family='binomial')
+	summary(m2.10)
+	tmp			<- m2.10
+	m2.10.CONS.or<- cbind(data.table(COEF=names(coef(tmp))), as.data.table( exp(cbind(OR = coef(tmp), confint(tmp))) ) )
+	setnames(m2.10.CONS.or, c('2.5 %','97.5 %'), c('l95','u95'))			
+	#
+	#	sub analysis Rakai: sample date
+	#	sample date and batch confounded, should not include batch
+	#	sort of overfitting. take out comm num?
+	#	cool -- this now recovers the sample date effect!!
+	m2.7		<- glm(data=subset(drs2t, COHORT=='RCCS'), UNASS ~ VL + SAMPLEDATEc + PR_NTDIFFc + ART + ST, family='binomial')
+	summary(m2.7)
+	#
+	#	compare AIC of batch model vs community model (must use same data)
+	#	the batch models have lower AIC than the comm_num model
+	if(0)
+	{
+		sapply(list(m2.1b, m2.2b, m2.3, m2.4), AIC)	
+		sapply(list(m2.1b, m2.2b, m2.3, m2.4), AIC)		
+	}	
+	#
+	#	explore if I can use different link functions (log link to get RR)
+	#	... not successful
+	if(0)
+	{
+		p2.5		<- glm(data=subset(drs2npr, ST%in%c('A1','D')), UNASS ~ VL + COHORT + PR_NTDIFFc + ART + ST, family=poisson(link=log))
+		r2.5		<- glm(data=subset(drs2npr, ST%in%c('A1','D')), UNASS ~ VL + COHORT + PR_NTDIFFc + ART + ST, family=binomial(link=log), control=glm.control(epsilon=1e-8, maxit=100, trace=TRUE), start=c(-2.12,0.93, 0.96, 0.87, 0.72823123, 0.60499165, -0.02665851,0.46523009, 1.07472518, 0.35393831, 0.94179246, 0.03808863,0))
+		#qb2.5		<- glm(data=subset(drs2npr, ST%in%c('A1','D')), UNASS ~ VL + COHORT + PR_NTDIFFc + ART + ST, family=quasibinomial(link=log), start=c(-2.12,0.93, 0.96, 0.87, 0.72823123, 0.60499165, -0.02665851,0.46523009, 1.07472518, 0.35393831, 0.94179246, 0.03808863,0))
+		#p2.5		<- glm(data=subset(drs2npr, ST%in%c('A1','D')), UNASS ~ VL + COHORT + PR_NTDIFFc + ART + ST, family=poisson(link=log))
+		
+		library(ResourceSelection)
+		hoslem.test(subset(drs2npr, ST%in%c('A1','D'))[, UNASS], fitted(m2.5))
+		hoslem.test(subset(drs2npr, ST%in%c('A1','D'))[, UNASS], fitted(p2.5))
+		hoslem.test(subset(drs2npr, ST%in%c('A1','D'))[, UNASS], fitted(r2.5))
+		sapply(list(m2.5, p2.5, r2.5), AIC)	#the logit model also has smallest deviance and is easiest to fit
+		require(AICcmodavg)
+		sapply(list(m2.5, p2.5, r2.5), AICc)	#this is basically the same
+		p2.2		<- glm(data=drs2, UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCH, family=poisson(link=log))
+		#	I don t think r2.2 has converged.. 
+		r2.2		<- glm(data=drs2, UNASS ~ VL + COHORT + PR_NTDIFFc + ART + BATCH, family=binomial(link=log), control=glm.control(epsilon=1e-8, maxit=1e3, trace=FALSE),
+				start=c(-2.41272163456974, 0.557456598211733, 0.486523777039746, 0.385699510360356, 0.319142195398426, 0.875550188558768, 1.03022591978234, 0.513438150979493, rep(0, 114)))									
+	}
+	if(0)
+	{
+		subset(drs2a, !grepl('PRIOR',TAXA))[, list(N_ASS= sum(ASS), N_UNASS=sum(1-ASS), P_UNASS=round(sum(1-ASS)/length(ASS), d=2)), by='BATCH']
+		subset(drs2a, !grepl('PRIOR',TAXA))[, list(N_ASS= sum(ASS), N_UNASS=sum(1-ASS), P_UNASS=round(sum(1-ASS)/length(ASS), d=2)), by='COMM_NUM']
+		subset(drs2a, !grepl('PRIOR',TAXA))[, list(N_ASS= sum(ASS), N_UNASS=sum(1-ASS), P_UNASS=round(sum(1-ASS)/length(ASS), d=2)), by='COMET_Region1']
+		subset(drs2a, !grepl('PRIOR',TAXA))[, table(COMM_NUM, floor(SAMPLEDATE))]		
+	}
+	#
+	#	write odds ratio tables
+	#
+	tmp		<- copy(m12.1e.or)
+	set(tmp, NULL, 'OR', tmp[, round(OR,d=2)])
+	set(tmp, NULL, 'CI', tmp[, paste(round(l95,d=2),'-',round(u95,d=2),sep='')])	
+	write.csv(subset(tmp, !is.na(OR), select=c(COEF, OR, CI)), row.names=FALSE, file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_regression_model12.1e.csv'))
+	tmp		<- copy(m2.1e.or)
+	set(tmp, NULL, 'OR', tmp[, round(OR,d=2)])
+	set(tmp, NULL, 'CI', tmp[, paste(round(l95,d=2),'-',round(u95,d=2),sep='')])	
+	write.csv(subset(tmp, !is.na(OR), select=c(COEF, OR, CI)), row.names=FALSE, file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_regression_model2.1.csv'))
+	tmp		<- copy(m2.5.1F1R.or)
+	set(tmp, NULL, 'OR', tmp[, round(OR,d=2)])
+	set(tmp, NULL, 'CI', tmp[, paste(round(l95,d=2),'-',round(u95,d=2),sep='')])	
+	write.csv(subset(tmp, !is.na(OR), select=c(COEF, OR, CI)), row.names=FALSE, file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_regression_model2.5.1F1R.or.csv'))
+	tmp		<- copy(m2.5.3F4F.or)
+	set(tmp, NULL, 'OR', tmp[, round(OR,d=2)])
+	set(tmp, NULL, 'CI', tmp[, paste(round(l95,d=2),'-',round(u95,d=2),sep='')])	
+	write.csv(subset(tmp, !is.na(OR), select=c(COEF, OR, CI)), row.names=FALSE, file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_regression_model2.5.3F4F.csv'))
+	tmp		<- copy(m2.5.4F3R.or)
+	set(tmp, NULL, 'OR', tmp[, round(OR,d=2)])
+	set(tmp, NULL, 'CI', tmp[, paste(round(l95,d=2),'-',round(u95,d=2),sep='')])	
+	write.csv(subset(tmp, !is.na(OR), select=c(COEF, OR, CI)), row.names=FALSE, file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_regression_model2.5.4F3R.csv'))
+	tmp		<- copy(m2.5.CONS.or)
+	set(tmp, NULL, 'OR', tmp[, round(OR,d=2)])
+	set(tmp, NULL, 'CI', tmp[, paste(round(l95,d=2),'-',round(u95,d=2),sep='')])	
+	write.csv(subset(tmp, !is.na(OR), select=c(COEF, OR, CI)), row.names=FALSE, file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_regression_model2.5.CONS.csv'))
+	
+	#
+	#	run batches - subanalysis
+	#	
+	drs2b	<- copy(drs2a)	
+	tmp2	<- unique(subset(drs2b, BATCH2>=15892 & BATCH2<=15964 & !is.na(COMM_NUM), COMM_NUM))
+	tmp2	<- unique(subset(merge(drs2b, tmp2, by='COMM_NUM'), select=BATCH2))
+	drs2b		<- merge(drs2b, tmp2, by='BATCH2')
+	drs2b[, UNASSB:= 0L]
+	set(drs2b, drs2b[, which(BATCH2>=15892 & BATCH2<=15964 & !is.na(COMM_NUM))], 'UNASSB', 1L)
+	drs2b	<- subset(drs2b, !grepl('PRIOR',TAXA), select=c("UNASSB", "TAXA", "PANGEA_ID", "BATCH", "PR_NTDIFFc", "ART", "BATCHVL", "VL", "COHORT", "LOC", "COMM_NUM", "ST", "SAMPLEDATE", "SAMPLEDATEc"))	
+	set(drs2b, NULL, 'SAMPLEDATEc', drs2b[, relevel(factor(SAMPLEDATEc), ref='2011.75')])
+	write.csv(drs2b, row.names=FALSE, file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_batch_vs_community.csv'))
+	s2.1	<- glm(data=subset(drs2b, !is.na(SAMPLEDATE)), UNASSB ~ VL + COMM_NUM + PR_NTDIFFc + ART + ST + SAMPLEDATE, family='binomial')
+	summary(s2.1)
+	s2.2	<- glm(data=subset(drs2b, !is.na(SAMPLEDATE)), UNASSB ~ VL + PR_NTDIFFc + ART + ST + SAMPLEDATEc, family='binomial')
+	summary(s2.2)
+	#
+	#	do the predictions, use model m2.1
+	#
+	#	exclude singular batches to get OK prediction
+	#
+	#	data for predictions
+	tmp			<- subset(m12.1.or, l95>1.05 & grepl('BATCH',COEF))[, as.integer(regmatches(COEF, regexpr('[0-9]+',COEF)))] 
+	dpr			<- subset(drs2npr, COHORT%in%c('RCCS','UG-MRC','BW-Mochudi') & COMET_CONS!='short' & !BATCH2%in%tmp)	
+	#	higher viral load
+	tmp		<- subset(dpr, VL!='No VL measured')
+	pr0		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(VL%in%c('<1e4'))], 'VL', '1e4-2e4')
+	pr1		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(VL%in%c('<1e4', '1e4-2e4'))], 'VL', '2e4-4e4')
+	pr2		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(VL%in%c('<1e4', '1e4-2e4', '2e4-4e4'))], 'VL', '4e4-1e5')
+	pr3		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(VL%in%c('<1e4', '1e4-2e4', '2e4-4e4','4e4-1e5'))], 'VL', '>1e5')
+	pr4		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	tmp[, H0u_p:= UNASS]
+	tmp[, H0all_p:= 1]
+	tmp[, H0_p:= pr0$fit]
+	tmp[, H0_l:= pr0$fit-1.96*pr0$se.fit]
+	tmp[, H0_u:= pr0$fit+1.96*pr0$se.fit]
+	tmp[, H1_p:= pr1$fit]
+	tmp[, H1_l:= pr1$fit-1.96*pr1$se.fit]
+	tmp[, H1_u:= pr1$fit+1.96*pr1$se.fit]
+	tmp[, H2_p:= pr2$fit]
+	tmp[, H2_l:= pr2$fit-1.96*pr2$se.fit]
+	tmp[, H2_u:= pr2$fit+1.96*pr2$se.fit]
+	tmp[, H3_p:= pr3$fit]
+	tmp[, H3_l:= pr3$fit-1.96*pr3$se.fit]
+	tmp[, H3_u:= pr3$fit+1.96*pr3$se.fit]
+	tmp[, H4_p:= pr4$fit]
+	tmp[, H4_l:= pr4$fit-1.96*pr4$se.fit]
+	tmp[, H4_u:= pr4$fit+1.96*pr4$se.fit]
+	tmp		<- melt(tmp, id.vars=c('COHORT'), measure.vars=colnames(tmp)[grepl('^H[0-9]+',colnames(tmp))])
+	set(tmp, tmp[, which(value<0)], 'value', 0)
+	set(tmp, tmp[, which(value>1)], 'value', 1)
+	set(tmp, NULL, 'TYPE', tmp[, gsub('_','',regmatches(variable, regexpr('_[a-z]', variable)))])
+	set(tmp, NULL, 'variable', tmp[, regmatches(variable, regexpr('[A-Za-z0-9]+', variable))])
+	tmp		<- tmp[, list(value=sum(value)), by=c('COHORT','TYPE','variable')]
+	tmp2	<- subset(tmp, variable=='H0' & TYPE=='p')
+	setnames(tmp2, 'value', 'BL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, BL)), by='COHORT')
+	tmp2	<- subset(tmp, variable=='H0all')
+	setnames(tmp2, 'value', 'TOTAL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, TOTAL)), by='COHORT')
+	tmp		<- subset(tmp, variable!='H0u' & variable!='H0all' & TYPE=='p')
+	tmp[, REDUCTION_N:= BL-value]
+	tmp[, REDUCTION_P:= (BL-value)/TOTAL]
+	tmp		<- subset(merge(tmp, data.table(variable=c('H1','H2','H3','H4'), LABEL=c('VL >1e4','VL >2e4','VL >4e4','VL >1e5')), by='variable'), select=c(COHORT, LABEL, REDUCTION_N, REDUCTION_P, TOTAL))
+	ans		<- copy(tmp)
+	#
+	#	primer sites assembled
+	tmp		<- copy(dpr)
+	pr0		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(PR_NTDIFFc%in%c('2F or 2R unassembled'))], 'PR_NTDIFFc', '0')
+	pr1		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	tmp[, H0u_p:= UNASS]
+	tmp[, H0all_p:= 1]
+	tmp[, H0_p:= pr0$fit]
+	tmp[, H0_l:= pr0$fit-1.96*pr0$se.fit]
+	tmp[, H0_u:= pr0$fit+1.96*pr0$se.fit]
+	tmp[, H1_p:= pr1$fit]
+	tmp[, H1_l:= pr1$fit-1.96*pr1$se.fit]
+	tmp[, H1_u:= pr1$fit+1.96*pr1$se.fit]
+	tmp		<- melt(tmp, id.vars=c('COHORT'), measure.vars=colnames(tmp)[grepl('^H[0-9]+',colnames(tmp))])
+	set(tmp, tmp[, which(value<0)], 'value', 0)
+	set(tmp, tmp[, which(value>1)], 'value', 1)
+	set(tmp, NULL, 'TYPE', tmp[, gsub('_','',regmatches(variable, regexpr('_[a-z]', variable)))])
+	set(tmp, NULL, 'variable', tmp[, regmatches(variable, regexpr('[A-Za-z0-9]+', variable))])
+	tmp		<- tmp[, list(value=sum(value)), by=c('COHORT','TYPE','variable')]
+	tmp2	<- subset(tmp, variable=='H0' & TYPE=='p')
+	setnames(tmp2, 'value', 'BL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, BL)), by='COHORT')
+	tmp2	<- subset(tmp, variable=='H0all')
+	setnames(tmp2, 'value', 'TOTAL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, TOTAL)), by='COHORT')
+	tmp		<- subset(tmp, variable!='H0u' & variable!='H0all' & TYPE=='p')
+	tmp[, REDUCTION_N:= BL-value]
+	tmp[, REDUCTION_P:= (BL-value)/TOTAL]
+	tmp		<- subset(merge(tmp, data.table(variable=c('H1'), LABEL=c('Assembled primer sites')), by='variable'), select=c(COHORT, LABEL, REDUCTION_N, REDUCTION_P, TOTAL))
+	ans		<- rbind(ans, tmp)
+	#
+	#	no mutations
+	tmp		<- subset(dpr, PR_NTDIFFc!='2F or 2R unassembled')	
+	pr0		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(PR_NTDIFFc%in%c('2F at least one mutation'))], 'PR_NTDIFFc', '0')
+	pr1		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(PR_NTDIFFc%in%c('2F at least one mutation','2R at least one mutation, 2F no mutation'))], 'PR_NTDIFFc', '0')
+	pr2		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	tmp[, H0u_p:= UNASS]
+	tmp[, H0all_p:= 1]
+	tmp[, H0_p:= pr0$fit]
+	tmp[, H0_l:= pr0$fit-1.96*pr0$se.fit]
+	tmp[, H0_u:= pr0$fit+1.96*pr0$se.fit]
+	tmp[, H1_p:= pr1$fit]
+	tmp[, H1_l:= pr1$fit-1.96*pr1$se.fit]
+	tmp[, H1_u:= pr1$fit+1.96*pr1$se.fit]
+	tmp[, H2_p:= pr2$fit]
+	tmp[, H2_l:= pr2$fit-1.96*pr2$se.fit]
+	tmp[, H2_u:= pr2$fit+1.96*pr2$se.fit]
+	tmp		<- melt(tmp, id.vars=c('COHORT'), measure.vars=colnames(tmp)[grepl('^H[0-9]+',colnames(tmp))])
+	set(tmp, tmp[, which(value<0)], 'value', 0)
+	set(tmp, tmp[, which(value>1)], 'value', 1)
+	set(tmp, NULL, 'TYPE', tmp[, gsub('_','',regmatches(variable, regexpr('_[a-z]', variable)))])
+	set(tmp, NULL, 'variable', tmp[, regmatches(variable, regexpr('[A-Za-z0-9]+', variable))])
+	tmp		<- tmp[, list(value=sum(value)), by=c('COHORT','TYPE','variable')]
+	tmp2	<- subset(tmp, variable=='H0' & TYPE=='p')
+	setnames(tmp2, 'value', 'BL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, BL)), by='COHORT')
+	tmp2	<- subset(tmp, variable=='H0all')
+	setnames(tmp2, 'value', 'TOTAL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, TOTAL)), by='COHORT')
+	tmp		<- subset(tmp, variable!='H0u' & variable!='H0all' & TYPE=='p')
+	tmp[, REDUCTION_N:= BL-value]
+	tmp[, REDUCTION_P:= (BL-value)/TOTAL]
+	tmp		<- subset(merge(tmp, data.table(variable=c('H1','H2'), LABEL=c('PR 2F no mutation','PR 2F, 2R no mutation')), by='variable'), select=c(COHORT, LABEL, REDUCTION_N, REDUCTION_P, TOTAL))
+	ans		<- rbind(ans, tmp)
+	#
+	#	subtype (from sub analysis)
+	tmp		<- copy(dpr)
+	pr0		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(COMET_CONS%in%c('D'))], 'COMET_CONS', 'A1')
+	pr1		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(COMET_CONS%in%c('D','C'))], 'COMET_CONS', 'A1')
+	pr2		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(COMET_CONS%in%c('D','C','pot_recombinant'))], 'COMET_CONS', 'A1')
+	pr3		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(COMET_CONS%in%c('D','C','other','pot_recombinant'))], 'COMET_CONS', 'A1')
+	pr4		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	tmp[, H0u_p:= UNASS]
+	tmp[, H0all_p:= 1]
+	tmp[, H0_p:= pr0$fit]
+	tmp[, H0_l:= pr0$fit-1.96*pr0$se.fit]
+	tmp[, H0_u:= pr0$fit+1.96*pr0$se.fit]
+	tmp[, H1_p:= pr1$fit]
+	tmp[, H1_l:= pr1$fit-1.96*pr1$se.fit]
+	tmp[, H1_u:= pr1$fit+1.96*pr1$se.fit]
+	tmp[, H2_p:= pr2$fit]
+	tmp[, H2_l:= pr2$fit-1.96*pr2$se.fit]
+	tmp[, H2_u:= pr2$fit+1.96*pr2$se.fit]
+	tmp[, H3_p:= pr3$fit]
+	tmp[, H3_l:= pr3$fit-1.96*pr3$se.fit]
+	tmp[, H3_u:= pr3$fit+1.96*pr3$se.fit]
+	tmp[, H4_p:= pr4$fit]
+	tmp[, H4_l:= pr4$fit-1.96*pr4$se.fit]
+	tmp[, H4_u:= pr4$fit+1.96*pr4$se.fit]
+	tmp		<- melt(tmp, id.vars=c('COHORT'), measure.vars=colnames(tmp)[grepl('^H[0-9]+',colnames(tmp))])
+	set(tmp, tmp[, which(value<0)], 'value', 0)
+	set(tmp, tmp[, which(value>1)], 'value', 1)
+	set(tmp, NULL, 'TYPE', tmp[, gsub('_','',regmatches(variable, regexpr('_[a-z]', variable)))])
+	set(tmp, NULL, 'variable', tmp[, regmatches(variable, regexpr('[A-Za-z0-9]+', variable))])
+	tmp		<- tmp[, list(value=sum(value)), by=c('COHORT','TYPE','variable')]
+	tmp2	<- subset(tmp, variable=='H0' & TYPE=='p')
+	setnames(tmp2, 'value', 'BL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, BL)), by='COHORT')
+	tmp2	<- subset(tmp, variable=='H0all')
+	setnames(tmp2, 'value', 'TOTAL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, TOTAL)), by='COHORT')
+	tmp		<- subset(tmp, variable!='H0u' & variable!='H0all' & TYPE=='p')
+	tmp[, REDUCTION_N:= BL-value]
+	tmp[, REDUCTION_P:= (BL-value)/TOTAL]
+	tmp		<- subset(merge(tmp, data.table(variable=c('H1','H2','H3','H4'), LABEL=c('D','D,C','D,C,pot recombinant','D,C,other,pot recomb')), by='variable'), select=c(COHORT, LABEL, REDUCTION_N, REDUCTION_P, TOTAL))
+	ans		<- rbind(ans, tmp)
+	#
+	#	no ART self report 
+	tmp		<- copy(dpr)
+	pr0		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	set(tmp, tmp[, which(ART%in%c('ART started or self reported'))], 'ART', 'no ART')
+	pr1		<- predict(m2.5.CONS, newdata=tmp, type='response', se.fit=TRUE)
+	tmp[, H0u_p:= UNASS]
+	tmp[, H0all_p:= 1]
+	tmp[, H0_p:= pr0$fit]
+	tmp[, H0_l:= pr0$fit-1.96*pr0$se.fit]
+	tmp[, H0_u:= pr0$fit+1.96*pr0$se.fit]
+	tmp[, H1_p:= pr1$fit]
+	tmp[, H1_l:= pr1$fit-1.96*pr1$se.fit]
+	tmp[, H1_u:= pr1$fit+1.96*pr1$se.fit]
+	tmp		<- melt(tmp, id.vars=c('COHORT'), measure.vars=colnames(tmp)[grepl('^H[0-9]+',colnames(tmp))])
+	set(tmp, tmp[, which(value<0)], 'value', 0)
+	set(tmp, tmp[, which(value>1)], 'value', 1)
+	set(tmp, NULL, 'TYPE', tmp[, gsub('_','',regmatches(variable, regexpr('_[a-z]', variable)))])
+	set(tmp, NULL, 'variable', tmp[, regmatches(variable, regexpr('[A-Za-z0-9]+', variable))])
+	tmp		<- tmp[, list(value=sum(value)), by=c('COHORT','TYPE','variable')]
+	tmp2	<- subset(tmp, variable=='H0' & TYPE=='p')
+	setnames(tmp2, 'value', 'BL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, BL)), by='COHORT')
+	tmp2	<- subset(tmp, variable=='H0all')
+	setnames(tmp2, 'value', 'TOTAL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, TOTAL)), by='COHORT')
+	tmp		<- subset(tmp, variable!='H0u' & variable!='H0all' & TYPE=='p')
+	tmp[, REDUCTION_N:= BL-value]
+	tmp[, REDUCTION_P:= (BL-value)/TOTAL]
+	tmp		<- subset(merge(tmp, data.table(variable=c('H1'), LABEL=c('ART not self-reported or started')), by='variable'), select=c(COHORT, LABEL, REDUCTION_N, REDUCTION_P, TOTAL))
+	ans		<- rbind(ans, tmp)
+	#
+	#	RCCS batches as typical UG-MRC 15034 (UG-MRC)
+	#	bad batches as typical from same region 15699 (RCCS)		
+	tmp		<- subset(drs2npr, COHORT=='RCCS')
+	pr0		<- predict(m2.1, newdata=tmp, type='response', se.fit=TRUE)
+	tmp2	<- subset(m12.1.or, l95>1 & grepl('BATCH',COEF))[, gsub('BATCH','',COEF)]
+	set(tmp, tmp[, which(BATCH%in%tmp2)], 'BATCH', '15699 (RCCS)')
+	pr1		<- predict(m2.1, newdata=tmp, type='response', se.fit=TRUE)	
+	tmp2	<- subset(subset(drs2a, !grepl('PRIOR',TAXA) & grepl('RCCS',BATCH))[, list(P_UNASS=round(sum(1-ASS)/length(ASS), d=2)), by='BATCH'], P_UNASS>0.38)[, BATCH]	
+	set(tmp, tmp[, which(BATCH%in%tmp2)], 'BATCH', '15034 (UG-MRC)')
+	pr2		<- predict(m2.1, newdata=tmp, type='response', se.fit=TRUE)
+	tmp[, H0u_p:= UNASS]
+	tmp[, H0all_p:= 1]
+	tmp[, H0_p:= pr0$fit]
+	tmp[, H0_l:= pr0$fit-1.96*pr0$se.fit]
+	tmp[, H0_u:= pr0$fit+1.96*pr0$se.fit]
+	tmp[, H1_p:= pr1$fit]
+	tmp[, H1_l:= pr1$fit-1.96*pr1$se.fit]
+	tmp[, H1_u:= pr1$fit+1.96*pr1$se.fit]
+	tmp[, H2_p:= pr2$fit]
+	tmp[, H2_l:= pr2$fit-1.96*pr2$se.fit]
+	tmp[, H2_u:= pr2$fit+1.96*pr2$se.fit]
+	tmp		<- melt(tmp, id.vars=c('COHORT'), measure.vars=colnames(tmp)[grepl('^H[0-9]+',colnames(tmp))])
+	set(tmp, tmp[, which(value<0)], 'value', 0)
+	set(tmp, tmp[, which(value>1)], 'value', 1)
+	set(tmp, NULL, 'TYPE', tmp[, gsub('_','',regmatches(variable, regexpr('_[a-z]', variable)))])
+	set(tmp, NULL, 'variable', tmp[, regmatches(variable, regexpr('[A-Za-z0-9]+', variable))])
+	tmp		<- tmp[, list(value=sum(value)), by=c('COHORT','TYPE','variable')]
+	tmp2	<- subset(tmp, variable=='H0' & TYPE=='p')
+	setnames(tmp2, 'value', 'BL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, BL)), by='COHORT')
+	tmp2	<- subset(tmp, variable=='H0all')
+	setnames(tmp2, 'value', 'TOTAL')
+	tmp		<- merge(tmp, subset(tmp2, select=c(COHORT, TOTAL)), by='COHORT')
+	tmp		<- subset(tmp, variable!='H0u' & variable!='H0all' & TYPE=='p')
+	tmp[, REDUCTION_N:= BL-value]
+	tmp[, REDUCTION_P:= (BL-value)/TOTAL]
+	tmp		<- subset(merge(tmp, data.table(variable=c('H1','H2'), LABEL=c('no sig plates','as avg UG MRC')), by='variable'), select=c(COHORT, LABEL, REDUCTION_N, REDUCTION_P, TOTAL))
+	ans		<- rbind(ans, tmp)	
+	#
+	#	write csv
+	set(ans, NULL, 'REDUCTION_P_L', ans[, paste(round(REDUCTION_P*100,d=1),'pc',sep='')])
+	#ans[, paste(unique(LABEL),collapse='", "')]
+	#set(ans, NULL, 'LABEL', ans[, factor(LABEL, levels=c("Assembled primer sites", "VL >1e4", "VL >2e4", "VL >4e4", "VL >1e5", "D", "Batch run as typical run from same comm", "PR 2F no mutation", "PR 2F, 2R no mutation", "ART not self-reported or started"))])	
+	ans		<- dcast.data.table(ans, LABEL~COHORT, value.var='REDUCTION_P_L')		
+	write.csv(ans, row.names=FALSE, file=file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_percentreductions.csv'))
+	
+	
+	#
+	#	save
+	#
+	save(drs2, m2.1, m2.2, m2.3, m2.1.or, file=file.path(wdir, gsub('.rda','_logistic_160905.rda',wfile)))
+	tmp		<- copy(m2.1.or)
+	set(tmp, NULL, 'COEF', tmp[, gsub('COHORT','',gsub('PR_NTDIFFc','',gsub('VL','viral load ',gsub('BATCH','plate ',COEF))))])
+	set(tmp, NULL, 'OR', tmp[, round(OR,d=2)])
+	set(tmp, NULL, 'LABEL', tmp[, as.character(OR)])
+	set(tmp, NULL, 'l95', tmp[, round(l95,d=2)])
+	set(tmp, NULL, 'u95', tmp[, round(u95,d=2)])
+	set(tmp, NULL, 'LABEL2', tmp[, paste(l95,'-',u95,sep='')])
+	tmp2	<- tmp[, which(l95>1 & l95<=3)]
+	set(tmp, tmp2, 'LABEL', tmp[tmp2,paste(LABEL,' *',sep='')])
+	tmp2	<- tmp[, which(l95>3)]
+	set(tmp, tmp2, 'LABEL', tmp[tmp2,paste(LABEL,' **',sep='')])
+	write.csv(subset(tmp, !is.na(OR), select=c(COEF,LABEL,LABEL2)), row.names=FALSE, file=file.path(wdir, gsub('.rda','_logistic_160905.csv',wfile)))
+	
+	#
+	#	old stuff
+	#
 
-	m2.5		<- glm(data=subset(drs2npr, ST%in%c('A1','D')), UNASS ~ VL + COHORT + PR_NTDIFFc + ART + ST, family='binomial')
-	summary(m2.5)
-	
-	
-	m2.1.or<- cbind(data.table(COEF=names(coef(m2.1))), as.data.table( exp(cbind(OR = coef(m2.1), confint(m2.1))) ) )
-	setnames(m2.1.or, c('2.5 %','97.5 %'), c('l95','u95'))		
-	subset(m2.1.or, u95<0.95)
-	#	how many batches w significant odds ratio?
-	tmp		<- subset(m2.1.or, grepl('BATCH',COEF) & l95>1)	
-	nrow(tmp) / ( nrow(subset(m2.1.or, grepl('BATCH',COEF)))+1 )	
-	#	21.9%  21/25 (84%) from RCCS
-	
-
-	subset(drs2a, TAXA!='PRIOR')[, list(N_ASS= sum(ASS), N_UNASS=sum(1-ASS), P_UNASS=round(sum(1-ASS)/length(ASS), d=2)), by='COMM_NUM']
-	subset(drs2a, TAXA!='PRIOR')[, list(N_ASS= sum(ASS), N_UNASS=sum(1-ASS), P_UNASS=round(sum(1-ASS)/length(ASS), d=2)), by='COMET_Region1']
-	subset(drs2a, TAXA!='PRIOR')[, table(COMM_NUM, floor(SAMPLEDATE))]
 	#
 	#	what are these batches?
 	#	
@@ -1847,29 +2419,6 @@ treecomparison.explaingaps.regressions.160804<- function()
 				ans
 			}, by='BATCH_UNASS']		
 	dcast.data.table(tmp, TYPE~BATCH_UNASS+variable)
-	#
-	#	save
-	#
-	save(drs2, m2.1, m2.2, m2.3, m2.1.or, file=file.path(wdir, gsub('.rda','_logistic_160905.rda',wfile)))
-	tmp		<- copy(m2.1.or)
-	set(tmp, NULL, 'COEF', tmp[, gsub('COHORT','',gsub('PR_NTDIFFc','',gsub('VL','viral load ',gsub('BATCH','plate ',COEF))))])
-	set(tmp, NULL, 'OR', tmp[, round(OR,d=2)])
-	set(tmp, NULL, 'LABEL', tmp[, as.character(OR)])
-	set(tmp, NULL, 'l95', tmp[, round(l95,d=2)])
-	set(tmp, NULL, 'u95', tmp[, round(u95,d=2)])
-	set(tmp, NULL, 'LABEL2', tmp[, paste(l95,'-',u95,sep='')])
-	tmp2	<- tmp[, which(l95>1 & l95<=3)]
-	set(tmp, tmp2, 'LABEL', tmp[tmp2,paste(LABEL,' *',sep='')])
-	tmp2	<- tmp[, which(l95>3)]
-	set(tmp, tmp2, 'LABEL', tmp[tmp2,paste(LABEL,' **',sep='')])
-	
-	
-	write.csv(subset(tmp, !is.na(OR), select=c(COEF,LABEL,LABEL2)), row.names=FALSE, file=file.path(wdir, gsub('.rda','_logistic_160905.csv',wfile)))
-	
-	#
-	#	old stuff
-	#
-
 	#
 	#	batch models with BATCH VL
 	#	
@@ -2271,6 +2820,42 @@ treecomparison.explaingaps.countgaps<- function()
 	#
 	tmp		<- merge(dgd, subset(dm, select=c(TAXA,COHORT)),by='TAXA')
 	tmp[, LEN:=END-START+1L]
+	#	add the odd RCCS sequence run
+	tmp		<- merge(tmp, subset(dm, select=c(TAXA, SANGER_ID)), by='TAXA')
+	tmp[, SANGER_PLATE:= as.integer(regmatches(SANGER_ID, regexpr('^[0-9]+', SANGER_ID)))]
+	tmp2	<- subset(tmp, SANGER_PLATE>=15892 & SANGER_PLATE<=15964)
+	tmp2[, COHORT:='RCCS_run_odd_plates']	
+	tmp		<- rbind(tmp, tmp2)
+	tmp2	<- subset(tmp, SANGER_PLATE<15892 | SANGER_PLATE>15964)
+	tmp2[, COHORT:='RCCS_other_plates']
+	tmp		<- rbind(tmp, tmp2)
+	#	add all Uganda sequences
+	tmp2	<- subset(tmp, COHORT=='UG-MRC'|COHORT=='RCCS')
+	tmp2[, COHORT:='Uganda']
+	tmp		<- rbind(tmp, tmp2)
+	#	look at distribution of gaps by cohort
+	dgi		<- subset(tmp, GENE=='GAG+POL+ENV')[, list(P=ecdf(1-UNASS)(seq(0,1,.01)), PC_ASS=seq(0,1,.01)), by=c('COHORT','GENE','LEN')]
+	#	                RCCS GAG+POL+ENV 8926 0.2392074    0.2
+	dgi		<- subset(tmp, GENE=='GAG+POL+ENV' & COHORT%in%c('BW-Mochudi','UG-MRC','RCCS','AC_Resistance'))[, list(P=ecdf(1-UNASS)(seq(0,1,.01)), PC_ASS=seq(0,1,.01))]
+	#					1: 0.206    0.2
+	#
+	#	make histogram
+	tmp2	<- subset(tmp, GENE=='GAG+POL+ENV' & COHORT%in%c('BW-Mochudi','UG-MRC','RCCS','AC_Resistance'))
+	set(tmp2, NULL, 'COHORT', tmp2[, factor(COHORT, levels=c('BW-Mochudi','UG-MRC','RCCS','AC_Resistance'),
+													labels=c('Mochudi Prevention Project', 'Uganda-MRC', 'Rakai Community Cohort Study', 'South Africa Resistance Cohort'))])				
+	tmp2	<- tmp2[, list(P_UNASS=seq(0,1,0.01), CUM= length(UNASS)*ecdf(UNASS)(seq(0,1,0.01))), by='COHORT']
+	ggplot(tmp2, aes(x=P_UNASS, fill=COHORT, y=CUM)) + 
+			geom_bar(stat='identity', position='stack') +
+			scale_x_continuous(labels=percent, expand=c(0,0), limit=c(-0.01,1.01), breaks=seq(0, 1, 0.2)) +
+			scale_y_continuous(expand=c(0,0), limits=c(0,4500))+
+			scale_fill_manual(values=c('Mochudi Prevention Project'="#33638DFF", 'South Africa Resistance Cohort'="#CF4446FF", 'Rakai Community Cohort Study'="#A8327DFF", 'Uganda-MRC'="#29AF7FFF")) +
+			theme_bw() + theme(legend.position='bottom') +
+			guides(fill=guide_legend(ncol=2)) + 
+			labs(	x='\nx% = proportion of unassembled sites per sequence is at most x%',
+					y='PANGEA-HIV sequences (cumulated)\n',
+					fill='cohort site')
+	ggsave(file.path('~/Dropbox (Infectious Disease)/2016_PANGEA_treecomp/figures','PANGEA_cumulated_by_gaps.pdf'), w=7, h=7)
+	#	
 	dgi		<- tmp[, list(ASS= c(mean(1-UNASS), quantile(1-UNASS, prob=c(0.25,.5,.75))), STAT=c('mean',paste('qu',c(0.25,.5,.75),sep='')) ), by=c('COHORT','GENE','LEN')]
 	dgi[, P:= 100*round(ASS, d=2)]
 	dgi[, N:= round(ASS*LEN,d=0)]
@@ -2362,13 +2947,17 @@ treecomparison.explaingaps.collect.data<- function()
 							data.table(PRIMER='N', GENE='GAG+POL+ENV',  LOC='start', SEQ=strsplit("atgggtgcgagagcgtcagtatt",'')[[1]]),
 							data.table(PRIMER='N', GENE='GAG+POL+ENV',  LOC='end', SEQ=strsplit("cttggaaaggattttgctataa",'')[[1]]),
 							data.table(PRIMER='Y', GENE='START-2F',  LOC='start', SEQ=strsplit("atgggtgcgagagcgtcagtatt",'')[[1]]),
-							data.table(PRIMER='Y', GENE='START-2F',  LOC='end', SEQ=strsplit(tmp[['2F']],'')[[1]]),
+							data.table(PRIMER='Y', GENE='START-2F',  LOC='end', SEQ=strsplit(tmp[['2F']],'')[[1]]),							
+							data.table(PRIMER='Y', GENE='START-1R',  LOC='start', SEQ=strsplit("atgggtgcgagagcgtcagtatt",'')[[1]]),
+							data.table(PRIMER='Y', GENE='START-1R',  LOC='end', SEQ=strsplit(tmp[['1R']],'')[[1]]),														
 							data.table(PRIMER='Y', GENE='2F-1R',  LOC='start', SEQ=strsplit(tmp[['2F']],'')[[1]]),
 							data.table(PRIMER='Y', GENE='2F-1R',  LOC='end', SEQ=strsplit(tmp[['1R']],'')[[1]]),
 							data.table(PRIMER='Y', GENE='1R-3F',  LOC='start', SEQ=strsplit(tmp[['1R']],'')[[1]]),
 							data.table(PRIMER='Y', GENE='1R-3F',  LOC='end', SEQ=strsplit(tmp[['3F']],'')[[1]]),
 							data.table(PRIMER='Y', GENE='3F-2R',  LOC='start', SEQ=strsplit(tmp[['3F']],'')[[1]]),
-							data.table(PRIMER='Y', GENE='3F-2R',  LOC='end', SEQ=strsplit(tmp[['2R']],'')[[1]]),
+							data.table(PRIMER='Y', GENE='3F-2R',  LOC='end', SEQ=strsplit(tmp[['2R']],'')[[1]]),							
+							data.table(PRIMER='Y', GENE='3F-4F',  LOC='start', SEQ=strsplit(tmp[['3F']],'')[[1]]),
+							data.table(PRIMER='Y', GENE='3F-4F',  LOC='end', SEQ=strsplit(tmp[['4F']],'')[[1]]),														
 							data.table(PRIMER='Y', GENE='2R-4F',  LOC='start', SEQ=strsplit(tmp[['2R']],'')[[1]]),
 							data.table(PRIMER='Y', GENE='2R-4F',  LOC='end', SEQ=strsplit(tmp[['4F']],'')[[1]]),
 							data.table(PRIMER='Y', GENE='4F-3R',  LOC='start', SEQ=strsplit(tmp[['4F']],'')[[1]]),
@@ -2402,24 +2991,67 @@ treecomparison.explaingaps.collect.data<- function()
 		#
 		dgene[, LEN:=END-START+1L]
 		set(dgene, NULL, 'GENE', dgene[, factor(GENE, levels=c(	"GAG+POL+ENV","GAG","POL","ENV", 
-																"START-2F","2F-1R","1R-3F","3F-2R","2R-4F","4F-3R","3R-END",
-																"START-2F-firsthalf","2F-1R-firsthalf","1R-3F-firsthalf","3F-2R-firsthalf","2R-4F-firsthalf","4F-3R-firsthalf","3R-END-firsthalf",
-																"START-2F-secondhalf","2F-1R-secondhalf","1R-3F-secondhalf","3F-2R-secondhalf","2R-4F-secondhalf","4F-3R-secondhalf","3R-END-secondhalf"))])
+																"START-2F","START-1R","2F-1R","1R-3F","3F-2R","2R-4F","3F-4F","4F-3R","3R-END",
+																"START-2F-firsthalf","START-1R-firsthalf","2F-1R-firsthalf","1R-3F-firsthalf","3F-2R-firsthalf","3F-4F-firsthalf","2R-4F-firsthalf","4F-3R-firsthalf","3R-END-firsthalf",
+																"START-2F-secondhalf","START-1R-secondhalf","2F-1R-secondhalf","1R-3F-secondhalf","3F-2R-secondhalf","3F-4F-secondhalf","2R-4F-secondhalf","4F-3R-secondhalf","3R-END-secondhalf"))])
 		setkey(dgene, GENE)
 		set(dgene, NULL, 'PRIMER', NULL)
 		#
 		tmp		<- dpan[, list(START=unlist(gregexpr(paste(SEQ, collapse='-*'),sqhxb2))), by=c('PR')]
 		dpan	<- merge(dpan, subset(tmp, START>0), by='PR',all.x=1)
 		#
+		#	add non-ambiguous primers for 1R 2F 2R 3F (none) 4F (none)
+		#	pan1r	<- 'cctccaattccYcctatcatttt'. 'y = c or t'. So in forward sense: G or A  
+		#	pan2f	<- 'gggaagtgaYatagcWggaac'. 'W= a or t'. 
+		#	pan2r	<- 'ctgccatctgttttccataRtc'. 'R= a or g'. So in forward sense: T or C
+		tmp		<- subset(dpan, PR=='1R')
+		tmp[, PR:='1Ra']
+		set(tmp, 12L, 'SEQR', 'c')
+		set(tmp, 12L, 'SEQ', 'g')
+		dpan	<- rbind(dpan, tmp)
+		tmp[, PR:='1Rb']
+		set(tmp, 12L, 'SEQR', 't')
+		set(tmp, 12L, 'SEQ', 'a')
+		dpan	<- rbind(dpan, tmp)
+		tmp		<- subset(dpan, PR=='2F')
+		tmp[, PR:='2Fa']
+		set(tmp, 10L, 'SEQ', 'c')
+		set(tmp, 16L, 'SEQ', 'a')
+		dpan	<- rbind(dpan, tmp)
+		tmp[, PR:='2Fb']
+		set(tmp, 10L, 'SEQ', 't')
+		set(tmp, 16L, 'SEQ', 't')
+		dpan	<- rbind(dpan, tmp)		
+		tmp		<- subset(dpan, PR=='2R')
+		tmp[, PR:='2Ra']
+		set(tmp, 3L, 'SEQR', 'a')
+		set(tmp, 3L, 'SEQ', 't')
+		dpan	<- rbind(dpan, tmp)
+		tmp		<- subset(dpan, PR=='2R')
+		tmp[, PR:='2Rb']
+		set(tmp, 3L, 'SEQR', 'g')
+		set(tmp, 3L, 'SEQ', 'c')
+		dpan	<- rbind(dpan, tmp)		
+		#
 		save(sq, sqp, sqi, dgene, dpan, file=file.path(wdir,wfile))
+		
+		#	extract START to 1R alignment
+		write.dna(sqp[, 1:(1893+23)], file=file.path(wdir, paste(gsub('.rda','',wfile),'_region_1F1R.fasta', sep='')), format='fa', colsep='', nbcol=-1)		
+		write.dna(sqp[, 4570:5573], file=file.path(wdir, paste(gsub('.rda','',wfile),'_region_3F4F.fasta', sep='')), format='fa', colsep='', nbcol=-1)		
+		write.dna(sqp[, 5555:8903], file=file.path(wdir, paste(gsub('.rda','',wfile),'_region_4F3R.fasta', sep='')), format='fa', colsep='', nbcol=-1)		
+		write.dna(sqp[ subset(dgd, GENE=='GAG+POL+ENV' & grepl('UG',TAXA) & LEN*(1-UNASS)>8000)[, TAXA], ], file=file.path(wdir, paste(gsub('.rda','',wfile),'_UGfull.fasta', sep='')), format='fa', colsep='', nbcol=-1)
+		write.dna(sqp[ subset(dgd, GENE=='GAG+POL+ENV' & grepl('ZA|BW',TAXA) & LEN*(1-UNASS)>8000)[, TAXA], ], file=file.path(wdir, paste(gsub('.rda','',wfile),'_ZABWfull.fasta', sep='')), format='fa', colsep='', nbcol=-1)		
+		write.dna(sqp[, 5555:8903], file=file.path(wdir, paste(gsub('.rda','',wfile),'_region_4F3R.fasta', sep='')), format='fa', colsep='', nbcol=-1)
 		#	extract primer alignments and write to file
 		subset(dpan, !is.na(START))[, {
-					write.dna(sq[, seq.int(START[1], len=length(START))], file=file.path(wdir, paste(gsub('.rda','',wfile),'_primer_',PR[1],'_start_',START[1],'.fasta', sep='')), format='fa')
+					write.dna(sqp[, seq.int(START[1], len=length(START))], file=file.path(wdir, paste(gsub('.rda','',wfile),'_primer_',PR[1],'_start_',START[1],'.fasta', sep='')), format='fa', colsep='', nbcol=-1)
 				}, by='PR']	
 		#	extract primer alignments and write to file +- 75 bp
 		subset(dpan, !is.na(START))[, {
-					write.dna(sq[, seq.int(START[1]-75L, len=length(START)+75L)], file=file.path(wdir, paste(gsub('.rda','',wfile),'_primerplusminus75bp_',PR[1],'_start_',START[1],'.fasta', sep='')), format='fa')
-				}, by='PR']			
+					write.dna(sqp[, seq.int(START[1]-75L, len=length(START)+75L)], file=file.path(wdir, paste(gsub('.rda','',wfile),'_primerplusminus75bp_',PR[1],'_start_',START[1],'.fasta', sep='')), format='fa', colsep='', nbcol=-1)
+				}, by='PR']		
+		
+		
 	}
 	#
 	#	calculate number of mutations in primers and gaps in gene regions
@@ -2429,7 +3061,7 @@ treecomparison.explaingaps.collect.data<- function()
 		load(file.path(wdir,wfile))
 		#	get differences relative to HXB2 on primer by primer position (IDX)
 		dpand		<- subset(dpan, !is.na(START))[, {
-					#START	<- rep(812, 21); z<- '2F'
+					#START	<- rep(1894, 23); z<- '1Ra'
 					z		<- PR					
 					psq		<- as.character( sqp[!grepl('HXB2',rownames(sqp)), seq.int(START[1], len=length(START))] )
 					tmp		<- subset(dpan, PR==z)[, gsub('\\.','n',paste(SEQ, collapse=''))]
@@ -2440,15 +3072,15 @@ treecomparison.explaingaps.collect.data<- function()
 						psq	<- psq[, -z]
 						tmp	<- tmp[-z]						
 					}
-					tmp		<- as.data.table( melt( t( t(psq)==tmp ) ) )
+					tmp		<- as.data.table( melt( t( t(psq)==tmp ), varnames=c('TAXA','POS') ) )
 					#sqhxb2i	<- which(grepl('HXB2',rownames(psq)))				
 					#tmp		<- as.data.table( melt( t( t(psq)==psq[sqhxb2i,] ) ) )
-					setnames(tmp, c('Var1','Var2','value'), c('TAXA','POS','NT_DIFF'))
-					tmp2	<- as.data.table( melt( psq=='?' ) )
-					setnames(tmp2, c('Var1','Var2','value'), c('TAXA','POS','MISS'))
+					setnames(tmp, 'value', 'NT_DIFF')
+					tmp2	<- as.data.table( melt( psq=='?', varnames=c('TAXA','POS') ) )
+					setnames(tmp2, 'value', 'MISS')
 					tmp		<- merge(tmp, tmp2, by=c('TAXA','POS'))				
-					tmp2	<- as.data.table( melt( psq=='n' ) )
-					setnames(tmp2, c('Var1','Var2','value'), c('TAXA','POS','ANY'))
+					tmp2	<- as.data.table( melt( psq=='n', varnames=c('TAXA','POS') ) )
+					setnames(tmp2, 'value', 'ANY')
 					tmp		<- merge(tmp, tmp2, by=c('TAXA','POS'))									
 					set(tmp, NULL, 'NT_DIFF', tmp[, as.integer(!NT_DIFF)])
 					#	adjust primer position according to z
@@ -2458,15 +3090,39 @@ treecomparison.explaingaps.collect.data<- function()
 						set(tmp, tmp2, 'POS', tmp[tmp2, POS+1L])
 						z	<- z[-1]
 					}
-					set(tmp, NULL, 'POS', tmp[, paste('PR_',POS,sep='')])
-					set(tmp, NULL, 'POS', tmp[, factor(POS, levels=paste('PR_',1:tmp[, length(unique(POS))],sep=''))])
+					set(tmp, NULL, 'POS', tmp[, paste('PR_',POS,sep='')])					
 					set(tmp, tmp[, which(MISS)], 'NT_DIFF', NA_integer_)
 					set(tmp, tmp[, which(ANY)], 'NT_DIFF', NA_integer_)
 					tmp[, MISS:=NULL]
 					tmp[, ANY:=NULL]
-					tmp
+					#tmp
+					list(TAXA=tmp$TAXA, POS=tmp$POS, NT_DIFF=tmp$NT_DIFF)
 				}, by='PR' ]
-		dpand	<- subset(dpand, !is.na(POS))
+		
+		set(dpand, NULL, 'POS', dpand[, factor(POS, levels=paste('PR_',1:dpand[, length(unique(POS))],sep=''))])
+		set(dpand, NULL, 'TAXA', dpand[, as.character(TAXA)])
+		set(dpand, NULL, 'POS', dpand[, as.character(POS)])
+		#	update 1R
+		tmp		<- dcast.data.table(subset(dpand, PR=='1Ra' | PR=='1Rb'), TAXA+POS~PR, value.var='NT_DIFF')
+		setnames(tmp, c('1Ra','1Rb'), c('pr1Ra','pr1Rb'))
+		tmp[, NT_DIFF:= pr1Ra*pr1Rb]
+		tmp[, PR:='1R']
+		set(tmp, NULL, c('pr1Ra','pr1Rb'), NULL)
+		dpand	<- rbind(subset(dpand, PR!='1R'), tmp)
+		#	update 2F
+		tmp		<- dcast.data.table(subset(dpand, PR=='2Fa' | PR=='2Fb'), TAXA+POS~PR, value.var='NT_DIFF')
+		setnames(tmp, c('2Fa','2Fb'), c('pr2Fa','pr2Fb'))
+		tmp[, NT_DIFF:= pr2Fa*pr2Fb]
+		tmp[, PR:='2F']
+		set(tmp, NULL, c('pr2Fa','pr2Fb'), NULL)
+		dpand	<- rbind(subset(dpand, PR!='2F'), tmp)
+		#	update 2R
+		tmp		<- dcast.data.table(subset(dpand, PR=='2Ra' | PR=='2Rb'), TAXA+POS~PR, value.var='NT_DIFF')
+		setnames(tmp, c('2Ra','2Rb'), c('pr2Ra','pr2Rb'))
+		tmp[, NT_DIFF:= pr2Ra*pr2Rb]
+		tmp[, PR:='2R']
+		set(tmp, NULL, c('pr2Ra','pr2Rb'), NULL)
+		dpand	<- rbind(subset(dpand, PR!='2R'), tmp)
 		#
 		#	calculate number of '?' in each of the gene regions
 		#
@@ -2476,10 +3132,145 @@ treecomparison.explaingaps.collect.data<- function()
 					tmp			<- z[, seq.int(START, END)]
 					tmp			<- apply(tmp=='?', 1, sum)
 					list(	TAXA= names(tmp), UNASS= tmp/(END-START+1L) 	)
+				}, by=c('GENE','START','END','LEN')]
+		#	add number not '?','n','-'
+		tmp		<- dgene[, {					
+					#START<- 812; END_B4NXT<- 4341
+					tmp			<- z[, seq.int(START, END)]
+					tmp			<- apply(!(tmp=='?'|tmp=='n'|tmp=='-'), 1, sum)
+					list(	TAXA= names(tmp), ACTG= tmp/(END-START+1L) 	)
 				}, by=c('GENE','START','END')]
+		dgd		<- merge(dgd, tmp, by=c('GENE','START','END','TAXA'))		
 		dgd		<- subset(dgd, !grepl('HXB2',TAXA))
 		#
 		save(sq, sqp, sqi, dgene, dpan, dpand, dgd, file=file.path(wdir,wfile))
+	}
+	#
+	#	get COMET subtypes
+	#
+	if(0)
+	{
+		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_1F1R_COMETv0.5.txt"
+		dc			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
+		dc[, COMET_R:='COMET_1F1R']
+		dc[, COMET_V:='0.5']
+		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_3F4F_COMETv0.5.txt"
+		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
+		tmp[, COMET_R:='COMET_3F4F']
+		tmp[, COMET_V:='0.5']
+		dc			<- rbind(dc,tmp)		
+		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_4F3R_COMETv0.5.txt"
+		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
+		tmp[, COMET_R:='COMET_4F3R']
+		tmp[, COMET_V:='0.5']
+		dc			<- rbind(dc,tmp)
+		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_1F1R_COMETv2.1.txt"
+		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
+		tmp[, COMET_R:='COMET_1F1R']
+		tmp[, COMET_V:='2.1']
+		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)
+		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_3F4F_COMETv2.1.txt"
+		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
+		tmp[, COMET_R:='COMET_3F4F']
+		tmp[, COMET_V:='2.1']
+		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)		
+		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_4F3R_COMETv2.1.txt"
+		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
+		tmp[, COMET_R:='COMET_4F3R']
+		tmp[, COMET_V:='2.1']
+		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)
+		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_UGfull_COMETv2.1.txt"
+		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
+		tmp[, COMET_R:='COMET_full']
+		tmp[, COMET_V:='2.1']
+		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)
+		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_ZABWfull_COMETv2.1.txt"
+		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
+		tmp[, COMET_R:='COMET_full']
+		tmp[, COMET_V:='2.1']
+		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)
+		dc[, x:=NULL]
+		setnames(dc, c('bootstrap.support','name','subtype','length'), c('COMET_BS','TAXA','COMET_ST','COMET_N'))
+		dc			<- subset(dc, !is.na(TAXA))
+		dc			<- subset(dc, !grepl('HXB2',TAXA))	
+		#	reset length from dgd
+		tmp			<- subset(dgd, GENE%in%c('START-1R','3F-4F','4F-3R','GAG+POL+ENV'))
+		set(tmp,NULL,'ACTG',tmp[,ACTG*LEN])
+		set(tmp,tmp[, which(GENE=='START-1R')],'GENE','COMET_1F1R')
+		set(tmp,tmp[, which(GENE=='3F-4F')],'GENE','COMET_3F4F')
+		set(tmp,tmp[, which(GENE=='4F-3R')],'GENE','COMET_4F3R')
+		set(tmp,tmp[, which(GENE=='GAG+POL+ENV')],'GENE','COMET_full')		
+		setnames(tmp,c('GENE','ACTG'),c('COMET_R','COMET_ACTG'))
+		dc			<- merge(subset(dc,select=c('TAXA','COMET_ST','COMET_R','COMET_N','COMET_V')),subset(tmp,select=c('TAXA','COMET_R','COMET_ACTG')),by=c('TAXA','COMET_R'))
+		if(0)
+		{
+			set(dc, dc[, which(grepl('unassigned', COMET_ST))], 'COMET_ST', 'unassigned')
+			set(dc, dc[, which(grepl('_', COMET_ST))], 'COMET_ST', 'pot_recombinant')
+			set(dc, dc[, which(!COMET_ST%in%c('A1','B','C','D','unassigned','pot_recombinant'))], 'COMET_ST', 'other')			
+		}
+		if(1)	#based on observation that on full genome, all recombinants are 'unassigned'
+		{
+			set(dc, dc[, which(grepl('unassigned', COMET_ST))], 'COMET_ST', 'pot_recombinant')
+			set(dc, dc[, which(grepl('_', COMET_ST))], 'COMET_ST', 'pot_recombinant')
+			set(dc, dc[, which(!COMET_ST%in%c('A1','B','C','D','pot_recombinant'))], 'COMET_ST', 'other')						
+		}
+		#	cross-compare assignments: assignments largely agree, 
+		#	except that COMET2.1 now makes more assignments on short sequences, that are mostly assigned A
+		dc[, table(COMET_ST,COMET_V,COMET_R)]
+		#	use actual length	
+		#set(dc, dc[, which(COMET_N<500 & COMET_V=='0.5')], 'COMET_ST', 'short')
+		set(dc, dc[, which(COMET_ACTG<500 & COMET_V=='0.5')], 'COMET_ST', 'short')
+		set(dc, dc[, which(COMET_ACTG<500 & COMET_V=='2.1')], 'COMET_ST', 'short')
+		#	use COMETv2.1
+		dc			<- subset(dc, COMET_V=='2.1',select=c('TAXA','COMET_R','COMET_ST','COMET_ACTG'))
+		setnames(dc, 'COMET_ACTG','COMET_N')
+		tmp			<- dc[, {
+					ans	<- 'pot_recombinant'
+					z	<- which(!COMET_ST%in%c('short',"unassigned"))
+					if(all(COMET_ST[z]=="A1"))
+						ans<- 'A1'
+					if(all(COMET_ST[z]=="B"))
+						ans<- 'B'
+					if(all(COMET_ST[z]=="C"))
+						ans<- 'C'
+					if(all(COMET_ST[z]=="D"))
+						ans<- 'D'
+					if(all(COMET_ST[z]=="other"))
+						ans<- 'other'
+					if(length(which(COMET_ST=="unassigned"))>1)
+						ans<- 'unassigned'
+					if(all(COMET_ST=="short"))
+						ans<- 'short'
+					list(COMET_R='COMET_CONS',COMET_ST=ans, COMET_N=min(COMET_N))
+				}, by='TAXA']
+		dc			<- rbind(dc, tmp, use.names=TRUE)
+		if(0)
+		{
+			#	check COMET subtype assignments on ZA|BW full
+			tmp			<- merge(dc, subset(dc, COMET_R=='COMET_full' & grepl('ZA|BW',TAXA), TAXA), by='TAXA')
+			tmp			<- dcast.data.table(tmp, TAXA~COMET_R, value.var='COMET_ST')
+			#	check COMET subtype assignments on UG full
+			tmp			<- merge(dc, subset(dc, COMET_R=='COMET_full' & grepl('UG',TAXA), TAXA), by='TAXA')
+			tmp			<- dcast.data.table(tmp, TAXA~COMET_R, value.var='COMET_ST')
+			tmp[, COMET_CLASS:='agree_pure_subtype']
+			set(tmp, tmp[, which(COMET_full=='unassigned' & COMET_CONS%in%c('unassigned','pot_recombinant'))], 'COMET_CLASS', 'agree_pot_recombinant')
+			set(tmp, tmp[, which(COMET_full=='unassigned' & !COMET_CONS%in%c('unassigned','pot_recombinant'))], 'COMET_CLASS', 'by_three_regions:_potentially_wrong_pure_subtype')
+			set(tmp, tmp[, which(COMET_full!='unassigned' & COMET_CONS%in%c('unassigned','pot_recombinant'))], 'COMET_CLASS', 'by_three_regions:_potentially_wrong_pot_recombinant')
+			#	tmp[, table(COMET_CLASS)]
+			#                      agree_pot_recombinant                                  agree_pure_subtype by_three_regions:_potentially_wrong_pot_recombinant		by_three_regions:_potentially_wrong_pure_subtype 
+			#                                        342                                                 343                                                   2                                                  28 
+			#	prop of pure subtypes assignments that may be wrong: 28/(343+28)=0.0754717
+			#	prop of pot recombinant and unassigned in 715 from UG: 370/715=0.517
+			#	prop of pot recombinant and unassigned in 3628 from UG: (579+104)/3628=0.188
+			
+		}		
+		#	ignore check analysis on 'COMET_full'
+		dc			<- subset(dc, COMET_R!='COMET_full')
+		tmp2		<- dcast.data.table(dc, TAXA~COMET_R, value.var='COMET_N')
+		setnames(tmp2, setdiff(colnames(tmp2),'TAXA'), paste(setdiff(colnames(tmp2),'TAXA'),'_N',sep=''))
+		dc			<- dcast.data.table(dc, TAXA~COMET_R, value.var='COMET_ST')
+		dc			<- merge(dc, tmp2, by='TAXA')
+		#
 	}
 	#
 	#	add meta-data
@@ -2524,6 +3315,14 @@ treecomparison.explaingaps.collect.data<- function()
 		set(dst, NULL, 'variable', dst[, paste('SUBTYPE_',toupper(gsub('\\.class','',variable)),sep='')])	
 		dst					<- dcast.data.table(dst, STUDY_ID~variable)
 		dm					<- merge(dm, dst, by='STUDY_ID',all.x=1)
+		#	add COMET subtype data
+		dm					<- merge(dm, dc, by='TAXA',all.x=1)
+		set(dm, dm[, which(is.na(COMET_1F1R))],'COMET_1F1R_N',0L)
+		set(dm, dm[, which(is.na(COMET_1F1R))],'COMET_1F1R','short')
+		set(dm, dm[, which(is.na(COMET_3F4F))],'COMET_3F4F_N',0L)
+		set(dm, dm[, which(is.na(COMET_3F4F))],'COMET_3F4F','short')
+		set(dm, dm[, which(is.na(COMET_4F3R))],'COMET_4F3R_N',0L)
+		set(dm, dm[, which(is.na(COMET_4F3R))],'COMET_4F3R','short')
 		#	add REGA subtype data
 		load("~/Dropbox (Infectious Disease)/PANGEA_alignments/Rega Subtype Analysis/Gag REGA results/regaGag.rda")
 		regaGag		<- as.data.table(regaGag)
@@ -2531,29 +3330,6 @@ treecomparison.explaingaps.collect.data<- function()
 		set(regaGag, NULL, 'assignment', regaGag[, gsub('Check the Report|Check the report|Check the bootscan','Check bootscan', gsub('Subtype ','', gsub('HIV-1 ','', assignment)))])
 		setnames(regaGag, c('assignment','support','pure','pure_support'),c('REGA_GAG_A','REGA_GAG_AS','REGA_GAG_PURE','REGA_GAG_PURES'))
 		dm			<- merge(dm, regaGag, by='TAXA',all.x=1)
-		#	add COMET subtype data
-		indir		<- '~/Dropbox (Infectious Disease)/PANGEA_alignments/Rakai Data for IqTree'
-		infiles		<- data.table(FILE=list.files(indir, full.names=1, pattern='.rda$', recursive=1))	
-		infiles[, GENE:= regmatches(FILE,regexpr('Region[0-9]',FILE))]
-		dc			<- infiles[, {
-					load(FILE)
-					dc			<- as.data.table(summaryData)
-					setnames(dc, 'seqid', 'TAXA')
-					tmp			<- dc[, which(grepl('PG[0-9]+-[A-Z]+', TAXA))]
-					dc[, SITE:= NA_character_]
-					set(dc, tmp, 'SITE', dc[tmp,regmatches(TAXA,regexpr('PG[0-9]+-[A-Z]+', TAXA))])					
-					dc			<- subset(dc, dataSource=='Pangea')
-					set(dc, NULL, 'TAXA', dc[, regmatches(TAXA,regexpr('PG[0-9]+.*', TAXA))])
-					dc			<- subset(dc, select=c(TAXA, CometSubtype))
-					set(dc, NULL, 'CometSubtype', dc[, as.character(CometSubtype)])
-					dc
-				}, by='GENE']
-		set(dc, dc[, which(grepl('unassigned', CometSubtype))], 'CometSubtype', 'unassigned')
-		set(dc, dc[, which(grepl('check', CometSubtype))], 'CometSubtype', 'check')
-		set(dc, dc[, which(!CometSubtype%in%c('A1','A2','B','C','D','unassigned','check'))], 'CometSubtype', 'other')
-		set(dc, NULL, 'GENE', dc[, paste('COMET_',GENE,sep='')])
-		dc			<- dcast.data.table(dc, TAXA~GENE, value.var='CometSubtype')
-		dm			<- merge(dm, dc, by='TAXA',all.x=1)
 		#	add Sanger processing data etc
 		dc			<- data.table(read.csv("~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_Summary.csv"))		
 		setnames(dc, c('Sanger.ID','PANGEA.ID','reference.for.mapping','clinical.genome.coverage'), c('SANGER_ID','PANGEA_ID','REF_4_MAPPING','COV'))		
@@ -2582,7 +3358,7 @@ treecomparison.explaingaps.collect.data<- function()
 		set(tmp2, tmp2[, which(TAXA=='PG14-UG500536-S02540-R2')], 'COV', 8210L)
 		set(tmp2, tmp2[, which(TAXA=='PG14-UG500541-S02545-R2')], 'COV', 5086L)		
 		z			<- subset(tmp2, grepl('-R2',TAXA))
-		z			<- merge(subset(dc, COV>0), subset(z,grepl("PG",TAXA) & COV>0, select=c(PANGEA_ID,TAXA,COV)), by=c('PANGEA_ID','COV'))
+		z			<- merge(subset(dc, COV>0, select=which(colnames(dc)!='TAXA')), subset(z,grepl("PG",TAXA) & COV>0, select=c(PANGEA_ID,TAXA,COV)), by=c('PANGEA_ID','COV'))
 		setnames(z, 'TAXA','TAXA_NEW')
 		dc			<- merge(dc, subset(z, select=c(SANGER_ID,TAXA_NEW)), by='SANGER_ID', all.x=1)
 		tmp2		<- dc[, which(!is.na(TAXA_NEW))]
@@ -2595,6 +3371,8 @@ treecomparison.explaingaps.collect.data<- function()
 		#	complete COHORT
 		set(dm, dm[, which(grepl('UG',PANGEA_ID) & is.na(COHORT))], 'COHORT', 'UG-MRC')
 		set(dm, dm[, which(grepl('ZA',PANGEA_ID) & is.na(COHORT))], 'COHORT', 'AC_Resistance')
+		#	add extraction ID		
+		dm[, EXTRACT_ID:= dm[,gsub('-S','',regmatches(TAXA,regexpr('-S[0-9]+', TAXA)))]]		
 		#	save
 		save(sq, sqp, sqi, dgene, dpan, dpand, dgd, dm, file=file.path(wdir,wfile))		
 	}	
@@ -3533,6 +4311,495 @@ treecomparison.submissions.160713<- function()
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.16
 ##--------------------------------------------------------------------------------------------------------
+treecomparison.submissions.161123<- function()	
+{
+	require(data.table)
+	require(ape)
+	require(adephylo)
+	require(phangorn)
+	require(parallel)
+	#
+	#	get true trees
+	#
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees'
+	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
+	
+	
+	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('Vill.*DATEDTREE', tfiles) ] )
+	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
+	tmp		<- rbind( subset(tfiles, SC=='VILL_99_APR15'), subset(tfiles, SC=='VILL_99_APR15'), subset(tfiles, SC=='VILL_99_APR15') )
+	set(tmp, NULL, 'SC', c('150701_VILL_SCENARIO-C','150701_VILL_SCENARIO-D','150701_VILL_SCENARIO-E'))
+	tfiles	<- rbind(tfiles, tmp)
+	tmp		<- list.files(indir, pattern='newick$', full.names=TRUE)
+	tmp		<- data.table( FILE_T= tmp[ grepl('*DATEDTREE', tmp) ] )
+	tmp[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
+	tfiles	<- rbind(tfiles, tmp)
+	tfiles[, BRL_T:= 'time']	
+	set(tfiles, NULL, 'SC', tfiles[, gsub('161121_','161121_REGIONAL_',SC)])
+	set(tfiles, tfiles[, which(grepl('REG',SC) & grepl('SUBST',FILE_T))], 'BRL_T', 'subst')	
+	ttrs	<- lapply(tfiles[, FILE_T], function(x)	read.tree(file=x) )
+	names(ttrs)	<- tfiles[, SC]	
+	for(z in c('VILL_99_APR15','150701_VILL_SCENARIO-C','150701_VILL_SCENARIO-D','150701_VILL_SCENARIO-E'))
+		ttrs[[z]]	<- root(ttrs[[z]], node=Ntip(ttrs[[z]])+2, resolve.root=1)	
+	tfiles[, IDX_T:=seq_along(ttrs)]
+	tfiles[, TAXAN_T:= sapply(ttrs, Ntip)]
+	#	patristic distances on true trees (by time and subst/site)
+	tbrl	<- lapply(seq_len(nrow(tfiles)), function(i)
+			{
+				ph		<- ttrs[[tfiles[i, IDX_T]]]
+				tmp		<- cophenetic.phylo(ph)				
+				tmp		<- as.data.table(melt(tmp))
+				setnames(tmp, c('Var1','Var2','value'),c('TAXA1','TAXA2','PD'))
+				tmp		<- subset(tmp, TAXA1!=TAXA2)
+				tmp[, IDX_T:= tfiles[i, IDX_T]]
+				tmp[, SC:= tfiles[i, SC]]
+				tmp[, BRL_T:= tfiles[i, BRL_T]]
+				tmp[, TAXAN_T:= tfiles[i, TAXAN_T]]
+				tmp
+			})
+	tbrl	<- do.call('rbind',tbrl)		
+	#	info on true trees
+	tinfo	<- merge(tfiles, do.call('rbind',lapply(seq_along(ttrs), function(i) data.table(TAXA=ttrs[[i]]$tip.label, IDX_T=i))), by='IDX_T')	
+	tinfo[, IDPOP:=NA_character_]
+	tmp		<- tinfo[, which(grepl('REGIONAL',SC))]
+	set(tinfo, tmp, 'IDPOP', tinfo[tmp,regmatches(TAXA, regexpr('IDPOP_[0-9]+',TAXA))])
+	tmp		<- tinfo[, which(!grepl('REGIONAL',SC))]
+	set(tinfo, tmp, 'IDPOP', tinfo[tmp, regmatches(TAXA, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',TAXA))])		
+	stopifnot(subset(tinfo, grepl('VILL',SC))[, length(which(substring(TAXA,1,10)!=substring(IDPOP,1,10)))]==0)	
+	stopifnot( tinfo[, length(which(is.na(IDPOP)))==0] )	
+	set(tinfo, NULL, 'IDPOP', tinfo[,toupper(IDPOP)])
+	set(tinfo, NULL, 'TAXA', tinfo[,toupper(TAXA)])
+	#	read cluster membership from DATEDCLUTREES	
+	tmp		<- list.files(indir, pattern='DATEDCLUTREES', full.names=TRUE)
+	tmp		<- rbind( data.table( 	FILE_CLU_T= tmp, 
+					SC= gsub('161121_','161121_REGIONAL_',toupper(gsub('_DATEDCLUTREES','',gsub('.newick','',basename(tmp))))),
+					BRL_T= 'time'),
+			data.table( 	FILE_CLU_T= tmp, 
+					SC= gsub('161121_','161121_REGIONAL_',toupper(gsub('_DATEDCLUTREES','',gsub('.newick','',basename(tmp))))),
+					BRL_T= 'subst') )
+	tfiles	<- merge(tfiles, tmp, by=c('SC','BRL_T'), all=1)	
+	tmp		<- subset(tfiles, !is.na(FILE_CLU_T))[, {
+				z		<- read.tree(FILE_CLU_T)
+				do.call('rbind',lapply(seq_along(z), function(i) data.table(IDCLU=i, TAXA=z[[i]]$tip.label)))				
+			}, by=c('SC','BRL_T')]	
+	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all=1)
+	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N= length(IDPOP)), by=c('SC','BRL_T','IDCLU')]
+	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','IDCLU'), all=1)
+	#	read sequences and determine %gappiness
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
+	tmp		<- data.table( FILE_SEQ_T= tmp, SC= gsub('_GAG|_FULL|_P17','',gsub('161121_','161121_REGIONAL_',toupper(gsub('_SIMULATED','',gsub('\\.fa|\\.fasta','',basename(tmp)))))))
+	z		<- subset(tmp, SC=='VILL_99_APR15')
+	set(z, NULL, 'SC', '150701_VILL_SCENARIO-C')
+	tmp		<- rbind( tmp, z )	
+	tfiles	<- merge(tfiles, tmp, by='SC', all=1)
+	tmp		<- subset(tfiles, !is.na(FILE_SEQ_T))[, {
+				z		<- read.dna(FILE_SEQ_T, format='fasta')	
+				ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))
+				ans		<- apply(ans[c('n','-','?'),], 2, sum)
+				list(TAXA=rownames(z), GPS=ans)				
+			}, by=c('SC','BRL_T')]
+	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all.x=1)
+	#	add % gaps by gene for regional
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	infiles	<- data.table(FILE=list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$|GTRFIXED.*_SIMULATED.fasta$'))
+	infiles[, SC:= gsub('161121_','161121_REGIONAL_',toupper(gsub('_SIMULATED.fa|_SIMULATED.fasta','',basename(FILE))))]
+	tmp		<- subset(infiles, grepl('TRAIN|FULL', SC))[, {
+				#FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN4_SIMULATED.fa"
+				sq	<- read.dna(FILE, format='fa')
+				seqi<- as.data.table(read.csv(gsub('\\.fa|\\.fasta','_gene.txt',FILE), header=FALSE))
+				seqi[, GENE:= regmatches(V2, regexpr('[a-z]+', V2))]
+				seqi[, START:= as.integer(gsub('-','',regmatches(V2, regexpr('[0-9]+-', V2))))]
+				seqi[, END:= as.integer(gsub('-','',regmatches(V2, regexpr('-[0-9]+', V2))))]
+				seqi	<- subset(seqi, select=c(GENE,START,END))
+				seqi	<- rbind(seqi, data.table(GENE='full', START=1L, END= seqi[, max(END)]))				
+				ans		<- seqi[, {
+							#START<- 1474; END<- 5466
+							z	<- as.character(sq[,START:END])
+							tmp	<- apply(z, 2, function(x) all(x%in%c('-','?'))) 							
+							z	<- z[, !tmp]
+							tmp	<- apply(z, 1, function(x) length(which(x=='?'))) / ncol(z)
+							list(TAXA=names(tmp), GAPS_P=tmp)
+						}, by='GENE']
+				set(ans, NULL, 'GENE', ans[, paste(toupper(GENE),'_GAPS_P',sep='')])
+				ans		<- dcast.data.table(ans, TAXA~GENE, value.var='GAPS_P')
+				ans
+			}, by='SC']
+	z		<- subset(infiles, !grepl('TRAIN|FULL', SC))[, {
+				#FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/161121_GTRFIXED1_GAG_SIMULATED.fasta"
+				sq	<- read.dna(FILE, format='fa')
+				z	<- as.character(sq)
+				zz	<- apply(z, 2, function(x) all(x%in%c('-','?'))) 							
+				z	<- z[, !zz]
+				ans	<- apply(z, 1, function(x) length(which(x=='?'))) / ncol(z)
+				ans	<- data.table(TAXA=names(ans), GAPS_P=ans, GENE=gsub('GTRFIXED[0-9]_','',regmatches(FILE,regexpr('GTRFIXED[0-9]_[A-Z0-9]+',FILE))))				
+				ans
+			}, by='SC']	
+	z	<- dcast.data.table(z, SC+TAXA~GENE, value.var='GAPS_P')
+	setnames(z,c('GAG','P17'),c('GAG_GAPS_P','P17_GAPS_P'))
+	tmp	<- rbind(tmp, z, use.names=TRUE,fill=TRUE)
+	tmp		<- tmp[, list(FULL_GAPS_P=mean(FULL_GAPS_P), GAG_GAPS_P=mean(GAG_GAPS_P), POL_GAPS_P=mean(POL_GAPS_P), ENV_GAPS_P=mean(ENV_GAPS_P), P17_GAPS_P=mean(P17_GAPS_P)), by='SC']
+	tinfo	<- merge(tinfo, tmp, all.x=1, by='SC')	
+	#
+	# to tinfo add actual transmitters
+	#
+	# check TRAIN1
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tinfo.add		<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tinfo.add		<- merge(tinfo.add, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
+	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
+	# check TRAIN2
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='150701_REGIONAL_TRAIN2']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN4
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN4' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )	
+	tmp[, SC:='150701_REGIONAL_TRAIN4']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN3
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN3' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='150701_REGIONAL_TRAIN3']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN5
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN5' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	tmp[, SC:='150701_REGIONAL_TRAIN5']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check GTRFIXED2
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED2_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED2' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )	
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_GTRFIXED2']
+	tinfo.add		<- rbind(tinfo.add, tmp)	
+	# check GTRFIXED3
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED3_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED3' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )	
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_GTRFIXED3']
+	tinfo.add		<- rbind(tinfo.add, tmp)	
+	# check GTRFIXED1
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED1_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED1' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )	
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_GTRFIXED1']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	#
+	# 	add transmitters for regional to tinfo
+	#
+	tinfo			<- merge(tinfo, tinfo.add, by=c('IDPOP', 'SC'), all.x=1)
+	#
+	#	add true node depths to tinfo
+	#
+	tmp				<- tinfo[,	{
+				cat(IDX_T,'\n')
+				ph<- ttrs[[IDX_T]]
+				list(DEPTH_T=node.depth.edgelength(ph)[seq_len(Ntip(ph))], TAXA=ph$tip.label)
+			}, by='IDX_T']
+	tinfo			<- merge(tinfo, tmp, by=c('IDX_T','TAXA'), all.x=1)
+	#
+	# compute closest individual on true trees
+	#
+	tmp				<- unique(subset(tinfo, select=c(SC, BRL_T, IDX_T)))	
+	tmp				<- tmp[, {
+				print(IDX_T)
+				ph			<- ttrs[[IDX_T]]
+				model.reg	<- grepl('REGIONAL',SC)
+				treedist.closest.ind(ph, model.reg)
+			}, by=c('SC','BRL_T','IDX_T')]
+	tinfo			<- merge(tinfo, tmp, by=c('SC','BRL_T','IDX_T','IDPOP'))
+	set(tinfo, NULL, 'IDPOP_CL', tinfo[, gsub('IDPOP_','',IDPOP_CL)])	
+	#
+	#	add if transmitter sampled
+	#
+	tmp				<- subset(tinfo, grepl('REGIONAL',SC))	
+	set(tmp, NULL, 'IDPOP', tmp[,as.integer(gsub('IDPOP_','',IDPOP))])
+	setkey(tmp, IDX_T, IDPOP)
+	tmp	<- unique(tmp)[, {
+				z	<- IDX_T
+				list(IDTR_SAMPLED=ifelse(IDTR%in%subset(tmp, IDX_T==z)[['IDPOP']], 'Y', 'N'))
+			}, by=c('IDX_T','IDPOP')]
+	set(tmp, NULL, 'IDPOP', tmp[, paste('IDPOP_',IDPOP,sep='')])
+	tinfo	<- merge(tinfo, tmp, by=c('IDX_T','IDPOP'),all.x=1)
+	#
+	#	get submitted trees
+	#	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps2'
+	infiles	<- list.files(indir, pattern='newick$', recursive=1, full.names=1)
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simple_GTR'
+	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))	
+	infiles	<- data.table(FILE=infiles)
+	strs	<- lapply(infiles[, FILE], function(x)
+			{
+				cat('\n',x)
+				read.tree(file=x)	
+			})
+	names(strs)	<- infiles[, FILE]
+	#
+	#
+	#
+	submitted.info			<- data.table(FILE=names(strs))
+	submitted.info[, IDX:=seq_along(strs)]
+	#
+	# set team
+	#			
+	submitted.info[, TEAM:=NA_character_]
+	set(submitted.info, submitted.info[, which(grepl('running_gaps',FILE))], 'TEAM', 'RUNGAPS2')
+	set(submitted.info, submitted.info[, which(grepl('simple_GTR',FILE))], 'TEAM', 'GTRFIXED')	
+	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )	
+	#
+	#	scenario
+	#	
+	submitted.info[, SC:=NA_character_]
+	tmp		<- submitted.info[, which(grepl('161121_GTRFIXED[0-9]', FILE))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, gsub('161121_','161121_REGIONAL_',regmatches(FILE, regexpr('161121_GTRFIXED[0-9]',FILE)))])
+	tmp		<- submitted.info[, which(grepl('150701_Regional_TRAIN2', FILE))]
+	set(submitted.info, tmp, 'SC', submitted.info[tmp, regmatches(FILE, regexpr('150701_Regional_TRAIN2',FILE))])
+	set(submitted.info, NULL, 'SC', submitted.info[, toupper(SC)])
+	stopifnot( submitted.info[, length(which(is.na(SC)))==0] )
+	#
+	#	define running gaps for the running gaps analysis
+	#
+	submitted.info[, RUNGGAPS_EXCL:=NA_real_]	
+	set(submitted.info, tmp, 'RUNGAPS', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])	
+	#
+	#	define running gaps2 selected fraction
+	#
+	submitted.info[, RUNGAPS_EXCL:=NA_real_]	
+	tmp		<- submitted.info[, which(TEAM=='RUNGAPS2')]
+	set(submitted.info, tmp, 'RUNGAPS_EXCL', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',FILE))/100])	
+	#
+	#	set covariates of scenarios
+	#
+	tmp		<- data.table(	SC=		c("150701_REGIONAL_TRAIN1","150701_REGIONAL_TRAIN2","161121_REGIONAL_GTRFIXED1","161121_REGIONAL_GTRFIXED2","161121_REGIONAL_GTRFIXED3","150701_REGIONAL_TRAIN3","150701_REGIONAL_TRAIN4" ,"150701_REGIONAL_TRAIN5", "150701_VILL_SCENARIO-A", "150701_VILL_SCENARIO-B", "VILL_99_APR15","150701_VILL_SCENARIO-C", "150701_VILL_SCENARIO-D", "150701_VILL_SCENARIO-E"),
+			MODEL=	c('R','R','R','R','R','R','R','R','V','V','V','V','V','V'),
+			SEQCOV= c(0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6),
+			ACUTE=	c('low', 'low', 'low', 'low', 'low',  'high', 'low', 'high', 'high', 'high', 'high', 'high', 'high', 'high'),
+			GAPS=	c('none', 'low', 'none', 'low', 'high', 'low', 'high', 'high', 'low', 'high', 'none', 'none', 'low', 'high'), 
+			ART=	c('none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'fast', 'fast', 'fast', 'fast'),
+			EXT= 	c('5pc', '5pc', '5pc', '5pc', '5pc', '5pc', '5pc', '5pc', '~0pc', '~0pc', '~0pc', '~0pc', '~0pc', '~0pc')	)
+	submitted.info	<- merge(submitted.info, tmp, by='SC')
+	#
+	#	set which gene used to construct tree (either pol or concatenated gag+pol+env)
+	#
+	submitted.info[, GENE:=NA_character_]
+	set(submitted.info, submitted.info[, which(grepl('FULL', FILE))], 'GENE', 'GAG+POL+ENV')	
+	set(submitted.info, submitted.info[, which(grepl('GAG', FILE))], 'GENE', 'GAG')
+	set(submitted.info, submitted.info[, which(grepl('P17', FILE))], 'GENE', 'P17')
+	set(submitted.info, submitted.info[, which(grepl('GTRFIXED', FILE))], 'GENE', 'GAG+POL+ENV')
+	stopifnot(nrow(subset(submitted.info, TEAM=='RAXML' & is.na(GENE)))==0)
+	#
+	#	best tree for each scenario
+	#
+	submitted.info[, BEST:='N']
+	#
+	#	set OTHER (ie old or some preliminary/unknown tree)
+	#
+	submitted.info[, OTHER:='N']
+	#
+	#	add BRL_UNITS
+	#
+	submitted.info[, BRL:='subst']
+	#
+	#	number taxa in tree
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, TAXAN:= sapply(strs, Ntip)]	
+	#
+	#	add index of true tree
+	#
+	require(phangorn)
+	tmp				<- subset(tfiles, select=c('SC','IDX_T','BRL_T'))
+	setkey(tmp, SC, BRL_T)
+	tmp				<- unique(tmp)
+	tmp				<- dcast.data.table(tmp, SC~BRL_T, value.var='IDX_T')
+	setnames(tmp, c('subst','time'), c("SUB_IDX_T","TIME_IDX_T"))
+	submitted.info	<- merge(submitted.info, tmp, by='SC')
+	submitted.info	<- merge(submitted.info, unique(subset(tfiles, select=c('SC','TAXAN_T'))), by='SC')	
+	stopifnot(nrow(subset(submitted.info, TAXAN>TAXAN_T))==0)
+	#
+	#	fix taxa names that teams have changed
+	#
+	tmp		<- subset(submitted.info, TEAM=='IQTree' & MODEL=='R')[, IDX]
+	for(i in tmp)
+	{
+		strs[[i]]$tip.label		<- sapply(strsplit(strs[[i]]$tip.label,'_'), function(x)	paste(x[1],'_',x[2],'|',x[3],'|',x[4],'_',x[5],'|',x[6],sep='')	)		
+	}
+	for(i in seq_along(strs))
+	{
+		strs[[i]]$tip.label		<- toupper(strs[[i]]$tip.label)		
+	}
+	for(i in seq_along(ttrs))
+	{
+		ttrs[[i]]$tip.label	<- toupper(ttrs[[i]]$tip.label)
+	}		
+	tmp2	<- subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA))
+	setkey(tmp2, IDPOP,SC,TAXA)
+	tmp2	<- unique(tmp2)
+	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='R')[, IDX]
+	for(i in tmp)
+	{		
+		cat(i,'\n')
+		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('IDPOP_[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
+		z	<- merge(tmp2, z, by=c('IDPOP','SC'))
+		setkey(z, IDX)
+		stopifnot(nrow(z)==Ntip(strs[[i]]))
+		strs[[i]]$tip.label	<- z[, TAXA]			
+	}
+	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='V')[, IDX]
+	for(i in tmp)
+	{
+		cat(i,'\n')
+		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
+		z	<- merge(tmp2, z, by=c('IDPOP','SC'))
+		stopifnot(nrow(z)==length(strs[[i]]$tip.label))
+		setkey(z, IDX)
+		strs[[i]]$tip.label	<- z[, TAXA]		
+	}
+	#
+	#	check labels and remove labels that do not appear in the observed tree
+	#
+options(warn=2)
+	tmp	<- submitted.info[, {				
+				stree		<- unroot(strs[[IDX]])
+				otree		<- unroot(ttrs[[TIME_IDX_T]])				
+				z			<- setdiff(otree$tip.label, stree$tip.label)
+				list(CHECK= length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+			}, by='IDX']
+	tmp	<- merge(subset(tmp, !CHECK), submitted.info, by='IDX')
+	for(i in seq_len(nrow(tmp)))
+	{
+		j			<- tmp[i, IDX]
+		cat('\n',j)		
+		otree		<- tmp[i, TIME_IDX_T]
+		stree		<- unroot(strs[[j]])
+		otree		<- unroot(ttrs[[otree]])					
+		z			<- merge( data.table(TAXA=stree$tip.label, TYPE='s'), data.table(TAXA=otree$tip.label, TYPE='o'), by='TAXA', all=1)			
+		strs[[j]]	<- drop.tip(stree, subset( z, is.na(TYPE.y))[, TAXA])		
+	}
+	submitted.info[, TAXAN:= sapply(strs, Ntip)]
+	#
+	#	are trees rooted?
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, ROOTED:=factor(sapply(strs, is.rooted),levels=c(TRUE,FALSE),labels=c('Y','N'))]
+	#
+	#	read LSD trees
+	#
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD'
+	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick', full.names=TRUE))
+	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
+	setkey(infiles, IDX)
+	strs_lsd		<- vector('list', submitted.info[, max(IDX)])
+	for(i in seq_len(nrow(infiles)))		
+	{
+		#	i<- 439
+		IDX						<- infiles[i,IDX]
+		FILE					<- infiles[i,FILE]
+		cat('\n',IDX)
+		ph						<- read.tree(FILE)
+		stopifnot( !is.null(ph) )
+		stopifnot( identical(sort(strs_rtt[[IDX]]$tip.label), sort(ph$tip.label)) )
+		strs_lsd[[IDX]]			<- ph
+		#names(strs_lsd[[IDX]])	<- FILE					
+	}
+	setkey(submitted.info, IDX)
+	submitted.info[, WITH_LSD:= factor(sapply(strs_lsd, is.null), levels=c(TRUE,FALSE), labels=c('N','Y'))]	 	
+	#
+	#	SAVE so far
+	#
+	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	save(strs, strs_lsd, ttrs, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_161123.rda'))	
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.16
+##--------------------------------------------------------------------------------------------------------
 treecomparison.submissions.160627<- function()	
 {
 	require(data.table)
@@ -4208,8 +5475,11 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_Inf')	
 		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
 		tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=0.045)
-		setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_45')	
-		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)		
+		setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_45')			
+		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
+		tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=0.01)
+		setnames(tmp, c('TPAIR_PHCL_T','NTPAIR_PHCL_T'), c('TPAIR_PHCL_T_1','NTPAIR_PHCL_T_1'))			
+		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)				
 		tinfo.pairs		<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf, rtn.pairs=TRUE)
 		setnames(tinfo.pairs, 'TRUE_PAIR','TRUE_PAIR_Inf')
 		#
@@ -4220,7 +5490,10 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
 		tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, strs, gd.thresh=0.045)
 		setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_45')		
-		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
+		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
+		tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, strs, gd.thresh=0.01)
+		setnames(tmp, c('TPAIR_PHCL', 'NTPAIR_PHCL'), c('TPAIR_PHCL_1', 'NTPAIR_PHCL_1'))		
+		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)			
 		tmp				<- treedist.closest.ind.reconstructed.oftruepairs(submitted.info, tinfo.pairs, strs)
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
 		#
@@ -5198,19 +6471,19 @@ treecomparison.ana.160627.sclu<- function()
 	#
 	#	KC distance standardized with TEAMS separated
 	#
-	tmp		<- subset(sc, ACUTE=='low' & TEAM=='IQ-TREE')
+	tmp		<- subset(sc, ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('IQ-TREE', 'PhyML', 'RAxML', 'MetaPIGA'))
 	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
 	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])
 	ggplot(tmp, aes(x=GAPS)) +
-			geom_jitter(aes(y=KCAme, colour=GENE), position=position_jitter(w=0.8, h = 0), size=2) +			
+			geom_jitter(aes(y=KCAme, pch=TEAM, colour=GENE), position=position_jitter(w=0.8, h = 0), size=2) +			
 			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
 			scale_y_continuous(expand=c(0,0), limits=c(0,2)) + #, breaks=seq(0,1,0.1), minor_breaks=seq(0,1,0.05)) +
 			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
-			labs(	x='\nUnassembled sites in simulated sequences', 
-					y='incorrectly estimated topologies of subtrees with 4 taxa\n(standardized Quartett distance)\n',
-					colour='part of genome used\nfor tree reconstruction',
-					pch='algorithm') +
-			theme_bw() + theme(legend.position='bottom') + facet_grid(~TEAM)
+			labs(	x='\nunassembled PANGEA-HIV sequences', 
+					y='standardized Quartett distance\n',
+					colour='part of simulated genome\nused or tree reconstruction',
+					pch='tree reconstruction\nmethod') +
+			theme_bw() + theme(legend.position='bottom') 
 	file	<- file.path(edir, paste(timetag,'_','KC_clumean_polvsall_by_gaps_taxan1600_Acute10pc_by_IQTree.pdf',sep=''))	
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
 	#
@@ -5234,19 +6507,20 @@ treecomparison.ana.160627.sclu<- function()
 	#
 	#	quartett distance standardized by n choose 4 only IQ-Tree
 	#
-	tmp		<- subset(sc, ACUTE=='low' & TEAM=='IQ-TREE')
+	tmp		<- subset(sc, ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('IQ-TREE', 'PhyML', 'RAxML', 'MetaPIGA'))
+	tmp[, list(NQDme=mean(NQDme)), by=c('SC','GENE')]
 	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
 	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])
 	ggplot(tmp, aes(x=GAPS)) +
-			geom_jitter(aes(y=NQDme, colour=GENE), position=position_jitter(w=0.8, h = 0), size=2) +			
+			geom_jitter(aes(y=NQDme, pch=TEAM, colour=GENE), position=position_jitter(w=0.8, h = 0), size=2) +			
 			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
-			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.32), breaks=seq(0,1,0.1), minor_breaks=seq(0,1,0.05)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.28), breaks=seq(0,1,0.1), minor_breaks=seq(0,1,0.05)) +
 			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
 			labs(	x='\nUnassembled sites in simulated sequences', 
-					y='incorrectly estimated topologies of subtrees with 4 taxa\n(standardized Quartett distance)\n',
-					colour='part of genome used\nfor tree reconstruction',
-					pch='algorithm') +
-			theme_bw() + theme(legend.position='bottom') + facet_grid(~TEAM)
+					y='proportion among all subtrees with 4 taxa\n',
+					colour='part of simulated genome\nused for tree reconstruction',
+					pch='tree reconstruction\nmethod') +
+			theme_bw() + theme(legend.position='bottom')
 	file	<- file.path(edir, paste(timetag,'_','QD_clumean_polvsall_by_gaps_taxan1600_Acute10pc_IQTree.pdf',sep=''))
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)	
 	#
@@ -5347,11 +6621,30 @@ treecomparison.ana.160627.sclu<- function()
 					pch='algorithm') +
 			theme_bw() + theme(legend.position='bottom') + facet_grid(variable~TEAM, scales='free_y')
 	file	<- file.path(edir, paste(timetag,'_','TOPOOTHER_clumean_polvsall_by_gaps_taxan1600_Acute10pc_withMVR.pdf',sep=''))
-	ggsave(file=file, w=20, h=15, useDingbats=FALSE)
-	
+	ggsave(file=file, w=20, h=15, useDingbats=FALSE)	
+	#
+	#	increasing gap coverage with ExaML - missing sites
+	#
+	tmp		<- subset(sc, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+	tmp		<- subset(tmp, GENE=='gag' & RUNGAPS==0.02 | GENE=='gag (p17)' & RUNGAPS==0.02 | GENE=='gag+pol+env')
+	tmp[, MISSING_P:= (RUNGAPS*GENE_L + (6807-GENE_L))/6807]
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])	
+	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_point(aes(y=NQDme, colour=GENE), size=2, pch=16) +
+			scale_colour_manual(values=c('gag (p17)'="#8C510A", 'gag'='red','gag+pol+env'="#3F4788FF")) +
+			scale_shape_manual(values=c('Botswana'=23, 'Uganda'=24)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 1), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.3), breaks=seq(0,1,0.05)) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nProportion of missing sites, relative to gag+pol+env genome', 
+					y='proportion among all subtrees with 4 taxa\n',
+					colour='part of simulated genome\nused for tree reconstruction') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_p17full_by_missingsites_taxan1600_Acute10pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7)
 	#
 	#	increasing gap coverage with ExaML
-	#
+	#	
 	tmp		<- subset(sc, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
 	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
 	setkey(tmp, GENE, RUNGAPS)	
@@ -5419,24 +6712,69 @@ treecomparison.ana.160627.strs<- function()
 	sa		<- subset(sa, OTHER=='N')
 	#
 	#	on full tree
-	#		
-	#	proportion of recovered transmission pairs 
 	#	
-	tmp		<- subset(sa, !is.na(TR_PAIR_rec) & ACUTE=='10%' & TEAM%in%c('IQ-TREE', 'PhyML', 'RAxML', 'MetaPIGA'))
+	
+	#
+	#	true transmission pairs among closest with distance < 1% 
+	#	
+	tmp		<- subset(sa, ACUTE=='10%' & GENE=='gag+pol+env' & TEAM%in%c('PhyML','MetaPIGA','IQ-TREE', 'RAxML'), select=c(IDX, GENE, TEAM, GAPS, TPAIR_PHCL_1, NTPAIR_PHCL_1))
 	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
 	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])	
 	ggplot(tmp, aes(x=GAPS)) +
-			geom_jitter(aes(y=TR_PAIR_rec, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
+			geom_jitter(aes(y=NTPAIR_PHCL_1/(TPAIR_PHCL_1+NTPAIR_PHCL_1), colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
 			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
 			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
-			scale_y_continuous(labels = scales::percent, limit=c(0.5,1)) +
-			labs(	x='\nUnassembled sites in full-genome sequences', 
-					y='phylogenetically closest pairs of individuals\nthat are transmission pairs, out of all such pairs\nthat can be identified in the true tree\n',					
-					colour='part of genome used\nfor tree reconstruction',
-					pch='algorithm') +
+			scale_y_continuous(labels = scales::percent, limits=c(0,1), expand=c(0,0)) +
+			labs(	x='\nunassembled sites of PANGEA-HIV sequences', 
+					y='no transmission pair\n',					
+					colour='part of simulated genome\nused for tree reconstruction',
+					pch='tree reconstruction\nmethod') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_by_gaps.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	#
+	#
+	#
+	tmp		<- subset(sa, ACUTE=='10%' & GENE=='gag+pol+env' & TEAM%in%c('PhyML', 'MetaPIGA','IQ-TREE', 'RAxML'), select=c(IDX, GENE, TEAM, GAPS, TPAIR_PHCL_1, NTPAIR_PHCL_1))
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])
+	tmp		<- melt(tmp, measure.vars=c('TPAIR_PHCL_1','NTPAIR_PHCL_1'))
+	set(tmp, tmp[, which(variable=='TPAIR_PHCL_1')], 'variable', 'Yes')
+	set(tmp, tmp[, which(variable=='NTPAIR_PHCL_1')], 'variable', 'No')
+	ggplot(tmp, aes(x=factor(IDX), fill=variable)) +
+			geom_bar(aes(y=value), stat='identity', position='stack') +
+			facet_wrap(~TEAM+GAPS, ncol=3, scales='free') +
+			scale_fill_manual(values=c('Yes'='red','No'="grey60")) +
+			labs(	x='\nreplicate tree reconstructions', 
+					y='phylogenetic pairs < 1% subst/site\n',					
+					fill='true transmission pair\nin simulation') +
+			theme_bw() + theme(legend.position='bottom', axis.text.x=element_blank(), axis.ticks.x=element_blank())
+	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_by_gaps_long.pdf',sep=''))
+	ggsave(file=file, w=8, h=12, useDingbats=FALSE)
+	
+	#
+	#	proportion of recovered transmission pairs 
+	#	
+	tmp		<- subset(sa, !is.na(TR_PAIR_rec) & ACUTE=='10%' & GENE=='gag+pol+env' & TEAM%in%c('IQ-TREE', 'PhyML', 'RAxML', 'MetaPIGA'))
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])	
+	ggplot(tmp, aes(x=GAPS)) +
+			geom_jitter(aes(y=1-TR_PAIR_rec, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
+			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, limit=c(0,0.25)) +
+			labs(	x='\nunassembled sites of PANGEA-HIV sequences', 
+					y='proportion of sampled transmission pairs\n',					
+					colour='part of simulated genome used\nfor tree reconstruction',
+					pch='tree reconstruction method') +
 			theme_bw() + theme(legend.position='bottom')
 	file	<- file.path(edir, paste(timetag,'_','pTransPairRecovered_by_gaps.pdf',sep=''))
 	ggsave(file=file, w=5, h=7, useDingbats=FALSE)
+	#		
+	#	proportion of recovered transmission pairs RAxML
+	#	
+	tmp		<- subset(sa, !is.na(TR_PAIR_rec) & ACUTE=='10%' & TEAM=='RAxML')
+	tmp[, list(TR_PAIR_nrec_pc= mean(1-TR_PAIR_rec) ), by=c('SC','GENE')]
 	#		
 	#	proportion of recovered transmission pairs IQTree
 	#	
@@ -5489,11 +6827,54 @@ treecomparison.ana.160627.strs<- function()
 	file	<- file.path(edir, paste(timetag,'_','pTransPairRecovered_by_gaps_by_TEAM_withBioNJMVR.pdf',sep=''))
 	ggsave(file=file, w=15, h=6, useDingbats=FALSE)	
 	#
+	#	proportion of recovered transmission pairs by rungaps -- overall missing sites
+	#	
+	#	confirm proportion unassembled
+	if(0)
+	{
+		dre		<- data.table(FA=list.files('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations', pattern='fa$', full.names=TRUE))	
+		dre[, GENE:= sapply(strsplit(basename(FA),'_'),'[[',4)]
+		dre[, RUNGAPS:= sapply(strsplit(basename(FA),'_'),'[[',3)]
+		set(dre, NULL, 'RUNGAPS', dre[, as.numeric(gsub('TRAIN2','',RUNGAPS))/100])
+		set(dre, NULL, 'GENE', dre[, as.character(factor(GENE, levels=c('P17','GAG','GAGPP', 'FULL'), labels=c('gag (p17)', 'gag', 'gag + pol (prot,p51)','gag+pol+env')))])
+		dre		<- dre[, {
+					sq	<- read.dna(FA, format='fa')
+					z	<- apply(as.character(sq),1,function(x) length(which(x=='?'))) / ncol(sq)
+					list(RUNGAPS_E=mean(z))
+				}, by=c('FA','GENE','RUNGAPS')]
+		dre[, FA:=NULL]	
+		tmp		<- subset(sa, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+		tmp		<- merge(dre, tmp, by=c('GENE','RUNGAPS'))
+		tmp[, MISSING_P_E:= (RUNGAPS_E*GENE_L + (6807-GENE_L))/6807]
+		tmp[, MISSING_P:= (RUNGAPS*GENE_L + (6807-GENE_L))/6807]
+	}
+	tmp		<- subset(sa, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+	tmp		<- subset(tmp, GENE=='gag' & RUNGAPS==0.02 | GENE=='gag (p17)' & RUNGAPS==0.02 | GENE=='gag+pol+env')
+	tmp[, MISSING_P:= (RUNGAPS*GENE_L + (6807-GENE_L))/6807]
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
+	setkey(tmp, GENE, RUNGAPS)			
+	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_point(aes(y=1-TR_PAIR_rec, colour=GENE), size=2, pch=16) +
+			#geom_line(aes(y=1-TR_PAIR_recSM, colour=GENE), size=0.5) +
+			#geom_point(data=tmp2, aes(y=1-TR_PAIR_recSM, pch=LOC), size=2.5, fill='black') +			
+			scale_colour_manual(values=c('gag (p17)'="#8C510A", 'gag + pol (prot,p51)'='green','gag'='red','gag+pol+env'="#3F4788FF")) +
+			scale_shape_manual(values=c('Botswana'=23, 'Uganda'=24)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.15)) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nproportion of missing sites, relative to gag+pol+env genome', 
+					y='proportion of sampled transmission pairs\n',
+					colour='part of simulated genome\nused for tree reconstruction',
+					pch='sampling location') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','pTransPairRecovered_p17full_by_missingsites_taxan1600_Acute10pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7, useDingbats=FALSE)
+	#
 	#	proportion of recovered transmission pairs by rungaps
 	#
 	tmp		<- subset(sa, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
 	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
-	setkey(tmp, GENE, RUNGAPS)	
+	setkey(tmp, GENE, RUNGAPS)			
 	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
 								TR_PAIR_recSM= predict(loess(TR_PAIR_rec~RUNGAPS, span=5))), 
 						by='GENE']
@@ -5619,7 +7000,10 @@ treecomparison.ana.160627.strs<- function()
 	ggsave(file=file, w=12, h=6, useDingbats=FALSE)
 	#		
 	#	MAE overall by TEAM (similar)
-	#		
+	#	
+	tmp		<- subset(sa, !is.na(TR_PAIR_rec) & ACUTE=='10%' & TEAM%in%c('IQ-TREE', 'PhyML', 'MetaPIGA', 'RAxML'))
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])	
 	ggplot(subset(tmp, !is.na(MAE_LSD)), aes(x=GAPS)) +
 			geom_jitter(aes(y=MAE_LSD, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
 			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
@@ -5659,25 +7043,30 @@ treecomparison.ana.160627.strs<- function()
 					pch='sampling location') +
 			theme_bw() + theme(legend.position='bottom') 
 	file	<- file.path(edir, paste(timetag,'_','MAE_p17full_by_rungaps_taxan1600_Acute10pc.pdf',sep=''))
-	ggsave(file=file, w=5, h=7, useDingbats=FALSE)		
+	ggsave(file=file, w=5, h=7, useDingbats=FALSE)
+	#		
+	#	MAE of transmission pairs by RAxML
+	#		
+	tmp		<- subset(sa, !is.na(MAE_TP_LSD) & ACUTE=='10%' & TEAM=='RAxML')
+	tmp[, list(MAE=mean(MAE_TP_LSD)), by=c('SC','GENE')]
 	#		
 	#	MAE of transmission pairs by TEAM
 	#		
-	tmp		<- subset(sa, !is.na(MAE_TP_LSD) & ACUTE=='10%' & TEAM%in%c('IQ-TREE', 'PhyML', 'MetaPIGA', 'RAxML'))
+	tmp		<- subset(sa, !is.na(MAE_TP_LSD) & ACUTE=='10%' & GENE=='gag+pol+env' & TEAM%in%c('IQ-TREE', 'PhyML', 'MetaPIGA', 'RAxML'))
 	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
 	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])	
 	ggplot(subset(tmp, !is.na(MAE_TP_LSD)), aes(x=GAPS)) +
-			geom_jitter(aes(y=MAE_TP_LSD, colour=GENE), position=position_jitter(w=0.8, h = 0), size=2) +
+			geom_jitter(aes(y=MAE_TP_LSD, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
 			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
 			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
-			scale_y_log10(expand=c(0,0), limit=c(1,1.5e3), breaks=c(1,10,100,1000), minor_breaks=c(seq(1,10,1),seq(10,100,10),seq(100,1000,100),seq(1000,10000,1000))) +			
-			labs(	x='\nUnassembled sites in full-genome sequences', 
-					y='mean absolute error in dated branches\namong sampled transmission pairs\n(years)\n',					
-					colour='part of genome used\nfor tree reconstruction',
-					pch='algorithm') +
-			theme_bw() + theme(legend.position='bottom') + facet_grid(~TEAM)
+			scale_y_log10(expand=c(0,0), limits=c(1,10), breaks=c(1,1.5,2,3,4,5,10)) +			
+			labs(	x='\nunassembled sites of PANGEA-HIV sequences', 
+					y='mean absolute error (years)\n',					
+					colour='part of simulated genome\nused for tree reconstruction',
+					pch='tree reconstruction\nmethod') +
+			theme_bw() + theme(legend.position='bottom')
 	file	<- file.path(edir, paste(timetag,'_','MAETP_by_gaps_by_TEAM.pdf',sep=''))
-	ggsave(file=file, w=12, h=5, useDingbats=FALSE)
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
 	#		
 	#	MAE of transmission pairs IQTree
 	#		
@@ -5698,6 +7087,28 @@ treecomparison.ana.160627.strs<- function()
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)		
 	#
 	#	MAE of transmission pairs by by rungaps
+	#
+	tmp		<- subset(sa, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+	tmp		<- subset(tmp, GENE=='gag' & RUNGAPS==0.02 | GENE=='gag (p17)' & RUNGAPS==0.02 | GENE=='gag+pol+env')
+	tmp[, MISSING_P:= (RUNGAPS*GENE_L + (6807-GENE_L))/6807]
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])	
+	#set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'))])
+	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_point(aes(y=MAE_TP_LSD, colour=GENE), size=2, pch=16) +
+			#geom_line(aes(y=MAE_TP_LSD_SM, colour=GENE), size=0.5) +
+			#geom_point(data=tmp2, aes(y=MAE_TP_LSD_SM, pch=LOC), size=2.5, fill='black') +			
+			scale_colour_manual(values=c('gag (p17)'="#8C510A", 'gag + pol (prot,p51)'='green','gag'='red','gag+pol+env'="#3F4788FF")) +
+			scale_shape_manual(values=c('Botswana'=23, 'Uganda'=24)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,1)) +
+			scale_y_continuous(expand=c(0,0), limit=c(0,6), breaks=seq(0,10,1), minor_breaks=seq(0,10,.5)) +			
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nProportion of missing sites relative to gag+pol+env genome', 
+					y='mean absolute error (years)\n',
+					colour='part of simulated genome used\nfor tree reconstruction') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','MAETP_p17full_by_missingsites_taxan1600_Acute10pc.pdf',sep=''))
+	ggsave(file=file, w=5, h=7, useDingbats=FALSE)	
+	#
 	#
 	tmp		<- subset(sa, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
 	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
@@ -5849,9 +7260,8 @@ treecomparison.ana.160627<- function()
 	#		
 	
 	#	prob closest on 4.5% (confounded by branch lengths)
-	tmp		<- merge(sa, subset(lba.su, OUTLIER_P<0.2, IDX), by='IDX')
-	tmp		<- copy(sa)
-	tmp		<- subset(tmp, !is.na(TR_REC_perc_45) & ACUTE=='10%' & TEAM%in%c('RAXML','IQTree'))
+	#tmp		<- merge(sa, subset(lba.su, OUTLIER_P<0.2, IDX), by='IDX')	
+	tmp		<- subset(sa, !is.na(TR_REC_perc_45) & GENE=='gag+pol+env' & ACUTE=='10%' & TEAM%in%c('RAxML','IQ-TREE'))
 	ggplot(tmp, aes(x=GAPS)) +
 			geom_jitter(aes(y=TR_REC_perc_45, colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
 			scale_shape_manual(values=c('IQTree'=15, 'PhyML'=12, 'RAXML'=8, 'MetaPIGA'=17)) +

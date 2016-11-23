@@ -18,10 +18,10 @@ all:
 		
 seq-gen:
 	echo $(CWD)	
-	tar -zxvf ../inst/ext/Seq-Gen.git.151006.tar.gz
-	make -C Seq-Gen.git.151006/source 
-	mv -f $(CWD)/Seq-Gen.git.151006/source/seq-gen ../inst/ext/seq-gen
-	rm -rf Seq-Gen.git.151006	
+	tar -zxvf ../inst/ext/seq-gen_v161121.tar.gz
+	make -C Seq-Gen/source 
+	mv -f $(CWD)/Seq-Gen/source/seq-gen ../inst/ext/seq-gen
+	rm -rf Seq-Gen	
 
 hptn-high:
 	echo $(CWD)	

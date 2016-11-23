@@ -1163,7 +1163,9 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 	#
 	tmp2				<- df.epi[, {
 										tmp2	<- df.inds[ which( df.inds$DOD>YR & floor(df.inds$TIME_TR)<YR ),]
-										list(SCOV= ifelse(nrow(tmp2)==0, 0, tmp2[, length(which(!is.na(TIME_SEQ)))/length(TIME_SEQ) ]))				
+										tmp3	<- df.inds[ which( df.inds$DOD>YR & floor(df.inds$TIME_TR)<YR & floor(df.inds$DIAG_T)<YR),]
+										list(SCOV= ifelse(nrow(tmp2)==0, 0, tmp2[, length(which(!is.na(TIME_SEQ)))/length(TIME_SEQ) ]), 
+											 SCOV_DIAG= ifelse(nrow(tmp3)==0, 0, tmp3[, length(which(!is.na(TIME_SEQ)))/length(TIME_SEQ) ]))				
 									} , by='YR']
 	sc.alive20.infl20	<- subset(tmp2, YR==pipeline.args['yr.end',][, as.numeric(v)]-1)[, SCOV]
 	df.sample			<- merge(df.sample, tmp2, by='YR')
@@ -1585,14 +1587,14 @@ PANGEA.add.gaps<- function(indir.simu, indir.gap, infile.simu, infile.gap, gap.c
 #	Function to add gaps into sequences  	
 #	olli originally written 01-07-2015
 ##--------------------------------------------------------------------------------------------------------
-PANGEA.add.gaps.merge.and.maintain.triplets<- function(indir.simu, indir.gap, infile.simu, infile.gap, verbose=1)
+PANGEA.add.gaps.merge.and.maintain.triplets<- function(indir.simu, indir.gap, infile.simu, infile.gap, prefix.simulation='TRAIN', verbose=1)
 {			
 	#	find files 		
 	files			<- data.table(FILE=list.files(indir.simu, pattern='\\.fa.*$'))
 	files			<- subset(files, !grepl('RMGPS',FILE) & !grepl('map$',FILE) & !grepl('^TMP',FILE) & grepl(infile.simu, FILE, fixed=1))
 	if(files[, any(grepl('gag', FILE))])
 	{
-		files[, SIMU:=files[, regmatches(FILE,regexpr('TRAIN[0-9]', FILE))]]
+		files[, SIMU:=files[, regmatches(FILE,regexpr(paste(prefix.simulation,'[0-9]',sep=''), FILE))]]
 		files[, GENE:=files[, sapply(strsplit(FILE,'_'), '[[', 5)]]
 		set(files, NULL, 'GENE', toupper(files[, substr(GENE,1,nchar(GENE)-3)]))
 		set(files, NULL, 'GENE', files[, factor(GENE, levels=c('GAG','POL','ENV'), labels=c('GAG','POL','ENV'))])
@@ -1626,7 +1628,7 @@ PANGEA.add.gaps.merge.and.maintain.triplets<- function(indir.simu, indir.gap, in
 	infile.new	<- paste(indir.simu,'/',infile.simu, sep='')	
 	file		<- paste(indir.simu,'/','TMP', gsub('\\.','mergedpartial\\.',infile.simu), sep='')
 	#	do not force length: mafft --reorder --anysymbol --add new_sequences --auto input
-	cmd			<- paste('mafft --thread 4 --treeout --reorder --keeplength --mapout --ep 0.0 --add ',infile.new,' ',infile.old,' > ',file, sep='')
+	cmd			<- paste('unset MAFFT_BINARIES\nmafft --thread 4 --treeout --reorder --keeplength --mapout --ep 0.0 --add ',infile.new,' ',infile.old,' > ',file, sep='')
 	cat('\ncalling')
 	cat(cmd)
 	system(cmd)	
@@ -1678,25 +1680,34 @@ PANGEA.add.gaps.merge.and.maintain.triplets<- function(indir.simu, indir.gap, in
 	x
 }
 
-PANGEA.add.gaps.simulate<- function(indir.simu, indir.gap, infile.simu, infile.gap, gap.country, gap.symbol, gap.seed, verbose=1)
-{			
+PANGEA.add.gaps.simulate<- function(x, gap.country, gap.symbol, gap.seed, prefix.simu='IDPOP|HOUSE', with.hxb2=1, strip.gaps=1, verbose=1)
+{	
+	stopifnot(any(class(x)=='DNAbin'))
+	x		<- as.character(x)
 	#
 	#	randomly select gaps from sequences in infile.gap from non-missing sequences
 	#
 	set.seed(gap.seed)
-	tmp			<- which(grepl(gap.country,rownames(x)))
-	dfg		<- data.table(IDXSIM=which(grepl('IDPOP|HOUSE',rownames(x))))
+	tmp		<- which(grepl(gap.country,rownames(x)))
+	dfg		<- data.table(IDXSIM=which(grepl(prefix.simu,rownames(x))))
 	dfg[, IDXGAP:=sample(tmp, nrow(dfg), replace=TRUE)]
 	for(i in seq_len(nrow(dfg)))
 	{
-		z						<- which(x[ dfg[i, IDXGAP], ]==gap.symbol)
+		z					<- which(x[ dfg[i, IDXGAP], ]==gap.symbol)
 		x[dfg[i, IDXSIM],z]	<- gap.symbol
 	}
-	x			<- x[ grepl('IDPOP|HOUSE', rownames(x)), ]
+	if(!with.hxb2)
+		x		<- x[ grepl(prefix.simu, rownames(x)), ]
+	if(with.hxb2)
+		x		<- x[ grepl(prefix.simu, rownames(x)) | grepl('HXB2', rownames(x)), ]
+	if(strip.gaps)
+	{
+		tmp		<- which(apply(x[!grepl('HXB2', rownames(x)),], 2, function(z) all(z%in%c('-','?','n'))))
+		cat(paste('\nrm common gap columns, n=',length(tmp)))
+		if(length(tmp))
+			x	<- x[,-tmp]		 		
+	}
 	sgp			<- as.DNAbin(x)	
-	#	clean up
-	tmp			<- list.files(indir.simu, pattern='^TMP', full.names=TRUE)
-	file.remove(tmp)	
 	sgp		
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -2324,10 +2335,24 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	file		<- paste(indir.epi, '/', infile.epi, sep='')
 	load(file)	#expect "df.epi"    "df.trms"   "df.inds"   "df.sample"   "df.sp"
 	#
-	file			<- paste(indir.sg,'/',infile.prefix, 'seqgen.R',sep='')
+	file		<- paste(indir.sg,'/',infile.prefix, 'seqgen.R',sep='')
 	cat(paste('\nLoad seqgen R input file, file=',file))
 	load(file)	#expect df.seqgen, gtr.central, log.df, df.nodestat
 	#
+	if( pipeline.args['er.gtr',][,v]=='GTR_POL_CP1' )
+	{
+		cat('\nUsing rate model GTR_POL_CP1: use pre-estimated evolutionary rate and GTR rates from pol, codon position 1')
+		#	reset rate models for gag, env and codons cp2 cp3
+		tmp		<- subset(log.df, GENE=='POL' & CODON_POS=='CP1')
+		set(tmp, NULL, 'mu', 1)
+		set(tmp, NULL, c('GENE','CODON_POS','IDX'), NULL)
+		tmp[, DUMMY:=1L]
+		log.df	<- unique(subset(log.df, select=c(GENE, CODON_POS)))
+		log.df[, DUMMY:=1L]
+		log.df	<- merge(log.df, tmp, by='DUMMY',allow.cartesian=TRUE)
+		log.df[, DUMMY:=NULL]
+		log.df[, IDX:=seq_len(nrow(log.df))]
+	}
 	if( pipeline.args['index.starttime.mode',][,v]=='shift' )		
 		root.edge.rate	<- 1e-6
 	if( pipeline.args['index.starttime.mode',][,v]!='shift' )

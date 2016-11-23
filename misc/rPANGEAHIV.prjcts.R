@@ -1790,12 +1790,48 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 		}
 }
 ##--------------------------------------------------------------------------------------------------------
+##	olli 17.11.16
+##--------------------------------------------------------------------------------------------------------
+project.PANGEA.treecomparison.runninggaps2.getfasta<- function()
+{
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
+	infiles	<- data.table(FFA=list.files(indir, pattern='fa$', full.names=TRUE))
+	infiles	<- subset(infiles, grepl('FULL',FFA))
+	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
+	#	
+	infiles[, DUMMY:= 1L]
+	infiles	<- merge(infiles, as.data.table(expand.grid(DUMMY=1L, EXCL=seq(0.5, 0.9, 0.1))), by='DUMMY', allow.cartesian=TRUE)
+	infiles[, DUMMY:=NULL]
+	infiles[, TRAIN_ID:= regmatches(FFA,regexpr('TRAIN[0-9]+', FFA))]
+	#	read each file, rm taxa with more than z missing sites
+	#	and write to file	
+	invisible(infiles[, {
+				#FFA		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations/150701_Regional_TRAIN260_FULL_SIMULATED.fa'
+				#EXCL		<- .9
+				#TRAIN_ID<- 'TRAIN260'
+				cat('\nTRAIN_ID', TRAIN_ID[1])
+				sq	<- read.dna(FFA[1], format='fa')				
+				tmp	<- apply(as.character(sq),1,function(x) length(which(x=='?'))) / ncol(sq)
+				for(i in seq_along(EXCL))
+				{
+					z	<- sq[names(tmp)[tmp<EXCL[i]],]
+					cat('\nnumber of taxa in reduced data set', nrow(z))
+					zz	<- file.path(outdir, gsub(TRAIN_ID[i],paste(TRAIN_ID[i],100*EXCL[i],sep=''),basename(FFA)))
+					write.dna(z, file=zz, format='fa', colsep='', nbcol=-1)
+					file.copy( gsub('\\.fa','_gene.txt',FFA), gsub('\\.fa','_gene.txt',zz))					
+				}
+				NULL
+			}, by=c('FFA')])
+	
+}
+##--------------------------------------------------------------------------------------------------------
 ##	olli 22.06.15
 ##--------------------------------------------------------------------------------------------------------
-project.PANGEA.treecomparison<- function()
+project.PANGEA.treecomparison.simulation.pipeline<- function()
 {		
 	if(1)
 	{
+		library(PANGEA.HIV.sim)
 		indir			<- '/Users/Oliver/git/HPTN071sim/source/PANGEA.HIV.sim/inst/misc'
 		pipeline.args	<- sim.regional.args( yr.start=1985, yr.end=2020, seed=42, s.MODEL='Fixed2Prop', report.prop.recent=1.0,
 				s.PREV.max.n=1600, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
@@ -1839,6 +1875,31 @@ project.PANGEA.treecomparison<- function()
 						#system(file)													
 					}											
 				}, by='label']
+		
+		
+		pipeline.args	<- sim.regional.args( 	seed=42, 
+				s.MODEL='Fixed2Prop', s.PREV.max.n=1600, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
+				report.prop.recent=1.0, epi.acute='low', epi.intervention='none', 
+				epi.import=0.05, root.edge.fixed=1,	
+				#wher.mu=log(0.002239075)-0.3^2/2, wher.sigma=0.3, bwerm.mu=log(0.002239075)-0.3^2/2, bwerm.sigma=0.3, er.gamma=4,
+				wher.mu=log(0.002239075), wher.sigma=0, bwerm.mu=log(0.002239075), bwerm.sigma=0, 
+				er.gamma=4, er.gtr='GTR_POL_CP1',
+				dbg.GTRparam=1, dbg.rER=1, index.starttime.mode='fix1955', startseq.mode='one', seqtime.mode='AtDiag')
+		#
+		# same as above but no heterogeneity on codon positions
+		#
+		pipeline.vary	<- data.table(	label='2' )			
+		dummy			<- pipeline.vary[, {									
+					tmpdir			<- '/Users/Oliver/duke/tmp/150701_Regional_GTRFIX'	#low acute
+					tmpdir			<- paste(tmpdir,label,sep='')
+					dir.create(tmpdir, showWarnings=FALSE)																		
+					file			<- sim.regional(tmpdir, pipeline.args=pipeline.args)
+					cat(file)
+					#stop()
+					system(file)																										
+				}, by='label']
+		
+		
 	}
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -2218,7 +2279,7 @@ project.PANGEA.treecomparison.gaps.RobinsonFould.ByPartitionScheme<- function()
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 01.07.15
 ##--------------------------------------------------------------------------------------------------------
-project.PANGEA.treecomparison.gaps.simulate<- function()
+project.PANGEA.treecomparison.gaps.simulate.rungapdatasets<- function()
 {		
 	indir.simu		<- '/Users/Oliver/git/HPTN071sim/treecomparison/nogaps'
 	indir.gap		<-	'~/git/HPTN071sim/treecomparison/PANGEAcov'
@@ -2327,12 +2388,12 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 		#
 		#	process gag genome runs
 		#
-
+		
 		#	determine pol start, and use only gag 
 		hxb2	<- as.character(ms[which(grepl('HXB2',rownames(ms))), ])
 		tmp		<- regexpr('a-*g-*a-*t-*a-*g-*g-*g-*g-*g-*g-*c-*a-*a-*c', paste(hxb2, collapse='') )
 		msg		<- ms[,1:(tmp-1L)]
-
+		
 		#	make allocations reproducible	
 		set.seed(gap.seed)
 		#	read chunks from selected gap country sequence (is NA, then read from all PANGEA seqs)		
@@ -2419,6 +2480,114 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 							save(sq, file=file.path(outdir, gsub('.fa','.R',FILE)))					
 						}, by='SC'] )
 	}
+}
+
+##--------------------------------------------------------------------------------------------------------
+##	olli 01.07.15
+##--------------------------------------------------------------------------------------------------------
+project.PANGEA.treecomparison.gaps.simulate.gtrfixed<- function()
+{		
+	indir.simu		<- '~/git/HPTN071sim/treecomparison/nogaps_161121'
+	indir.gap		<-	'~/git/HPTN071sim/treecomparison/PANGEAcov'
+	infile.gap		<- '151113_PANGEAGlobal4562_C10.fa'
+	outdir			<- '~/git/HPTN071sim/treecomparison/withgaps_161121'					
+	gap.symbol		<- '?'
+	gap.seed		<- 42
+	
+	
+	gap.country		<- 'BW'
+	outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
+	infile.simu		<- '161121_HPTN071_GTRFIXED2_SIMULATED'				
+	#	align and rbind simulated and real sequences, rm gap rows and trailing gap cols too: 
+	ms				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, prefix.simulation='GTRFIXED', verbose=1)	
+	write.dna(ms, file=paste(indir.simu,'/',infile.simu,'_RMGPS\\.fa',sep=''),format='fasta', colsep='', nbcol=-1)
+	#	this now includes HXB2 --> easy to define start + end of gag pol env (or any other restriction that I want to specify)
+	ans				<- PANGEA.add.gaps.simulate(ms, paste('PG[0-9]+-',gap.country,sep=''), gap.symbol, gap.seed, prefix.simu='IDPOP|HOUSE', with.hxb2=1, strip.gaps=1, verbose=1) 
+	#	save FULL without HXB2
+	outfile			<- gsub('SIMULATED','FULL_SIMULATED.fasta',gsub('GTRFIXED2_','GTRFIXED2_',gsub('HPTN071_','',infile.simu)))
+	write.dna(ans[ !grepl('HXB2',rownames(ans)), ], file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
+	#	write FULL partition table	
+	tmp				<- c(	regexpr('agataggggggcaac', paste(ans[which(grepl('HXB2',rownames(ans))), ], collapse='') ),
+							regexpr('atgagagtgaaggagaa', paste(ans[which(grepl('HXB2',rownames(ans))), ], collapse='') )	)
+	gene.pos		<- data.table(GENE=c('gag','pol','env'), START=c(1,tmp[1],tmp[2]), END=c(tmp[1]-1L,tmp[2]-1L,ncol(ans)))		
+	tmp				<- gene.pos[, list(STR=paste('DNA, ',GENE,' = ',START,'-',END,sep='')), by='GENE']
+	cat(paste( tmp[, STR], collapse='\n'), file=file.path(outdir, gsub('.fasta','_gene.txt',outfile)))
+	#	save P17 without HXB2
+	outfile			<- gsub('SIMULATED','P17_SIMULATED.fasta',gsub('GTRFIXED2_','GTRFIXED2_',gsub('HPTN071_','',infile.simu)))
+	hxb2			<- as.character(ans[which(grepl('HXB2',rownames(ans))), ])
+	tmp				<- regexpr('c-*c-*t-*a-*t-*a-*g-*t-*g-*c-*a-*g-*a-*a-*c-*a-*t-*c-*c-*a-*g-*g-*g', paste(hxb2, collapse='') )
+	write.dna(ans[!grepl('HXB2',rownames(ans)),1:(tmp-1L)], file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
+	#	save GAG without HXB2
+	outfile			<- gsub('SIMULATED','GAG_SIMULATED.fasta',gsub('GTRFIXED2_','GTRFIXED2_',gsub('HPTN071_','',infile.simu)))
+	hxb2			<- as.character(ans[which(grepl('HXB2',rownames(ans))), ])
+	tmp		<- regexpr('a-*g-*a-*t-*a-*g-*g-*g-*g-*g-*g-*c-*a-*a-*c', paste(hxb2, collapse='') )
+	write.dna(ans[!grepl('HXB2',rownames(ans)),1:(tmp-1L)], file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
+	#	clean up
+	tmp			<- list.files(indir.simu, pattern='^TMP', full.names=TRUE)
+	file.remove(tmp)	
+	
+	#
+	#
+	#
+	gap.country		<- 'UG'
+	outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
+	infile.simu		<- '161121_HPTN071_GTRFIXED2_SIMULATED'					
+	ans				<- PANGEA.add.gaps.simulate(ms, paste('PG[0-9]+-',gap.country,sep=''), gap.symbol, gap.seed, prefix.simu='IDPOP|HOUSE', with.hxb2=1, strip.gaps=1, verbose=1) 
+	#	save FULL without HXB2
+	outfile			<- gsub('SIMULATED','FULL_SIMULATED.fasta',gsub('GTRFIXED2_','GTRFIXED3_',gsub('HPTN071_','',infile.simu)))
+	write.dna(ans[ !grepl('HXB2',rownames(ans)), ], file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
+	#	write FULL partition table	
+	tmp				<- c(	regexpr('agataggggggcaac', paste(ans[which(grepl('HXB2',rownames(ans))), ], collapse='') ),
+			regexpr('atgagagtgaaggagaa', paste(ans[which(grepl('HXB2',rownames(ans))), ], collapse='') )	)
+	gene.pos		<- data.table(GENE=c('gag','pol','env'), START=c(1,tmp[1],tmp[2]), END=c(tmp[1]-1L,tmp[2]-1L,ncol(ans)))		
+	tmp				<- gene.pos[, list(STR=paste('DNA, ',GENE,' = ',START,'-',END,sep='')), by='GENE']
+	cat(paste( tmp[, STR], collapse='\n'), file=file.path(outdir, gsub('.fasta','_gene.txt',outfile)))
+	#	save P17 without HXB2
+	outfile			<- gsub('SIMULATED','P17_SIMULATED.fasta',gsub('GTRFIXED2_','GTRFIXED3_',gsub('HPTN071_','',infile.simu)))
+	hxb2			<- as.character(ans[which(grepl('HXB2',rownames(ans))), ])
+	tmp				<- regexpr('c-*c-*t-*a-*t-*a-*g-*t-*g-*c-*a-*g-*a-*a-*c-*a-*t-*c-*c-*a-*g-*g-*g', paste(hxb2, collapse='') )
+	write.dna(ans[!grepl('HXB2',rownames(ans)),1:(tmp-1L)], file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
+	#	save GAG without HXB2
+	outfile			<- gsub('SIMULATED','GAG_SIMULATED.fasta',gsub('GTRFIXED2_','GTRFIXED3_',gsub('HPTN071_','',infile.simu)))
+	hxb2			<- as.character(ans[which(grepl('HXB2',rownames(ans))), ])
+	tmp		<- regexpr('a-*g-*a-*t-*a-*g-*g-*g-*g-*g-*g-*c-*a-*a-*c', paste(hxb2, collapse='') )
+	write.dna(ans[!grepl('HXB2',rownames(ans)),1:(tmp-1L)], file=paste(outdir, outfile, sep='/'), format='fasta', colsep='', nbcol=-1)
+	#
+	#	non-gaps files
+	#	 	
+	files			<- data.table(FILE=list.files(indir.simu, pattern='GTRFIXED.*\\.fa.*$'))			
+	files[, SIMU:=files[, regmatches(FILE,regexpr('GTRFIXED[0-9]', FILE))]]
+	files[, GENE:=files[, sapply(strsplit(FILE,'_'), '[[', 5)]]
+	set(files, NULL, 'GENE', toupper(files[, substr(GENE,1,nchar(GENE)-3)]))
+	set(files, NULL, 'GENE', files[, factor(GENE, levels=c('GAG','POL','ENV'), labels=c('GAG','POL','ENV'))])
+	setkey(files, SIMU, GENE)	
+	files[, {
+					gag			<- read.dna( paste(indir.simu, FILE[1], sep='/'), format='fasta' )
+					pol			<- read.dna( paste(indir.simu, FILE[2], sep='/'), format='fasta' )
+					env			<- read.dna( paste(indir.simu, FILE[3], sep='/'), format='fasta' )
+					write.dna( gag[,1:387], file=paste(outdir, '/', '161121_GTRFIXED1_P17_SIMULATED.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+					write.dna( gag, file=paste(outdir, '/', '161121_GTRFIXED1_GAG_SIMULATED.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+					tmp			<- cbind(gag, pol, env)
+					write.dna( tmp, file=paste(outdir, '/', '161121_GTRFIXED1_FULL_SIMULATED.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+					gene.pos	<- data.table(GENE=c('gag','pol','env'), START=c(1,ncol(gag)+1,ncol(gag)+ncol(pol)+1), END=c(ncol(gag),ncol(gag)+ncol(pol),ncol(tmp)))		
+					tmp			<- gene.pos[, list(STR=paste('DNA, ',GENE,' = ',START,'-',END,sep='')), by='GENE']
+					cat(paste( tmp[, STR], collapse='\n'), file=paste(outdir, '/', '161121_GTRFIXED1_FULL_SIMULATED_gene.txt', sep=''))
+					NULL
+				}, by='SIMU']				
+}	
+
+##--------------------------------------------------------------------------------------------------------
+##	olli 01.07.15
+##--------------------------------------------------------------------------------------------------------
+project.PANGEA.treecomparison.gaps.simulate<- function()
+{		
+	indir.simu		<- '/Users/Oliver/git/HPTN071sim/treecomparison/nogaps'
+	indir.gap		<-	'~/git/HPTN071sim/treecomparison/PANGEAcov'
+	infile.gap		<- '150623_PANGEAGlobal2681_C5.fa'
+	outdir			<- '/Users/Oliver/git/HPTN071sim/treecomparison/withgaps_160729'					
+	gap.symbol		<- '?'
+	gap.seed		<- 42
+		
 	if(0)
 	{
 		gap.country		<- 'BW'
@@ -3004,7 +3173,7 @@ project.PANGEA.TEST.pipeline.Apr2015.Manon<- function()
 project.PANGEA.TEST.pipeline.June2016.Josh<- function()
 {		
 		library(PANGEA.HIV.sim)
-		pipeline.args	<- sim.regional.args( 	seed=42, 
+		pipeline.args	<- sim.regional.args( 	seed=43, 
 												s.MODEL='Prop2SuggestedSampling', 
 												report.prop.recent=1.0,
 												epi.acute='high', epi.intervention='none', 
@@ -3014,17 +3183,39 @@ project.PANGEA.TEST.pipeline.June2016.Josh<- function()
 												index.starttime.mode='fix1970', startseq.mode='one', seqtime.mode="AtDiag")								
 		
 		# proposed standard run and control simulation
-		pipeline.vary	<- data.table(	label=					paste('-s',100*seq(1.0,0.2,-0.1),sep=''),										
-										s.PREV.max= 			seq(1,0.2,-0.1)	)			
+		pipeline.vary	<- data.table(	label=					paste('-s',100*c(0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8),'-seed',43,sep=''),										
+										s.PREV.max= 			c(0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8))			
 		dummy			<- pipeline.vary[, {				
 					set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.PREV.max))
+					set(pipeline.args, which( pipeline.args$stat=='s.seed' ), 'v', as.character(43))
 					print(pipeline.args)										
 					
 					tmpdir			<- '/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone'
 					tmpdir			<- paste(tmpdir,label,sep='')
 					dir.create(tmpdir, showWarnings=FALSE)																		
 					file			<- sim.regional(tmpdir, pipeline.args=pipeline.args)
-					#system(file)																										
+					system(file)																										
+				}, by='label']
+		# produce 10 replicates for each sequence coverage level
+		# start with 40% which should correspond to 22.4%
+		pipeline.vary	<- data.table(	s.PREV.max=c(0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8), 
+										cov=c(0.028,0.058,0.118,0.17,0.224,0.292,0.348,0.413,0.468))							
+		pipeline.vary	<- merge(pipeline.vary, as.data.table(expand.grid(s.PREV.max=c(0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8), seed=seq(43, length.out=9))), by='s.PREV.max')
+		pipeline.vary[, label:= paste('-cov',100*cov,'-seed',seed,sep='')]
+		pipeline.vary	<- subset(pipeline.vary, s.PREV.max!=0.4 | seed!=43)
+		pipeline.vary	<- subset(pipeline.vary, cov>0.4)
+		pipeline.vary	<- subset(pipeline.vary, seed!=43)
+		dummy			<- pipeline.vary[, {				
+					set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.PREV.max))
+					set(pipeline.args, which( pipeline.args$stat=='s.seed' ), 'v', as.character(seed))
+					print(pipeline.args)										
+					
+					tmpdir			<- '/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone'
+					tmpdir			<- paste(tmpdir,label,sep='')
+					dir.create(tmpdir, showWarnings=FALSE)																		
+					file			<- sim.regional(tmpdir, pipeline.args=pipeline.args)
+					system(file)					
+					#																										
 				}, by='label']
 }
 ##--------------------------------------------------------------------------------------------------------

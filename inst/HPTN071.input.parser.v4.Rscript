@@ -55,13 +55,13 @@ if(verbose)
 }	
 if(debug)
 {
-	indir			<- "/Users/Oliver/duke/2015_various/EpiSim"
-	outdir			<- "/Users/Oliver/duke/2015_various/TrChains"
-	infile.ind		<- "150129_HPTN071_scHF_IND.csv"
-	infile.trm		<- "150129_HPTN071_scHF_TRM.csv"
-	infile.args		<- "/Users/Oliver/duke/2015_various/150129_HPTN071_scHF_PipeArgs.R"
-	outfile.ind		<- "150129_HPTN071_scHF_IND.csv"
-	outfile.trm		<- "150129_HPTN071_scHF_TRM.csv"
+	indir			<- "/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone-s80-seed43/EpiSim"
+	outdir			<- "/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone-s80-seed43/TrChains"
+	infile.ind		<- "150129_HPTN071_scHN_IND.csv"
+	infile.trm		<- "150129_HPTN071_scHN_TRM.csv"
+	infile.args		<- "/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone-s80-seed43/150129_HPTN071_scHN_PipeArgs.R"
+	outfile.ind		<- "150129_HPTN071_scHN_IND.csv"
+	outfile.trm		<- "150129_HPTN071_scHN_TRM.csv"
 }
 #	start script
 require(data.table)

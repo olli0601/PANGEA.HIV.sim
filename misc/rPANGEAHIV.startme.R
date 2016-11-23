@@ -20,7 +20,7 @@ CODE.HOME	<<- "/Users/Oliver/git/PANGEA.HIV.sim"
 #the home directory of all projects
 HOME		<<- "/Users/Oliver/git/HPTN071sim/"
 #HOME		<<- "/work/or105/Gates_2014"
-DATA		<<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut'
+DATA		<<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut'
 #DATA		<<- '/work/or105/Gates_2014/2015_PANGEA_haircut'
 #DATA		<<- '/work/or105/Gates_2014/tree_comparison'
 
@@ -121,7 +121,7 @@ my.dumpframes<- function()
 }
 ###############################################################################
 #	re-load all R files
-require(PANGEA.HIV.sim)
+#require(PANGEA.HIV.sim)
 print(CODE.HOME)
 function.list<-c(list.files(path= paste(CODE.HOME,"R",sep='/'), pattern = ".R$", all.files = FALSE, full.names = TRUE, recursive = FALSE),	
 									paste(CODE.HOME,"misc","rPANGEAHIV.prjcts.R",sep='/'),
@@ -130,7 +130,7 @@ function.list<-c(list.files(path= paste(CODE.HOME,"R",sep='/'), pattern = ".R$",
 sapply(function.list,function(x){ source(x,echo=FALSE,print.eval=FALSE, verbose=FALSE) })
 ###############################################################################
 #	run script
-stop()
+#stop()
 if(DEBUG)	options(error= my.dumpframes)	
 cat(paste("\nrPANGEAHIV: ",ifelse(DEBUG,"debug",""),"call",default.fun,"\n"))
 do.call(default.fun,list()) 	

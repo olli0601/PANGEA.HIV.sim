@@ -10,12 +10,12 @@ label.sep		<- '|'
 #
 #	read I/O
 #
-indir.epi		<- '/Users/Oliver/git/HPTN071sim/tmp140914/TrChains'
-infile.epi		<- '140716_RUN001_SAVE.R'	
-indir.vts		<- '/Users/Oliver/git/HPTN071sim/tmp140914/VirusTreeSimulator'
-infile.prefix	<- '140716_RUN001_'	
-infile.args		<- '/Users/Oliver/git/HPTN071sim/tmp140914/140716_RUN001_PipeArgs.R'
-outdir.sg		<- '/Users/Oliver/git/HPTN071sim/tmp140914/SeqGen'	
+indir.epi		<- '/Users/Oliver/duke/tmp/150701_Regional_GTRFIX2/TrChains'
+infile.epi		<- '150129_HPTN071_scLN_SAVE.R'	
+indir.vts		<- '/Users/Oliver/duke/tmp/150701_Regional_GTRFIX2/VirusTreeSimulator'
+infile.prefix	<- '150129_HPTN071_scLN_'	
+infile.args		<- '/Users/Oliver/duke/tmp/150701_Regional_GTRFIX2/150129_HPTN071_scLN_PipeArgs.R'
+outdir.sg		<- '/Users/Oliver/duke/tmp/150701_Regional_GTRFIX2/SeqGen'	
 if(exists("args"))
 {
 	#	args input

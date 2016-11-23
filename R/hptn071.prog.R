@@ -100,6 +100,7 @@ prog.PANGEA.AddGaps.run.v1<- function()
 #' @param startseq.mode			Number of different starting sequences (default: 'one', optional 'many'). See \url{https://github.com/olli0601/PANGEA.HIV.sim#seed-sequences}.
 #' @param index.starttime.mode	Sampling distribution of sampling times of starting sequences (default: 'fix1970', optional 'fix19XX' where XX between 45-79, 'normal' meaning Normal(1955,7)). See \url{https://github.com/olli0601/PANGEA.HIV.sim#seed-sequences}.
 #' @param er.gamma				Site heterogeneity parameter (default: 4, optional 0)
+#' @param er.gtr				Evolution model identifier. Default: GTR_VARIABLE. Alternatively: GTR_POL_CP1.
 #' @param sp.prop.of.sexactive	Proportion of population sampled in seroprevalence survey (default: 0.05)
 #' @param report.prop.recent	Proportion of individuals in seroprevalence survey for whom recency of infection should be reported (default: 1)
 #' @param dbg.GTRparam			Use mean GTR rates instead of samples from empirical prior (default: 0, optional 1)
@@ -112,7 +113,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 										epi.model='HPTN071', epi.acute='high', epi.intervention='fast', epi.dt=1/48, epi.import=0.05, root.edge.fixed=0,
 										v.N0tau=1, v.r=2.851904, v.T50=-2,
 										wher.mu=log(0.00447743)-0.5^2/2, wher.sigma=0.5,
-										bwerm.mu=log(0.002239075)-0.3^2/2, bwerm.sigma=0.3, er.gamma=4, 
+										bwerm.mu=log(0.002239075)-0.3^2/2, bwerm.sigma=0.3, er.gamma=4, er.gtr='GTR_VARIABLE', 
 										sp.prop.of.sexactive= 0.05, 
 										report.prop.recent=1.0,
 										dbg.GTRparam=0, dbg.rER=0, 
@@ -168,8 +169,8 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 		ggplot(df.sample, aes(x=YR, y=s.fraction, colour=s.PREV.max)) + geom_line() + scale_y_continuous(breaks=seq(0, 0.16, 0.02)) + labs(colour='scenario', x='year', y='sampling fraction')		
 	}
 	stopifnot(epi.model=='HPTN071', epi.acute%in%c('low','high'), epi.intervention%in%c('none','slow','fast'), epi.dt==1/48)
-	pipeline.args	<- data.table(	stat= 	c('yr.start','yr.end','s.MODEL','s.INC.recent','s.INC.recent.len', 's.PREV.min', 's.PREV.max', 's.PREV.max.n', 's.INTERVENTION.prop', 's.INTERVENTION.start', 's.INTERVENTION.mul', 's.ARCHIVAL.n', 's.seed', 'index.starttime.mode', 'startseq.mode', 'seqtime.mode','root.edge.fixed','epi.model', 'epi.acute', 'epi.intervention', 'epi.dt', 'epi.import','v.N0tau','v.r','v.T50','wher.mu','wher.sigma','bwerm.mu','bwerm.sigma','er.gamma','sp.prop.of.sexactive','report.prop.recent','dbg.GTRparam','dbg.rER'), 
-									v	=	c(yr.start, yr.end, s.MODEL, s.INC.recent, s.INC.recent.len, s.PREV.min, s.PREV.max, s.PREV.max.n, s.INTERVENTION.prop, s.INTERVENTION.start, s.INTERVENTION.mul, s.ARCHIVAL.n, seed, index.starttime.mode, startseq.mode, seqtime.mode, root.edge.fixed, epi.model, epi.acute, epi.intervention, epi.dt, epi.import, v.N0tau, v.r, v.T50, wher.mu, wher.sigma, bwerm.mu, bwerm.sigma, er.gamma, sp.prop.of.sexactive, report.prop.recent, dbg.GTRparam, dbg.rER) )
+	pipeline.args	<- data.table(	stat= 	c('yr.start','yr.end','s.MODEL','s.INC.recent','s.INC.recent.len', 's.PREV.min', 's.PREV.max', 's.PREV.max.n', 's.INTERVENTION.prop', 's.INTERVENTION.start', 's.INTERVENTION.mul', 's.ARCHIVAL.n', 's.seed', 'index.starttime.mode', 'startseq.mode', 'seqtime.mode','root.edge.fixed','epi.model', 'epi.acute', 'epi.intervention', 'epi.dt', 'epi.import','v.N0tau','v.r','v.T50','wher.mu','wher.sigma','bwerm.mu','bwerm.sigma','er.gamma','er.gtr','sp.prop.of.sexactive','report.prop.recent','dbg.GTRparam','dbg.rER'), 
+									v	=	c(yr.start, yr.end, s.MODEL, s.INC.recent, s.INC.recent.len, s.PREV.min, s.PREV.max, s.PREV.max.n, s.INTERVENTION.prop, s.INTERVENTION.start, s.INTERVENTION.mul, s.ARCHIVAL.n, seed, index.starttime.mode, startseq.mode, seqtime.mode, root.edge.fixed, epi.model, epi.acute, epi.intervention, epi.dt, epi.import, v.N0tau, v.r, v.T50, wher.mu, wher.sigma, bwerm.mu, bwerm.sigma, er.gamma, er.gtr, sp.prop.of.sexactive, report.prop.recent, dbg.GTRparam, dbg.rER) )
 	setkey(pipeline.args, stat)	
 	pipeline.args
 }
@@ -223,7 +224,7 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(0)	#run LSD
+	if(1)	#run LSD
 	{
 		require(ape)
 		require(data.table)
@@ -232,7 +233,7 @@ pipeline.various<- function()
 		file	<- file.path('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation','/','submitted_160713_05QD.rda')
 		
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/lsd'
-		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713_05QD.rda'
+		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
 		load(file)				
 		
 		setkey(submitted.info, TEAM, SC, GENE, RUNGAPS)
@@ -266,9 +267,9 @@ pipeline.various<- function()
 					if(GENE=='POL')
 						ali.nrow	<- 2850						
 					cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
-					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=5, hpc.mem="6000mb")
+					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=10, hpc.mem="6000mb")
 					cat(cmd)		
-					cmd.hpccaller(paste(HOME,"tmp",sep='/'), paste("lsd",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)					
+					cmd.hpccaller(wdir, paste("lsd",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)					
 					#quit('no')
 				}, by='IDX']		
 		quit('no')
