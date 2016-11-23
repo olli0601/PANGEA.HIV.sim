@@ -179,7 +179,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)	#submit various
+	if(0)	#submit various
 	{
 		cmd			<- cmd.various()
 		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=171, hpc.mem="6000mb")
@@ -245,7 +245,8 @@ pipeline.various<- function()
 		#ds		<- rbind(ds, subset(submitted.info, TEAM=='RUNGAPS_ExaML' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('P17','GAG','GAG+POL+ENV'))[, list(IDX=IDX[seq.int(1,length(IDX),3)]), by='GENE'])		
 		#ds		<- merge(ds, submitted.info, by=c('IDX','GENE'))	
 		ds[, {	
-					ph				<- strs_rtt[[IDX]]
+					#ph				<- strs_rtt[[IDX]]
+					ph				<- strs[[IDX]]
 					tmp				<- data.table(TAXA=ph$tip.label, SEQ_T= sapply(strsplit(ph$tip.label, '|', fixed=1),'[[', 4))
 					tmp				<- tmp[,  list(STR=paste(TAXA,' ',SEQ_T,sep='')), by='TAXA'][, paste(STR, collapse='\n')]
 					tmp				<- paste(Ntip(ph),'\n',tmp,sep='')
