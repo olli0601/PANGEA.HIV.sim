@@ -4772,10 +4772,12 @@ options(warn=2)
 	#
 	#	read LSD trees
 	#
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD'
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_2'
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick', full.names=TRUE))
 	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
 	setkey(infiles, IDX)
+	setdiff(1:385, infiles[,IDX])
+	
 	strs_lsd		<- vector('list', submitted.info[, max(IDX)])
 	for(i in seq_len(nrow(infiles)))		
 	{
