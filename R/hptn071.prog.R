@@ -334,7 +334,7 @@ pipeline.various<- function()
 		indir		<- dirname(infile)
 		infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
 		infile[, OF:= paste(gsub('TRAIN1.*', '',gsub('150701','161125',basename(IF))),paste('TRAIN1_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
-		
+		infile		<- subset(infile, PARTIAL_LEN>=1700)
 		invisible(infile[, {																					
 							seq					<- read.dna(IF, format='fa')
 							ifp					<- paste(OF, '.fasta', sep='')
@@ -343,11 +343,11 @@ pipeline.various<- function()
 							args.examl			<- "-f d -D -m GAMMA"
 							args.starttree.type	<- 'parsimony'
 							
-							partition			<- paste(OF,'_gene.txt')
+							partition			<- paste(OF,'_gene.txt',sep='')
 							if(PARTIAL_LEN>=4500)
-								cat(paste('DNA, gag = 1-1440\nDNA, pol = 1441-4284\nDNA, env = 4285-',PARTIAL_LEN,sep=''), file=file.path(indir, partition))
+								cat(paste('DNA, gag = 1-1440\nDNA, pol = 1441-4284\nDNA, env = 4285-',PARTIAL_LEN,'\n',sep=''), file=file.path(indir, partition))
 							if(PARTIAL_LEN>=1700 & PARTIAL_LEN<4500)
-								cat(paste('DNA, gag = 1-1440\nDNA, pol = 1441-4284\nDNA, env = 4285-',PARTIAL_LEN,sep=''), file=file.path(indir, partition))
+								cat(paste('DNA, gag = 1-1440\nDNA, pol = 1441-',PARTIAL_LEN,'\n',sep=''), file=file.path(indir, partition))
 							if(PARTIAL_LEN<1700)
 								partition		<- NA
 							

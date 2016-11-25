@@ -6778,7 +6778,7 @@ treecomparison.ana.160627.strs<- function()
 	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_by_gaps.pdf',sep=''))
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
 	#
-	#
+	#	long
 	#
 	tmp		<- subset(sa, ACUTE=='10%' & GENE=='gag+pol+env' & TEAM%in%c('PhyML', 'MetaPIGA','IQ-TREE', 'RAxML'), select=c(IDX, GENE, TEAM, GAPS, TPAIR_PHCL_1, NTPAIR_PHCL_1))
 	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
@@ -6796,6 +6796,62 @@ treecomparison.ana.160627.strs<- function()
 			theme_bw() + theme(legend.position='bottom', axis.text.x=element_blank(), axis.ticks.x=element_blank())
 	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_by_gaps_long.pdf',sep=''))
 	ggsave(file=file, w=8, h=12, useDingbats=FALSE)
+	#
+	#	by missing sites
+	#
+	tmp		<- subset(sa, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+	tmp		<- subset(tmp, GENE=='gag' & RUNGAPS==0.02 | GENE=='gag (p17)' & RUNGAPS==0.02 | GENE=='gag+pol+env')
+	tmp[, MISSING_P:= (RUNGAPS*GENE_L + (6807-GENE_L))/6807]
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
+	setkey(tmp, GENE, RUNGAPS)			
+	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_point(aes(y=NTPAIR_PHCL_1/(TPAIR_PHCL_1+NTPAIR_PHCL_1), colour=GENE), size=2, pch=16) +
+			#geom_line(aes(y=1-TR_PAIR_recSM, colour=GENE), size=0.5) +
+			#geom_point(data=tmp2, aes(y=1-TR_PAIR_recSM, pch=LOC), size=2.5, fill='black') +			
+			scale_colour_manual(values=c('gag (p17)'="#8C510A", 'gag + pol (prot,p51)'='green','gag'='red','gag+pol+env'="#3F4788FF")) +
+			scale_shape_manual(values=c('Botswana'=23, 'Uganda'=24)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,1)) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nproportion of missing sites, relative to gag+pol+env genome', 
+					y='proportion of sampled transmission pairs\n',
+					colour='part of simulated genome\nused for tree reconstruction',
+					pch='sampling location') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_by_missingsites.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	#
+	#	by rungaps
+	#
+	tmp		<- subset(sa, TEAM=='RUNGAPS_ExaML' & !grepl('p51', GENE))
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag+pol+env'))])
+	setkey(tmp, GENE, RUNGAPS)			
+	tmp[, Y:=NTPAIR_PHCL_1/(TPAIR_PHCL_1+NTPAIR_PHCL_1)]
+	
+	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
+								YM= predict(loess(Y~RUNGAPS, span=5, degree=1))), 
+			by='GENE']
+	tmp		<- merge(tmp, tmp2, by=c('GENE','RUNGAPS'))		
+	tmp2	<- merge( rbind(data.table(GENE=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'), RUNGAPS=c(0.11, 0.08, 0.14, 0.17), LOC='Botswana'), data.table(GENE=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'), RUNGAPS=c(0.21, 0.18, 0.34, 0.47), LOC='Uganda')), tmp2,by=c('GENE','RUNGAPS')) 
+	#set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag (p17)','gag','gag + pol (prot,p51)','gag+pol+env'))])
+	ggplot(tmp, aes(x=RUNGAPS)) +
+			geom_point(aes(y=Y, colour=GENE), size=2, pch=8) +
+			geom_line(aes(y=YM, colour=GENE), size=0.5) +
+			geom_point(data=tmp2, aes(y=YM, pch=LOC), size=2.5, fill='black') +			
+			scale_colour_manual(values=c('gag (p17)'="#8C510A", 'gag + pol (prot,p51)'='green','gag'='red','gag+pol+env'="#3F4788FF")) +
+			scale_shape_manual(values=c('Botswana'=23, 'Uganda'=24)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.8)) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='no transmission pair\n',
+					colour='part of genome used\nfor tree reconstruction',
+					pch='sampling location') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_by_rungaps.pdf',sep=''))
+	ggsave(file=file, w=5, h=7, useDingbats=FALSE)
+
+	
 	
 	#
 	#	proportion of recovered transmission pairs 
