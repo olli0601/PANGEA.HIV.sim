@@ -335,10 +335,14 @@ pipeline.various<- function()
 		infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
 		infile[, OF:= paste(gsub('TRAIN1.*', '',gsub('150701','161125',basename(IF))),paste('TRAIN1_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
 		
-		invisible(infile[, {
-							#SC<- '150701_Regional_TRAIN202_FULL_SIMULATED'; PARTITION<- '150701_Regional_TRAIN202_FULL_SIMULATED_gene.txt'							
+		invisible(infile[, {																					
+							seq					<- read.dna(IF, format='fa')
+							ifp					<- paste(OF, '.fasta', sep='')
+							write.dna(seq[,1:PARTIAL_LEN], file=file.path(dirname(infile), ifp), format='fa', , colsep='', nbcol=-1)
+													
 							args.examl			<- "-f d -D -m GAMMA"
 							args.starttree.type	<- 'parsimony'
+							
 							partition			<- paste(OF,'_gene.txt')
 							if(PARTIAL_LEN>=4500)
 								cat(paste('DNA, gag = 1-1440\nDNA, pol = 1441-4284\nDNA, env = 4285-',PARTIAL_LEN,sep=''), file=file.path(indir, partition))
@@ -351,7 +355,7 @@ pipeline.various<- function()
 							if(!is.na(partition))						
 								args.parser		<- paste("-m DNA -q",partition)
 							
-							cmd		<- cmd.examl.single(dirname(IF), basename(IF), outdir=dirname(IF), outfile= OF, args.starttree.type=args.starttree.type, args.parser=args.parser, args.examl=args.examl, bs.seed=42)
+							cmd		<- cmd.examl.single(dirname(IF), ifp, outdir=dirname(IF), outfile= OF, args.starttree.type=args.starttree.type, args.parser=args.parser, args.examl=args.examl, bs.seed=42)
 							cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=129, hpc.q="pqeelab", hpc.mem="5800mb", hpc.nproc=1)
 							signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
 							cat(cmd)
