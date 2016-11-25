@@ -338,7 +338,7 @@ pipeline.various<- function()
 		invisible(infile[, {																					
 							seq					<- read.dna(IF, format='fa')
 							ifp					<- paste(OF, '.fasta', sep='')
-							write.dna(seq[,1:PARTIAL_LEN], file=file.path(dirname(infile), ifp), format='fa', , colsep='', nbcol=-1)
+							write.dna(seq[,1:PARTIAL_LEN], file=file.path(dirname(IF), ifp), format='fa', , colsep='', nbcol=-1)
 													
 							args.examl			<- "-f d -D -m GAMMA"
 							args.starttree.type	<- 'parsimony'
