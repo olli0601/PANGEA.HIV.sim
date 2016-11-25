@@ -5622,6 +5622,32 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#	save intermediate	
 		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD.rda',file))
 	}
+	options(show.error.messages = FALSE)		
+	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_09SBRL.rda',file))))
+	options(show.error.messages = TRUE)				
+	if( inherits(readAttempt, "try-error") )
+	{		
+		#
+		#	sum of branch lengths per tree
+		#
+		tmp			<- unique(subset(tinfo, select=IDX_T))
+		tmp			<- tmp[, {
+								ph	<- ttrs[[IDX_T]]
+								list(SUM_BRANCHES_T=sum(ph$edge.length))					
+							}, by='IDX_T']
+		setnames(tmp, 'IDX_T', 'SUB_IDX_T')			
+		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T')
+		
+		tmp		<- submitted.info[, {
+					#IDX<-638; SUB_IDX_T<- 1
+					#cat(IDX,'\n')
+					ph	<- strs[[IDX]]
+					list(SUM_BRANCHES=sum(ph$edge.length))					
+				}, by=c('IDX')]
+		submitted.info	<- merge(submitted.info, tmp, by='IDX')
+		#	save intermediate	
+		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_09SBRL.rda',file))
+	}
 	#
 	#	ADD other summaries
 	#
@@ -6689,8 +6715,7 @@ treecomparison.ana.160627.strs<- function()
 	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	#timetag		<- '160627'
 	timetag			<- '160713'		
-	load(file.path(edir,'submitted_160713_07MSELSD.rda'))
-		
+	load(file.path(edir,'submitted_160713_09SBRL.rda'))
 	set(submitted.info, submitted.info[, which(grepl('gag+pol+env',FILE,fixed=1))], 'GENE', 'GAG+POL+ENV')
 	
 	sa		<- copy(submitted.info)	
@@ -6716,6 +6741,24 @@ treecomparison.ana.160627.strs<- function()
 	#	on full tree
 	#	
 	
+	#
+	#	sum of branch lengths on full genome by method
+	#
+	tmp		<- subset(sa, ACUTE=='10%' & GENE=='gag+pol+env' & TEAM%in%c('PhyML','MetaPIGA','IQ-TREE', 'RAxML'), select=c(IDX, GENE, TEAM, GAPS, SUM_BRANCHES_T, SUM_BRANCHES))
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])	
+	ggplot(tmp, aes(x=GAPS)) +
+			geom_jitter(aes(y=sign(SUM_BRANCHES_T-SUM_BRANCHES)*log10(abs(SUM_BRANCHES_T-SUM_BRANCHES)), colour=GENE, pch=TEAM), position=position_jitter(w=0.8, h = 0), size=2) +
+			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) +			
+			scale_y_continuous(labels=c(-100,-10,0,10,100), limits=c(-log10(300),log10(300)), expand=c(0,0), breaks=seq(-2,2,1)) +
+			labs(	x='\nunassembled sites of PANGEA-HIV sequences', 
+					y='sum of branches in true tree -\nsum of branches in reconstructed tree',					
+					colour='part of simulated genome\nused for tree reconstruction',
+					pch='tree reconstruction\nmethod') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','sumBranches_by_gaps.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
 	#
 	#	true transmission pairs among closest with distance < 1% 
 	#	
@@ -7070,7 +7113,7 @@ treecomparison.ana.160627.strs<- function()
 	file	<- file.path(edir, paste(timetag,'_','MAETP_by_gaps_by_TEAM.pdf',sep=''))
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
 	#		
-	#	MAE of transmission pairs IQTree
+	#	MAE_LSD of transmission pairs IQTree
 	#		
 	tmp		<- subset(sa, !is.na(MAE_TP_LSD) & ACUTE=='10%' & TEAM=='IQ-TREE')
 	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
@@ -7086,7 +7129,26 @@ treecomparison.ana.160627.strs<- function()
 					pch='algorithm') +
 			theme_bw() + theme(legend.position='bottom') + facet_grid(~TEAM)
 	file	<- file.path(edir, paste(timetag,'_','MAETP_by_gaps_IQTree.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	#		
+	#	MAE of transmission pairs IQTree
+	#		
+	tmp		<- subset(sa, !is.na(MAE_TP_LSD) & ACUTE=='10%' & TEAM=='IQ-TREE')
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])	
+	ggplot(subset(tmp, !is.na(MAE_TP)), aes(x=GAPS)) +
+			geom_jitter(aes(y=MAE_TP, colour=GENE), position=position_jitter(w=0.8, h = 0), size=2) +
+			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			#scale_y_log10(expand=c(0,0), limit=c(1,32), breaks=c(1,10,100,1000), minor_breaks=c(seq(1,10,1),seq(10,100,10),seq(100,1000,100),seq(1000,10000,1000))) +			
+			labs(	x='\nUnassembled sites in full-genome sequences', 
+					y='mean absolute error in dated branches\namong sampled transmission pairs\n(years)\n',					
+					colour='part of genome used\nfor tree reconstruction',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom') + facet_grid(~TEAM)
+	file	<- file.path(edir, paste(timetag,'_','MAETP_by_gaps_IQTree.pdf',sep=''))
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)		
+	
 	#
 	#	MAE of transmission pairs by by rungaps
 	#
