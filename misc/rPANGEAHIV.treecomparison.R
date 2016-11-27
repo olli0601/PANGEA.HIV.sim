@@ -4325,15 +4325,15 @@ treecomparison.submissions.161123<- function()
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	
 	
-	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('Vill.*DATEDTREE', tfiles) ] )
+	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('.*DATEDTREE', tfiles) ] )
 	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
 	tmp		<- rbind( subset(tfiles, SC=='VILL_99_APR15'), subset(tfiles, SC=='VILL_99_APR15'), subset(tfiles, SC=='VILL_99_APR15') )
 	set(tmp, NULL, 'SC', c('150701_VILL_SCENARIO-C','150701_VILL_SCENARIO-D','150701_VILL_SCENARIO-E'))
 	tfiles	<- rbind(tfiles, tmp)
-	tmp		<- list.files(indir, pattern='newick$', full.names=TRUE)
-	tmp		<- data.table( FILE_T= tmp[ grepl('*DATEDTREE', tmp) ] )
-	tmp[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
-	tfiles	<- rbind(tfiles, tmp)
+	#tmp		<- list.files(indir, pattern='newick$', full.names=TRUE)
+	#tmp		<- data.table( FILE_T= tmp[ grepl('*DATEDTREE', tmp) ] )
+	#tmp[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
+	#tfiles	<- rbind(tfiles, tmp)
 	tfiles[, BRL_T:= 'time']	
 	set(tfiles, NULL, 'SC', tfiles[, gsub('161121_','161121_REGIONAL_',SC)])
 	set(tfiles, tfiles[, which(grepl('REG',SC) & grepl('SUBST',FILE_T))], 'BRL_T', 'subst')	
@@ -4389,17 +4389,18 @@ treecomparison.submissions.161123<- function()
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	tmp		<- data.table( FILE_SEQ_T= tmp, SC= gsub('_GAG|_FULL|_P17','',gsub('161121_','161121_REGIONAL_',toupper(gsub('_SIMULATED','',gsub('\\.fa|\\.fasta','',basename(tmp)))))))
-	z		<- subset(tmp, SC=='VILL_99_APR15')
-	set(z, NULL, 'SC', '150701_VILL_SCENARIO-C')
-	tmp		<- rbind( tmp, z )	
-	tfiles	<- merge(tfiles, tmp, by='SC', all=1)
-	tmp		<- subset(tfiles, !is.na(FILE_SEQ_T))[, {
-				z		<- read.dna(FILE_SEQ_T, format='fasta')	
-				ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))
-				ans		<- apply(ans[c('n','-','?'),], 2, sum)
-				list(TAXA=rownames(z), GPS=ans)				
-			}, by=c('SC','BRL_T')]
-	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all.x=1)
+	#z		<- subset(tmp, SC=='VILL_99_APR15')
+	#set(z, NULL, 'SC', '150701_VILL_SCENARIO-C')
+	#tmp		<- rbind( tmp, z )	
+	#tfiles	<- merge(tfiles, tmp, by='SC', all=1)
+	#tmp		<- subset(tfiles, !is.na(FILE_SEQ_T) & !grepl('99_Apr15', FILE_T))[, {
+	#			cat('\n',FILE_SEQ_T)
+	#			z		<- read.dna(FILE_SEQ_T, format='fasta')	
+	#			ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))
+	#			ans		<- apply(ans[c('n','-','?'),], 2, sum)
+	#			list(TAXA=rownames(z), GPS=ans)				
+	#		}, by=c('SC','BRL_T')]
+	#tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all.x=1)
 	#	add % gaps by gene for regional
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	infiles	<- data.table(FILE=list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$|GTRFIXED.*_SIMULATED.fasta$'))
@@ -4613,7 +4614,9 @@ treecomparison.submissions.161123<- function()
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps2'
 	infiles	<- list.files(indir, pattern='newick$', recursive=1, full.names=1)
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simple_GTR'
-	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))	
+	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/partiallen'
+	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))
 	infiles	<- data.table(FILE=infiles)
 	strs	<- lapply(infiles[, FILE], function(x)
 			{
@@ -4632,6 +4635,7 @@ treecomparison.submissions.161123<- function()
 	submitted.info[, TEAM:=NA_character_]
 	set(submitted.info, submitted.info[, which(grepl('running_gaps',FILE))], 'TEAM', 'RUNGAPS2')
 	set(submitted.info, submitted.info[, which(grepl('simple_GTR',FILE))], 'TEAM', 'GTRFIXED')	
+	set(submitted.info, submitted.info[, which(grepl('partiallen',FILE))], 'TEAM', 'PLEN')
 	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )	
 	#
 	#	scenario
@@ -4641,6 +4645,8 @@ treecomparison.submissions.161123<- function()
 	set(submitted.info, tmp, 'SC', submitted.info[tmp, gsub('161121_','161121_REGIONAL_',regmatches(FILE, regexpr('161121_GTRFIXED[0-9]',FILE)))])
 	tmp		<- submitted.info[, which(grepl('150701_Regional_TRAIN2', FILE))]
 	set(submitted.info, tmp, 'SC', submitted.info[tmp, regmatches(FILE, regexpr('150701_Regional_TRAIN2',FILE))])
+	tmp		<- submitted.info[, which(grepl('161125_Regional_TRAIN1', FILE))]
+	set(submitted.info, tmp, 'SC', '150701_REGIONAL_TRAIN1')
 	set(submitted.info, NULL, 'SC', submitted.info[, toupper(SC)])
 	stopifnot( submitted.info[, length(which(is.na(SC)))==0] )
 	#
@@ -4653,7 +4659,13 @@ treecomparison.submissions.161123<- function()
 	#
 	submitted.info[, RUNGAPS_EXCL:=NA_real_]	
 	tmp		<- submitted.info[, which(TEAM=='RUNGAPS2')]
-	set(submitted.info, tmp, 'RUNGAPS_EXCL', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',FILE))/100])	
+	set(submitted.info, tmp, 'RUNGAPS_EXCL', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',FILE))/100])
+	#
+	#	define partial length
+	#
+	submitted.info[, PLEN:=NA_real_]	
+	tmp		<- submitted.info[, which(TEAM=='PLEN')]
+	set(submitted.info, tmp, 'PLEN', submitted.info[tmp, as.numeric(gsub('PL','',regmatches(FILE, regexpr('PL[0-9]+',FILE))))])	
 	#
 	#	set covariates of scenarios
 	#
@@ -4673,7 +4685,8 @@ treecomparison.submissions.161123<- function()
 	set(submitted.info, submitted.info[, which(grepl('GAG', FILE))], 'GENE', 'GAG')
 	set(submitted.info, submitted.info[, which(grepl('P17', FILE))], 'GENE', 'P17')
 	set(submitted.info, submitted.info[, which(grepl('GTRFIXED', FILE))], 'GENE', 'GAG+POL+ENV')
-	stopifnot(nrow(subset(submitted.info, TEAM=='RAXML' & is.na(GENE)))==0)
+	set(submitted.info, submitted.info[, which(grepl('TRAIN1_PL', FILE))], 'GENE', 'GAG+POL+ENV')
+	stopifnot(nrow(subset(submitted.info, is.na(GENE)))==0)
 	#
 	#	best tree for each scenario
 	#
@@ -4745,7 +4758,6 @@ treecomparison.submissions.161123<- function()
 	#
 	#	check labels and remove labels that do not appear in the observed tree
 	#
-options(warn=2)
 	tmp	<- submitted.info[, {				
 				stree		<- unroot(strs[[IDX]])
 				otree		<- unroot(ttrs[[TIME_IDX_T]])				

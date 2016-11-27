@@ -224,22 +224,21 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(0)	#run LSD
+	if(1)	#run LSD
 	{
 		require(ape)
 		require(data.table)
 		require(big.phylo)
-		wdir	<- '~/duke/tmp'		 
-		file	<- file.path('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation','/','submitted_160713_05QD.rda')
-		
+		#wdir	<- '~/duke/tmp'		 
+		#file	<- file.path('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation','/','submitted_160713_05QD.rda')		
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/lsd'
 		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
 		load(file)				
 		
 		setkey(submitted.info, TEAM, SC, GENE, RUNGAPS)
 
-		#ds		<- subset(submitted.info, MODEL=='R')
-		ds		<- subset(submitted.info, MODEL=='R' & IDX%in%c(76,79,106,143,145,146,176,232,331,356,358,359,361))
+		ds		<- subset(submitted.info, MODEL=='R')
+		#ds		<- subset(submitted.info, MODEL=='R' & IDX%in%c(76,79,106,143,145,146,176,232,331,356,358,359,361))
 		#ds		<- subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN1' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1]), by='GENE']
 		#ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
 		#ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN4' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])		
@@ -269,7 +268,7 @@ pipeline.various<- function()
 					if(GENE=='POL')
 						ali.nrow	<- 2850						
 					cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
-					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=20, hpc.mem="11800mb")
+					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=40, hpc.mem="11800mb")
 					cat(cmd)		
 					cmd.hpccaller(wdir, paste("lsd",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)					
 					#quit('no')
@@ -324,7 +323,7 @@ pipeline.various<- function()
 					Sys.sleep(1)
 				}, by='SC'])		
 	}
-	if(1)	#submit ExaML of partial sequences 
+	if(0)	#submit ExaML of partial sequences 
 	{
 		require(ape)
 		require(big.phylo)	
@@ -392,7 +391,8 @@ prog.treecomparison<- function()
 	{
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
-		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'	
+		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'
+		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
 		#treedist.quartets.add(file=file, with.save=1)
 		treecomparison.submissions.160627.stuffoncluster(file)
 		#treedist.billera.add(file=file, with.save=1)		
