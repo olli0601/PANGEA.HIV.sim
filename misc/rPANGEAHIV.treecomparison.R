@@ -5444,17 +5444,18 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	if( inherits(readAttempt, "try-error") )
 	{
 		options(warn=2)
-		strs_rtt	<- lapply(seq_along(strs), function(i)
-				{
-					cat('\n',i)
-					#i	<- 628 ; i<- 241; i<- 571
-					ph	<- strs[[i]]
-					tmp	<- data.table(TAXA=ph$tip.label)
-					set(tmp, NULL, 'T_SEQ', tmp[, as.numeric(regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA))) ])					
-					#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
-					phr	<- rtt(ph, tmp[, T_SEQ], ncpu=1)	#this may drop a tip!
-					phr
-				})
+		strs_rtt	<- vector('list', length(strs))		
+		for(i in submitted.info[, IDX])
+		{
+			cat('\n',i)
+			#i	<- 628 ; i<- 241; i<- 571
+			ph				<- strs[[i]]
+			tmp				<- data.table(TAXA=ph$tip.label)
+			set(tmp, NULL, 'T_SEQ', tmp[, as.numeric(regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA))) ])					
+			#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
+			phr				<- rtt(ph, tmp[, T_SEQ], ncpu=1)	#this may drop a tip!
+			strs_rtt[[i]]	<- phr
+		}		
 		names(strs_rtt)	<- names(strs)
 		options(warn=0)
 		#
