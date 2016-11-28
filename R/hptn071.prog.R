@@ -224,7 +224,7 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(1)	#run LSD
+	if(0)	#run LSD
 	{
 		require(ape)
 		require(data.table)

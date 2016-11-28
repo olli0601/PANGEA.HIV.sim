@@ -4788,7 +4788,6 @@ treecomparison.submissions.161123<- function()
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick', full.names=TRUE))
 	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
 	setkey(infiles, IDX)
-	setdiff(1:385, infiles[,IDX])
 	
 	strs_lsd		<- vector('list', submitted.info[, max(IDX)])
 	for(i in seq_len(nrow(infiles)))		
@@ -4799,12 +4798,13 @@ treecomparison.submissions.161123<- function()
 		cat('\n',IDX)
 		ph						<- read.tree(FILE)
 		stopifnot( !is.null(ph) )
-		stopifnot( identical(sort(strs_rtt[[IDX]]$tip.label), sort(ph$tip.label)) )
+		stopifnot( identical(sort(strs[[IDX]]$tip.label), sort(ph$tip.label)) )
 		strs_lsd[[IDX]]			<- ph
 		#names(strs_lsd[[IDX]])	<- FILE					
 	}
 	setkey(submitted.info, IDX)
-	submitted.info[, WITH_LSD:= factor(sapply(strs_lsd, is.null), levels=c(TRUE,FALSE), labels=c('N','Y'))]	 	
+	submitted.info[, WITH_LSD:= factor(sapply(strs_lsd, is.null), levels=c(TRUE,FALSE), labels=c('N','Y'))]
+	submitted.info	<- subset(submitted.info, WITH_LSD=='Y')
 	#
 	#	SAVE so far
 	#
@@ -5441,7 +5441,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_01rerooted.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( 0 & inherits(readAttempt, "try-error") )
+	if( inherits(readAttempt, "try-error") )
 	{
 		options(warn=2)
 		strs_rtt	<- lapply(seq_along(strs), function(i)
@@ -5469,7 +5469,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_03RF.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( 0 & inherits(readAttempt, "try-error") )
+	if( inherits(readAttempt, "try-error") )
 	{		
 		#
 		#	long branch attraction
@@ -5525,7 +5525,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_04PD.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( 0 & inherits(readAttempt, "try-error") )
+	if( inherits(readAttempt, "try-error") )
 	{	
 		#
 		#	path distance of complete trees
@@ -5547,7 +5547,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_05QD.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( 0 & inherits(readAttempt, "try-error") )
+	if( inherits(readAttempt, "try-error") )
 	{		
 		#
 		#	quartet distances of complete trees
