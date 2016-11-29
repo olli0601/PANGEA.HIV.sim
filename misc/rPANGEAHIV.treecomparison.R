@@ -667,7 +667,7 @@ treedist.closest.ind.reconstructed.oftruepairs<- function(submitted.info, tinfo.
 				gds			<- treedist.closest.ind(ph, model.reg)
 				gds			<- subset(gds, IDPOP_CL_GD<=Inf)
 				#	get correct phylogenetically closest pairs
-				z			<- SUB_IDX_T
+				z			<- SUB_IDX_T 
 				z			<- subset(tinfo.pairs, SUB_IDX_T==z)		
 				z			<- subset(z, TRUE_PAIR_Inf)
 				#	get phylogenetically closest pairs in simulation
@@ -5490,12 +5490,6 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#
 		# compute on true trees the proportion if either transmitter or among recipients
 		#
-		tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=Inf)
-		setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_Inf')	
-		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
-		tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=0.045)
-		setnames(tmp, 'TR_REC_perc_T', 'TR_REC_perc_T_45')			
-		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)
 		tmp				<- treedist.closest.ind.obs(tinfo, gd.thresh=0.01)
 		setnames(tmp, c('TPAIR_PHCL_T','NTPAIR_PHCL_T'), c('TPAIR_PHCL_T_1','NTPAIR_PHCL_T_1'))			
 		submitted.info	<- merge(submitted.info, tmp, by='SUB_IDX_T', all.x=1)				
@@ -5504,12 +5498,6 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#
 		# compute closest individual on simulated trees and determine proportion if either transmitter or among recipients
 		#	
-		tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, strs, gd.thresh=Inf)
-		setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_Inf')		
-		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)	
-		tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, strs, gd.thresh=0.045)
-		setnames(tmp, 'TR_REC_perc', 'TR_REC_perc_45')		
-		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)
 		tmp				<- treedist.closest.ind.reconstructed(submitted.info, tinfo, strs, gd.thresh=0.01)
 		setnames(tmp, c('TPAIR_PHCL', 'NTPAIR_PHCL'), c('TPAIR_PHCL_1', 'NTPAIR_PHCL_1'))		
 		submitted.info	<- merge(submitted.info, tmp, by='IDX', all.x=1)			
