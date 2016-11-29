@@ -5464,7 +5464,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		ttrs	<- lapply(ttrs, ladderize)
 		strs	<- lapply(strs, ladderize)
 		strs_rtt<- lapply(strs_rtt, function(ph){
-					if(!is.null(strs_rtt))
+					if(!is.null(ph))
 						ph	<- ladderize(ph)
 					ph
 				} )	
