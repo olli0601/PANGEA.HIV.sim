@@ -5463,7 +5463,11 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		#		
 		ttrs	<- lapply(ttrs, ladderize)
 		strs	<- lapply(strs, ladderize)
-		strs_rtt<- lapply(strs_rtt, ladderize)	
+		strs_rtt<- lapply(strs_rtt, function(ph){
+					if(!is.null(strs_rtt))
+						ph	<- ladderize(ph)
+					ph
+				} )	
 		#	save intermediate	
 		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, file=gsub('.rda','_01rerooted.rda',file))
 	}	#			
