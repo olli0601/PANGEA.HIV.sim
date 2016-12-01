@@ -281,9 +281,9 @@ pipeline.various<- function()
 		#indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps3'
 		infiles		<- data.table(FILE=list.files(indir.wgaps, pattern='\\.fasta$|\\.fa$'))
-		infiles[, PARTITION:= gsub('\\.fasta','_gene.txt',FILE)]
+		infiles[, PARTITION:= gsub('\\.fasta|\\.fa','_gene.txt',FILE)]
 		infiles		<- subset(infiles, !grepl('EXCLSITES70',FILE))
-		outdir		<- indir.wgaps				
+		outdir		<- indir.wgaps	 			
 		infiles[, {	
 					#args.starttree.type	<- 'parsimony'
 					args.starttree.type	<- 'random'
