@@ -1835,7 +1835,7 @@ project.PANGEA.treecomparison.runninggaps3.getfasta<- function()
 	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 	#	
 	infiles[, DUMMY:= 1L]
-	infiles	<- merge(infiles, as.data.table(expand.grid(DUMMY=1L, EXCL=seq(0.3, 0.7, 0.2))), by='DUMMY', allow.cartesian=TRUE)
+	infiles	<- merge(infiles, as.data.table(expand.grid(DUMMY=1L, EXCL=seq(0.2, 0.4, 0.2))), by='DUMMY', allow.cartesian=TRUE)
 	infiles[, DUMMY:=NULL]
 	infiles[, TRAIN_ID:= regmatches(FFA,regexpr('TRAIN[0-9]+', FFA))]
 	#	read each file, rm taxa with more than z missing sites
@@ -1853,7 +1853,7 @@ project.PANGEA.treecomparison.runninggaps3.getfasta<- function()
 							set(tmp, tmp[, which(KEEP)], 'SITE_NEW', tmp[, as.double(seq_along(which(UNASS_P<EXCL[i])))])
 							# make fasta file
 							z	<- sq[, tmp$KEEP]
-							cat('\nnumber of columns in reduced data set', nrow(z))
+							cat('\nnumber of columns in reduced data set', ncol(z))
 							zz	<- file.path(outdir, gsub(TRAIN_ID[i],paste(TRAIN_ID[i],'_EXCLSITES',100*EXCL[i],sep=''),basename(FFA)))
 							write.dna(z, file=zz, format='fa', colsep='', nbcol=-1)
 							# make partitions
@@ -1877,7 +1877,15 @@ project.PANGEA.treecomparison.runninggaps3.getfasta<- function()
 						}
 						NULL
 					}, by=c('FFA')])
-	
+	#	check len
+	tmp	<- data.table(F=list.files(outdir, pattern='fa$', full.names=TRUE))
+	tmp	<- tmp[,{
+				z<- read.dna(F, format='fa')
+				list(COL=ncol(z))
+			},by='F']
+	tmp[, EXCL:= tmp[, gsub('EXCLSITES','',regmatches(F, regexpr('EXCLSITES[0-9]+',F)))]]
+	tmp[, RUNGAPS:= tmp[, as.numeric(gsub('TRAIN[0-9]','',regmatches(F, regexpr('TRAIN[0-9]+',F))))/100]]
+	ggplot(tmp, aes(x=RUNGAPS, colour=EXCL, y=COL)) + geom_line() + geom_point()
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 22.06.15

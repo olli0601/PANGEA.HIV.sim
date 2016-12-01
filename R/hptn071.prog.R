@@ -275,6 +275,109 @@ pipeline.various<- function()
 				}, by='IDX']		
 		quit('no')
 	}
+	if(1)	#	run ExamML with partition for tree comparison
+	{		
+		require(big.phylo)		
+		#indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
+		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps3'
+		infiles		<- data.table(FILE=list.files(indir.wgaps, pattern='\\.fasta$|\\.fa$'))
+		infiles[, PARTITION:= gsub('\\.fasta','_gene.txt',FILE)]
+		infiles		<- subset(infiles, !grepl('EXCLSITES70',FILE))
+		outdir		<- indir.wgaps				
+		infiles[, {	
+					#args.starttree.type	<- 'parsimony'
+					args.starttree.type	<- 'random'
+					args.parser			<- "-m DNA "
+					if(file.exists(file.path(indir.wgaps, PARTITION)))
+						args.parser		<- paste("-m DNA -q",PARTITION)					
+					cmd		<- cmd.examl.single(indir.wgaps, FILE, outdir=outdir, args.parser=args.parser, args.starttree.type=args.starttree.type, args.examl="-m GAMMA -f d -D", verbose=1)
+					cmd		<- hivc.cmd.hpcwrapper(cmd, hpc.walltime=71, hpc.q=NA, hpc.mem="1850mb", hpc.nproc=4)
+					signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
+					outfile	<- paste("ex3",signat,sep='.')
+					cat(cmd)
+					#hivc.cmd.hpccaller(outdir, outfile, cmd)
+					Sys.sleep(1)
+					#stop()
+				}, by='FILE']	
+		quit('no')
+	}
+	if(0)	#	run ExamML with partition for tree comparison in replicate of 10
+	{		
+		require(big.phylo)		
+		indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_simpleGTR'
+		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/simpleGTR'
+		infiles		<- data.table(FILE=list.files(indir.wgaps, pattern='\\.fasta$'))
+		infiles[, PARTITION:= gsub('\\.fasta','_gene.txt',FILE)]
+		outdir		<- indir.wgaps		
+		infiles		<- subset(infiles, grepl('FULL',FILE))
+		infiles[, {					
+					for(i in 1:10)
+					{
+						args.parser		<- "-m DNA "
+						if(file.exists(file.path(indir.wgaps, PARTITION)))
+							args.parser	<- paste("-m DNA -q",PARTITION)
+						#args.examl		<- "-m GAMMA -f d -D"
+						args.examl		<- "-m GAMMA"
+						cmd				<- cmd.examl.single(indir.wgaps, FILE, outdir=outdir, outfile=gsub('\\.fasta',paste('_REP',i,sep=''),FILE), args.parser=args.parser, args.examl=args.examl, verbose=1)
+						cmd				<- hivc.cmd.hpcwrapper(cmd, hpc.walltime=410, hpc.q="pqeelab", hpc.mem="5900mb", hpc.nproc=1)
+						signat			<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
+						outfile			<- paste("ex",signat,sep='.')
+						cat(cmd)
+						hivc.cmd.hpccaller(outdir, outfile, cmd)
+						Sys.sleep(1)
+						#stop()	
+					}					
+				}, by='FILE']					
+	}
+	if(0)	#	run ExamML with partition for prev unsuccessful runs
+	{		
+		require(big.phylo)		
+		outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+		outdir		<- '/work/or105/Gates_2014/tree_comparison/simpleGTR'
+		indir.wgaps	<- outdir
+		infiles		<- data.table(OF=c("161121_GTRFIXED2_FULL_SIMULATED_REP5", "161121_GTRFIXED3_FULL_SIMULATED_REP1", "161121_GTRFIXED3_FULL_SIMULATED_REP2", "161121_GTRFIXED3_FULL_SIMULATED_REP5"))
+		infiles[, IF:=paste(gsub('_REP[0-9]+','',OF),'.fasta',sep='')]
+		infiles[, PARTITION:= gsub('\\.fasta','_gene.txt',IF)]
+		infiles[, {					
+					args.parser		<- "-m DNA "
+					if(file.exists(file.path(indir.wgaps, PARTITION)))
+						args.parser	<- paste("-m DNA -q",PARTITION) 
+					cmd				<- cmd.examl.single(indir.wgaps, IF, outdir=outdir, outfile=OF, args.parser=args.parser, args.examl="-m GAMMA -f d -D", verbose=1)
+					cmd				<- hivc.cmd.hpcwrapper(cmd, hpc.walltime=241, hpc.q="pqeelab", hpc.mem="5900mb", hpc.nproc=1)
+					signat			<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
+					outfile			<- paste("ex",signat,sep='.')
+					cat(cmd)
+					hivc.cmd.hpccaller(outdir, outfile, cmd)
+					Sys.sleep(1)
+					#stop()						
+				}, by='OF']
+	}
+	if(0)	#	run ExamML with partition for prev unsuccessful runs
+	{		
+		require(big.phylo)		
+		outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+		outdir		<- '/work/or105/Gates_2014/tree_comparison/rungaps2'
+		indir.wgaps	<- outdir
+		infiles		<- data.table(OF=c("150701_Regional_TRAIN21750_FULL_SIMULATED","150701_Regional_TRAIN21780_FULL_SIMULATED",
+						"150701_Regional_TRAIN22350_FULL_SIMULATED","150701_Regional_TRAIN23070_FULL_SIMULATED",
+						"150701_Regional_TRAIN23090_FULL_SIMULATED","150701_Regional_TRAIN23150_FULL_SIMULATED",
+						"150701_Regional_TRAIN23750_FULL_SIMULATED","150701_Regional_TRAIN24860_FULL_SIMULATED"))
+		infiles[, IF:=paste(gsub('_REP[0-9]+','',OF),'.fa',sep='')]
+		infiles[, PARTITION:= gsub('\\.fa','_gene.txt',IF)]
+		infiles[, {					
+					args.parser		<- "-m DNA "
+					if(file.exists(file.path(indir.wgaps, PARTITION)))
+						args.parser	<- paste("-m DNA -q",PARTITION) 
+					cmd				<- cmd.examl.single(indir.wgaps, IF, outdir=outdir, outfile=OF, args.parser=args.parser, args.examl="-m GAMMA -f d -D", verbose=1)
+					cmd				<- hivc.cmd.hpcwrapper(cmd, hpc.walltime=41, hpc.q="pqeelab", hpc.mem="5900mb", hpc.nproc=1)
+					signat			<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
+					outfile			<- paste("ex",signat,sep='.')
+					cat(cmd)
+					hivc.cmd.hpccaller(outdir, outfile, cmd)
+					Sys.sleep(1)
+					#stop()						
+				}, by='IF']
+	}
 	if(0)	#calculate genetic distances in alignment + get bootstrap variance
 	{
 		#batch.i		<- 1
@@ -323,7 +426,7 @@ pipeline.various<- function()
 					Sys.sleep(1)
 				}, by='SC'])		
 	}
-	if(1)	#submit ExaML of partial sequences 
+	if(0)	#submit ExaML of partial sequences 
 	{
 		require(ape)
 		require(big.phylo)	
