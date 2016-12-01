@@ -4385,62 +4385,44 @@ treecomparison.submissions.161123<- function()
 	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all=1)
 	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N= length(IDPOP)), by=c('SC','BRL_T','IDCLU')]
 	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','IDCLU'), all=1)
-	#	read sequences and determine %gappiness
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	#	read sequences and determine %gappiness in full alignment
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
-	tmp		<- data.table( FILE_SEQ_T= tmp, SC= gsub('_GAG|_FULL|_P17','',gsub('161121_','161121_REGIONAL_',toupper(gsub('_SIMULATED','',gsub('\\.fa|\\.fasta','',basename(tmp)))))))
-	#z		<- subset(tmp, SC=='VILL_99_APR15')
-	#set(z, NULL, 'SC', '150701_VILL_SCENARIO-C')
-	#tmp		<- rbind( tmp, z )	
-	#tfiles	<- merge(tfiles, tmp, by='SC', all=1)
-	#tmp		<- subset(tfiles, !is.na(FILE_SEQ_T) & !grepl('99_Apr15', FILE_T))[, {
-	#			cat('\n',FILE_SEQ_T)
-	#			z		<- read.dna(FILE_SEQ_T, format='fasta')	
-	#			ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))
-	#			ans		<- apply(ans[c('n','-','?'),], 2, sum)
-	#			list(TAXA=rownames(z), GPS=ans)				
-	#		}, by=c('SC','BRL_T')]
-	#tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all.x=1)
-	#	add % gaps by gene for regional
+	trungps	<- data.table( 	FILE_SEQ_T= tmp, 
+							TEAM= 'RUNGAPS2',
+							SC='150701_Regional_TRAIN2',
+							GENE='FULL',
+							RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
+							RUNGAPS_EXCL= as.numeric(gsub('TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100
+							)
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
+	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
+	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
+							TEAM= 'RUNGAPS_ExaML',
+							SC='150701_Regional_TRAIN2',
+							GENE=regmatches(tmp,regexpr('FULL|GAG|GAGPP|P17|FULL',tmp)),
+							RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
+							RUNGAPS_EXCL= 1
+							)
+	trungps	<- rbind(trungps, tmp)	
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
-	infiles	<- data.table(FILE=list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$|GTRFIXED.*_SIMULATED.fasta$'))
-	infiles[, SC:= gsub('161121_','161121_REGIONAL_',toupper(gsub('_SIMULATED.fa|_SIMULATED.fasta','',basename(FILE))))]
-	tmp		<- subset(infiles, grepl('TRAIN|FULL', SC))[, {
-				#FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN4_SIMULATED.fa"
-				sq	<- read.dna(FILE, format='fa')
-				seqi<- as.data.table(read.csv(gsub('\\.fa|\\.fasta','_gene.txt',FILE), header=FALSE))
-				seqi[, GENE:= regmatches(V2, regexpr('[a-z]+', V2))]
-				seqi[, START:= as.integer(gsub('-','',regmatches(V2, regexpr('[0-9]+-', V2))))]
-				seqi[, END:= as.integer(gsub('-','',regmatches(V2, regexpr('-[0-9]+', V2))))]
-				seqi	<- subset(seqi, select=c(GENE,START,END))
-				seqi	<- rbind(seqi, data.table(GENE='full', START=1L, END= seqi[, max(END)]))				
-				ans		<- seqi[, {
-							#START<- 1474; END<- 5466
-							z	<- as.character(sq[,START:END])
-							tmp	<- apply(z, 2, function(x) all(x%in%c('-','?'))) 							
-							z	<- z[, !tmp]
-							tmp	<- apply(z, 1, function(x) length(which(x=='?'))) / ncol(z)
-							list(TAXA=names(tmp), GAPS_P=tmp)
-						}, by='GENE']
-				set(ans, NULL, 'GENE', ans[, paste(toupper(GENE),'_GAPS_P',sep='')])
-				ans		<- dcast.data.table(ans, TAXA~GENE, value.var='GAPS_P')
-				ans
-			}, by='SC']
-	z		<- subset(infiles, !grepl('TRAIN|FULL', SC))[, {
-				#FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/161121_GTRFIXED1_GAG_SIMULATED.fasta"
-				sq	<- read.dna(FILE, format='fa')
-				z	<- as.character(sq)
-				zz	<- apply(z, 2, function(x) all(x%in%c('-','?'))) 							
-				z	<- z[, !zz]
-				ans	<- apply(z, 1, function(x) length(which(x=='?'))) / ncol(z)
-				ans	<- data.table(TAXA=names(ans), GAPS_P=ans, GENE=gsub('GTRFIXED[0-9]_','',regmatches(FILE,regexpr('GTRFIXED[0-9]_[A-Z0-9]+',FILE))))				
-				ans
-			}, by='SC']	
-	z	<- dcast.data.table(z, SC+TAXA~GENE, value.var='GAPS_P')
-	setnames(z,c('GAG','P17'),c('GAG_GAPS_P','P17_GAPS_P'))
-	tmp	<- rbind(tmp, z, use.names=TRUE,fill=TRUE)
-	tmp		<- tmp[, list(FULL_GAPS_P=mean(FULL_GAPS_P), GAG_GAPS_P=mean(GAG_GAPS_P), POL_GAPS_P=mean(POL_GAPS_P), ENV_GAPS_P=mean(ENV_GAPS_P), P17_GAPS_P=mean(P17_GAPS_P)), by='SC']
-	tinfo	<- merge(tinfo, tmp, all.x=1, by='SC')	
+	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$|GTRFIXED.*_SIMULATED.fasta$')
+	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
+							TEAM= NA_real_,
+							SC=gsub('161121_','161121_REGIONAL_',toupper(gsub('_SIMULATED.fa|_SIMULATED.fasta','',basename(tmp)))),
+							GENE=gsub('\\.fa$','FULL',regmatches(tmp,regexpr('\\.fa$|FULL|GAG|GAGPP|P17|FULL',tmp))),
+							RUNGAPS= NA_real_,
+							RUNGAPS_EXCL= NA_real_
+							)
+	trungps	<- rbind(trungps, tmp)	
+	trungps	<- trungps[, {
+							#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
+							cat('\n',FILE_SEQ_T)
+							z		<- read.dna(FILE_SEQ_T, format='fasta')	
+							ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))							
+							list(TAXA=rownames(z), ACTG_P=apply(ans[c('a','c','t','g'),], 2, sum), UNASS_P=ans['?',])				
+					 	}, by=c('FILE_SEQ_T','SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL')]
+	trungps	<- trungps[, list(ACTG_P=mean(ACTG_P), UNASS_P=mean(UNASS_P)), by=c('FILE_SEQ_T','SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL')]						
 	#
 	# to tinfo add actual transmitters
 	#
@@ -4652,14 +4634,17 @@ treecomparison.submissions.161123<- function()
 	#
 	#	define running gaps for the running gaps analysis
 	#
-	submitted.info[, RUNGGAPS_EXCL:=NA_real_]	
-	set(submitted.info, tmp, 'RUNGAPS', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])	
+	submitted.info[, RUNGAPS:=NA_real_]	
+	tmp		<- submitted.info[, which(grepl('RUNGAPS',TEAM))]
+	set(submitted.info, tmp, 'RUNGAPS', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
 	#
 	#	define running gaps2 selected fraction
 	#
 	submitted.info[, RUNGAPS_EXCL:=NA_real_]	
 	tmp		<- submitted.info[, which(TEAM=='RUNGAPS2')]
 	set(submitted.info, tmp, 'RUNGAPS_EXCL', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',FILE))/100])
+	tmp		<- submitted.info[, which(TEAM=='RUNGAPS_ExaML')]
+	set(submitted.info, tmp, 'RUNGAPS_EXCL', 1)	
 	#
 	#	define partial length
 	#
@@ -4681,10 +4666,9 @@ treecomparison.submissions.161123<- function()
 	#	set which gene used to construct tree (either pol or concatenated gag+pol+env)
 	#
 	submitted.info[, GENE:=NA_character_]
-	set(submitted.info, submitted.info[, which(grepl('FULL', FILE))], 'GENE', 'GAG+POL+ENV')	
-	set(submitted.info, submitted.info[, which(grepl('GAG', FILE))], 'GENE', 'GAG')
-	set(submitted.info, submitted.info[, which(grepl('P17', FILE))], 'GENE', 'P17')
-	set(submitted.info, submitted.info[, which(grepl('GTRFIXED', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(grepl('_FULL_', FILE))], 'GENE', 'GAG+POL+ENV')	
+	set(submitted.info, submitted.info[, which(grepl('_GAG_', FILE))], 'GENE', 'GAG')
+	set(submitted.info, submitted.info[, which(grepl('_P17_', FILE))], 'GENE', 'P17')	
 	set(submitted.info, submitted.info[, which(grepl('TRAIN1_PL', FILE))], 'GENE', 'GAG+POL+ENV')
 	stopifnot(nrow(subset(submitted.info, is.na(GENE)))==0)
 	#
@@ -4809,7 +4793,7 @@ treecomparison.submissions.161123<- function()
 	#	SAVE so far
 	#
 	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	save(strs, strs_lsd, ttrs, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_161123.rda'))	
+	save(strs, strs_lsd, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_161123.rda'))	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.16
@@ -5469,7 +5453,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 					ph
 				} )	
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, file=gsub('.rda','_01rerooted.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, file=gsub('.rda','_01rerooted.rda',file))
 	}	#			
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_03RF.rda',file))))
@@ -5512,7 +5496,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs_rtt, tinfo)
 		sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')	
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_03RF.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_03RF.rda',file))
 	}
 	
 	options(show.error.messages = FALSE)		
@@ -5534,7 +5518,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp[, TAXA_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_04PD.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_04PD.rda',file))
 	}
 	
 	options(show.error.messages = FALSE)		
@@ -5554,7 +5538,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp				<- treedist.quartetdifference.clusters.wrapper(submitted.info, ttrs, strs_rtt, tinfo)
 		tmp[, TAXA_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_05QD.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_05QD.rda',file))
 	}
 	
 	options(show.error.messages = FALSE)		
@@ -5579,7 +5563,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp[, TAXA_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_06PDLSD.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_06PDLSD.rda',file))
 	}
 	
 	options(show.error.messages = FALSE)		
@@ -5601,7 +5585,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp[, TAXA_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD.rda',file))
 	}
 	
 	options(show.error.messages = FALSE)		
@@ -5625,7 +5609,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp[, EDGE_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_08MSEGD.rda',file))
 	}
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_09SBRL.rda',file))))
@@ -5651,7 +5635,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 				}, by=c('IDX')]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX')
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_09SBRL.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_09SBRL.rda',file))
 	}
 	#
 	#	ADD other summaries
@@ -6704,6 +6688,400 @@ treecomparison.ana.160627.sclu<- function()
 			theme_bw() + theme(legend.position='bottom') 
 	file	<- file.path(edir, paste(timetag,'_','QD_clumean_p17full_by_rungaps_taxan1600_Acute10pc.pdf',sep=''))
 	ggsave(file=file, w=5, h=7)		
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 30.11.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.ana.161130.sclu<- function()
+{	
+	require(ggplot2)
+	require(data.table)
+	require(ape)
+	require(scales)	
+	require(ggtree)
+	require(phangorn)
+	
+	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	timetag			<- '161123'		
+	#	
+	#	merge
+	#
+	load(file.path(edir,'submitted_160713_09SBRL.rda'))
+	sc				<- copy(sclu.info)
+	load(file.path(edir,'submitted_161123_09SBRL.rda'))
+	sclu.info[, MSE_GD:=NULL]
+	sclu.info[, MAE_GD:=NULL]
+	sclu.info[, MSE_TP_GD:=NULL]
+	sclu.info[, MAE_TP_GD:=NULL]
+	sc				<- rbind(sc, sclu.info, use.names=TRUE, fill=TRUE)
+	set(sc, sc[, which(grepl('gag+pol+env',FILE,fixed=1))], 'GENE', 'GAG+POL+ENV')
+	#	get RUNGAPS etc columns
+	sc[, RUNGAPS:=NA_real_]	
+	tmp				<- sc[, which(TEAM=='RUNGAPS_ExaML')]
+	set(sc, tmp, 'RUNGAPS', sc[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])	
+	sc[, RUNGAPS_EXCL:=NA_real_]	
+	tmp				<- sc[, which(TEAM=='RUNGAPS2')]
+	set(sc, tmp, 'RUNGAPS_EXCL', sc[tmp, as.numeric(gsub('.*TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',FILE))/100])
+	sc[, PLEN:=NA_real_]	
+	tmp				<- sc[, which(TEAM=='PLEN')]
+	set(sc, tmp, 'PLEN', sc[tmp, as.numeric(gsub('PL','',regmatches(FILE, regexpr('PL[0-9]+',FILE))))])
+	#	fixup RUNGAPS
+	tmp		<- sc[, which(TEAM=='RUNGAPS2')]
+	set(sc, tmp, 'RUNGAPS', sc[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
+	tmp		<- sc[, which(TEAM=='RUNGAPS_ExaML')]
+	set(sc, tmp, 'RUNGAPS_EXCL', 1)
+	
+	#	merge trungps
+	set(trungps, NULL, 'SC', trungps[, gsub('Regional','REGIONAL',gsub('_P17|_GAG|_FULL','',SC))])
+	set(trungps, NULL, 'GENE', trungps[, gsub('FULL','GAG+POL+ENV',GENE)])	
+	sc		<- merge(sc, subset(trungps, !is.na(RUNGAPS) & !is.na(RUNGAPS_EXCL), c(SC, TEAM, GENE, RUNGAPS, RUNGAPS_EXCL, ACTG_P, UNASS_P)), by=c('SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL'), all.x=1)	
+	#
+	sclu.info		<- copy(sc)
+	#
+	sc		<- copy(sclu.info)			
+	sc		<- merge(sc, data.table(GENE=c('P17','GAG','GAG+PARTIALPOL','POL','GAG+POL+ENV'), GENE_L=c(396, 1440, 3080, 2843, 6807)), by='GENE')	
+	tmp		<- unique( subset(tinfo, BRL_T=='subst' & grepl('REG',SC), select=c(SC, TAXA, ENV_GAPS_P, FULL_GAPS_P,  GAG_GAPS_P, POL_GAPS_P)) )
+	tmp		<- tmp[, list(FULL_GAPS_P=mean(FULL_GAPS_P), GAG_GAPS_P=mean(GAG_GAPS_P), POL_GAPS_P=mean(POL_GAPS_P), ENV_GAPS_P=mean(ENV_GAPS_P)), by='SC']
+	tmp		<- melt(tmp, id.vars=c('SC'), variable.name='GENE', value.name='GAPS_P')
+	set(tmp, NULL, 'GENE', tmp[, gsub('FULL','GAG+POL+ENV',gsub('_GAPS_P','',GENE))])	
+	sc		<- merge(sc, tmp, by=c('SC','GENE'), all.x=1)
+	#
+	#tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N=CLU_N[1], MXGPS_CLU= max(GPS), MDGPS_CLU=median(GPS)), by=c('SC','IDCLU')]
+	#sc		<- merge(sc, tmp, by=c('SC','IDCLU'))	
+	set(sc, NULL, 'MODEL', sc[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
+	set(sc, sc[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
+	set(sc, NULL, 'SC', sc[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
+							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+	set(sc, NULL, 'GAPS', sc[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for\nBotswana\nsequences','as for\nUganda\nsequences'))])
+	set(sc, NULL, 'BEST', sc[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])
+	set(sc, sc[, which(GENE=='P17')], 'GENE', 'gag (p17)')
+	set(sc, sc[, which(GENE=='GAG')], 'GENE', 'gag')
+	set(sc, sc[, which(GENE=='GAG+PARTIALPOL')], 'GENE', 'gag + pol (prot,p51)')		
+	set(sc, sc[, which(GENE=='POL')], 'GENE', 'pol')
+	set(sc, sc[, which(GENE=='GAG+POL+ENV')], 'GENE', 'gag+pol+env')
+	set(sc, sc[, which(TEAM=='IQTree')], 'TEAM', 'IQ-TREE')
+	set(sc, sc[, which(TEAM=='RAXML')], 'TEAM', 'RAxML')
+	set(sc, NULL, 'EXT', sc[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
+	set(sc, NULL, 'ART', sc[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
+	sc		<- subset(sc, OTHER=='N')	
+	#	fixup GENE
+	tmp		<- sc[, which(TEAM=='GTRFIXED' & grepl('_P17_',FILE))]
+	set(sc, tmp, 'GENE', 'gag (p17)')
+	tmp		<- sc[, which(TEAM=='GTRFIXED' & grepl('_GAG_',FILE))]
+	set(sc, tmp, 'GENE', 'gag')
+	tmp		<- sc[, which(TEAM=='GTRFIXED' & grepl('_FULL_',FILE))]
+	set(sc, tmp, 'GENE', 'gag+pol+env')
+	#
+	sc		<- sc[, list( 	NRFme=mean(NRFC, na.rm=TRUE), 	
+					NQDme=mean(NQDC, na.rm=TRUE), 	
+					NPDme=mean(NPD, na.rm=TRUE), 	
+					NPDSQme=mean(NPDSQ, na.rm=TRUE),		
+					NRFmd=median(NRFC, na.rm=TRUE), 	
+					NQDmd=median(NQDC, na.rm=TRUE), 
+					NPDmd=median(NPD, na.rm=TRUE), 	
+					NPDSQmd=median(NPDSQ, na.rm=TRUE)
+			), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','GAPS_P','ACTG_P','UNASS_P','RUNGAPS','RUNGAPS_EXCL','PLEN','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
+	sc		<- subset(sc, MODEL=='Model: Regional')
+	#
+	#	patchy vs partial sequences
+	#
+	tmp		<- subset(sc, 	(TEAM=='RUNGAPS_ExaML' & grepl('gag+pol+env',GENE,fixed=1)) | 
+							(TEAM=='PLEN'))
+	tmp[, MISSING_P:= NA_real_]
+	tmp2	<- tmp[, which(TEAM=='RUNGAPS_ExaML')]
+	set(tmp, tmp2,'MISSING_P', tmp[tmp2, (RUNGAPS*GENE_L + (6807-GENE_L))/6807])		
+	tmp2	<- tmp[, which(TEAM=='PLEN')]
+	set(tmp, tmp2,'MISSING_P', tmp[tmp2, 1-PLEN/6807])
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM, levels=c('RUNGAPS_ExaML','PLEN'), labels=c('patchy gag+pol+env sequences','partial sequences'))])	
+	
+	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_point(aes(y=NQDme, colour=TEAM), size=2, pch=8) +
+			#geom_line(aes(y=YM, colour=GENE), size=0.5) +						
+			scale_colour_manual(values=c('partial sequences'='red','patchy gag+pol+env sequences'="#3F4788FF")) +			
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.25)) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nproportion of missing sites, relative to gag+pol+env genome', 
+					y='proportion among all subtrees with 4 taxa\n',
+					colour='distribution of unassembled sites') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean__by_missingsites.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	#
+	#	repeat QD dist with control run (no model misspec)
+	#	currently no improvement whatsoever, potentially due to using -D
+	#
+	tmp		<- subset(sc, ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('GTRFIXED','IQ-TREE', 'PhyML', 'RAxML', 'MetaPIGA'))
+	#tmp[, list(NQDme=mean(NQDme)), by=c('SC','GENE')]
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])
+	ggplot(tmp, aes(x=GAPS)) +
+			geom_jitter(aes(y=NQDme, pch=TEAM, colour=GENE), position=position_jitter(w=0.4, h = 0), size=2) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.28), breaks=seq(0,1,0.1), minor_breaks=seq(0,1,0.05)) +
+			scale_shape_manual(values=c('GTRFIXED'=10, 'IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='proportion among all subtrees with 4 taxa\n',
+					colour='part of simulated genome\nused for tree reconstruction',
+					pch='tree reconstruction\nmethod') +
+			theme_bw() + theme(legend.position='bottom')
+	#
+	#	consider excluding taxa with most gaps, x-axis before taxa excluded
+	#
+	tmp		<- subset(sc, ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS2','RUNGAPS_ExaML'))
+	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(0.5,.6,.7,.8,.9,1), labels=c(">50% unassembled sites",">60% unassembled sites",">70% unassembled sites",">80% unassembled sites",">90% unassembled sites","none"))])	
+	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
+								YM= predict(loess(NQDme~RUNGAPS, span=5, degree=2))), 
+						by='RUNGAPS_EXCL']
+	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','RUNGAPS'))		
+	
+	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">60% unassembled sites",">80% unassembled sites",">90% unassembled sites","none")), aes(x=RUNGAPS)) +
+			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">80% unassembled sites","none")), aes(y=NQDme, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
+			geom_line(aes(y=YM, colour=RUNGAPS_EXCL)) +			
+			scale_colour_brewer(palette='Set1') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0), limits=c(0, 0.25), breaks=seq(0,1,0.05), minor_breaks=seq(0,1,0.01)) +			
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='proportion among all subtrees with 4 taxa\n',
+					colour='sequences excluded\nbefore tree reconstruction',
+					pch='sequences excluded\nbefore tree reconstruction') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedtaxa.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	#
+	#	consider excluding taxa with most gaps, x-axis after taxa excluded
+	#
+	tmp		<- subset(sc, ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS2','RUNGAPS_ExaML'))
+	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(0.5,.6,.7,.8,.9,1), labels=c(">50% unassembled sites",">60% unassembled sites",">70% unassembled sites",">80% unassembled sites",">90% unassembled sites","none"))])	
+	tmp2	<- tmp[, 	list(	UNASS_P= UNASS_P, 
+								YM= predict(loess(NQDme~UNASS_P, span=5, degree=2))), 
+						by='RUNGAPS_EXCL']
+	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','UNASS_P'))		
+	
+	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">60% unassembled sites",">80% unassembled sites",">90% unassembled sites","none")), aes(x=UNASS_P)) +
+			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">80% unassembled sites","none")), aes(y=NQDme, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
+			geom_line(aes(y=YM, colour=RUNGAPS_EXCL)) +			
+			scale_colour_brewer(palette='Set1') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0), limits=c(0, 0.25), breaks=seq(0,1,0.05), minor_breaks=seq(0,1,0.01)) +			
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='proportion among all subtrees with 4 taxa\n',
+					colour='sequences excluded\nbefore tree reconstruction',
+					pch='sequences excluded\nbefore tree reconstruction') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_unassembledafterexclusion.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 30.11.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.ana.161130.strs<- function()
+{	
+	require(ggplot2)
+	require(data.table)
+	require(ape)
+	require(scales)	
+	require(ggtree)
+	require(phangorn)
+	#save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=file.path(edir,'submitted_161123_09SBRL.rda'))
+	
+	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	timetag			<- '161123'		
+	#	
+	#	merge
+	#
+	load(file.path(edir,'submitted_160713_09SBRL.rda'))
+	sa				<- copy(submitted.info)
+	load(file.path(edir,'submitted_161123_09SBRL.rda'))
+	set(submitted.info, NULL, c('MSE_GD','MAE_GD','MSE_TP_GD','MAE_TP_GD','RUNGGAPS_EXCL'), NULL)
+	sa				<- rbind(sa, submitted.info, use.names=TRUE, fill=TRUE)
+	submitted.info	<- copy(sa)
+	#	sa<- copy(submitted.info)
+	#	fixup RUNGAPS
+	tmp		<- sa[, which(TEAM=='RUNGAPS2')]
+	set(sa, tmp, 'RUNGAPS', sa[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
+	tmp		<- sa[, which(TEAM=='RUNGAPS_ExaML')]
+	set(sa, tmp, 'RUNGAPS_EXCL', 1)	
+	#	merge trungps
+	set(trungps, NULL, 'SC', trungps[, gsub('Regional','REGIONAL',gsub('_P17|_GAG|_FULL','',SC))])
+	set(trungps, NULL, 'GENE', trungps[, gsub('FULL','GAG+POL+ENV',GENE)])	
+	sa		<- merge(sa, subset(trungps, !is.na(RUNGAPS) & !is.na(RUNGAPS_EXCL), c(SC, TEAM, GENE, RUNGAPS, RUNGAPS_EXCL, ACTG_P, UNASS_P)), by=c('SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL'), all.x=1)
+	#
+	#	make pretty
+	#
+	set(sa, sa[, which(grepl('gag+pol+env',FILE,fixed=1))], 'GENE', 'GAG+POL+ENV')
+	sa		<- merge(sa, data.table(GENE=c('P17','GAG','GAG+PARTIALPOL','POL','GAG+POL+ENV'), GENE_L=c(396, 1440, 3080, 2843, 6807)), by='GENE')
+	set(sa, NULL, 'MODEL', sa[, factor(MODEL, levels=c('V','R'),labels=c('Model: Village','Model: Regional'))])
+	set(sa, sa[, which(SC=="VILL_99_APR15")],'SC',"150701_VILL_SCENARIO-C")	
+	set(sa, NULL, 'SC', sa[, factor(SC,	levels=c("150701_REGIONAL_TRAIN1", "150701_REGIONAL_TRAIN2", "150701_REGIONAL_TRAIN3", "150701_REGIONAL_TRAIN4","150701_REGIONAL_TRAIN5","150701_VILL_SCENARIO-A","150701_VILL_SCENARIO-B","150701_VILL_SCENARIO-C","150701_VILL_SCENARIO-D","150701_VILL_SCENARIO-E"), 
+							labels=c('sc 1','sc 2','sc 3','sc 4','sc 5','sc A','sc B','sc C','sc D','sc E'))])
+	set(sa, NULL, 'GAPS', sa[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for\nBotswana\nsequences','as for\nUganda\nsequences'))])	
+	set(sa, NULL, 'BEST', sa[, factor(BEST, levels=c('Y','N'),labels=c('best tree','replicate tree'))])
+	set(sa, sa[, which(GENE=='P17')], 'GENE', 'gag (p17)')
+	set(sa, sa[, which(GENE=='GAG')], 'GENE', 'gag')
+	set(sa, sa[, which(GENE=='GAG+PARTIALPOL')], 'GENE', 'gag + pol (prot,p51)')		
+	set(sa, sa[, which(GENE=='POL')], 'GENE', 'pol')
+	set(sa, sa[, which(GENE=='GAG+POL+ENV')], 'GENE', 'gag+pol+env')
+	set(sa, sa[, which(TEAM=='IQTree')], 'TEAM', 'IQ-TREE')
+	set(sa, sa[, which(TEAM=='RAXML')], 'TEAM', 'RAxML')
+	set(sa, NULL, 'EXT', sa[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
+	set(sa, NULL, 'ACUTE', sa[, factor(ACUTE, levels=c('low','high'),labels=c('10%','40%'))])
+	set(sa, NULL, 'ART', sa[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
+	sa		<- subset(sa, OTHER=='N')
+	#
+	#		false pos transmission pairs and mean abs error by missing sites
+	#	
+	tmp		<- subset(sa, 	(TEAM=='RUNGAPS_ExaML' & grepl('gag+pol+env',GENE,fixed=1)) | 
+							(TEAM=='PLEN'))
+	tmp[, MISSING_P:= NA_real_]
+	tmp2	<- tmp[, which(TEAM=='RUNGAPS_ExaML')]
+	set(tmp, tmp2,'MISSING_P', tmp[tmp2, (RUNGAPS*GENE_L + (6807-GENE_L))/6807])		
+	tmp2	<- tmp[, which(TEAM=='PLEN')]
+	set(tmp, tmp2,'MISSING_P', tmp[tmp2, 1-PLEN/6807])
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM, levels=c('RUNGAPS_ExaML','PLEN'), labels=c('patchy gag+pol+env sequences','partial sequences'))])
+	tmp[, Y:=NTPAIR_PHCL_1/(TPAIR_PHCL_1+NTPAIR_PHCL_1)]
+	
+	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_point(aes(y=Y, colour=TEAM), size=2, pch=8) +
+			#geom_line(aes(y=YM, colour=GENE), size=0.5) +						
+			scale_colour_manual(values=c('partial sequences'='red','patchy gag+pol+env sequences'="#3F4788FF")) +			
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.8)) +
+			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
+			labs(	x='\nproportion of missing sites, relative to gag+pol+env genome', 
+					y='no transmission pair\n',
+					colour='distribution of unassembled sites',
+					pch='sampling location') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_by_missingsites.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	
+	
+	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_point(aes(y=MAE_LSD, colour=TEAM), size=2, pch=8) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
+			scale_colour_manual(values=c('partial sequences'='red','patchy gag+pol+env sequences'="#3F4788FF")) +				 
+			scale_y_log10(expand=c(0,0), limit=c(1,15), breaks=c(1,1.5,2,3,4,5,10), minor_breaks=c(seq(1,10,1),seq(10,100,10),seq(100,1000,100),seq(1000,10000,1000))) +			
+			labs(	x='\nproportion of missing sites, relative to gag+pol+env genome', 
+					y='mean absolute error in dated branches\n(years)\n',					
+					colour='distribution of unassembled sites',
+					pch='algorithm') +
+			theme_bw() + theme(legend.position='bottom') 
+	file	<- file.path(edir, paste(timetag,'_','MAETP_by_missingsites.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	
+	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_point(aes(y=sign(SUM_BRANCHES_T-SUM_BRANCHES)*log10(abs(SUM_BRANCHES_T-SUM_BRANCHES)), colour=TEAM), size=2, pch=8) +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
+			scale_colour_manual(values=c('partial sequences'='red','patchy gag+pol+env sequences'="#3F4788FF")) +			
+			scale_y_continuous(breaks=c(-2,1,0,1,2), labels=c(-100,-10,0,10,100)) +			
+			labs(	x='\nproportion of missing sites, relative to gag+pol+env genome', 
+					y='sum of branches in true tree-\nsum of branches in reconstructed tree',					
+					colour='distribution of unassembled sites') +
+			theme_bw() + theme(legend.position='bottom') 		
+	#
+	#	create partial trees
+	#
+	tmp			<- subset(sa, TEAM=='PLEN')
+	setkey(tmp, PLEN)	
+	phs			<- lapply(tmp[, IDX], function(i) strs_rtt[[i]] )				
+	phs[[length(phs)+1]]	<- ttrs[[tmp$SUB_IDX_T[1]]]
+	phs			<- lapply( c(length(phs), seq(1,length(phs)-1)), function(i) phs[[i]] )
+	class(phs) 	<- "multiPhylo"	
+	names(phs)	<- c('True phylogeny',paste('Simulated phylogeny\nfrom partial sequences of length', tmp$PLEN))
+	p	<- ggtree(phs, size=0.1) + facet_wrap(~.id, ncol=10)				
+	pdf(file=file.path(edir, paste(timetag,'_strs_rtt_plen.pdf',sep='')), w=40, h=nrow(tmp)/10*12)
+	print(p)
+	dev.off()	
+	#
+	# evaluate excluding taxa when x-axis is %unassembled before taxa excluded
+	#
+	tmp		<- subset(sa, GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS2','RUNGAPS_ExaML'))
+	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(0.5,.6,.7,.8,.9,1), labels=c(">50% unassembled sites",">60% unassembled sites",">70% unassembled sites",">80% unassembled sites",">90% unassembled sites","none"))])	
+	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
+								YM= predict(loess(MAE_LSD~RUNGAPS, span=5, degree=2))), 
+						by='RUNGAPS_EXCL']
+	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','RUNGAPS'))			
+	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">60% unassembled sites",">80% unassembled sites",">90% unassembled sites","none")), aes(x=RUNGAPS)) +
+			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">80% unassembled sites","none")), aes(y=MAE_LSD, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
+			geom_line(aes(y=YM, colour=RUNGAPS_EXCL)) +			
+			scale_colour_brewer(palette='Set1') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(expand=c(0,0), breaks=c(1,1.5,2,3,4,5,10), limits=c(0,10.5)) +			
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='mean absolute error (years)\n',
+					colour='sequences excluded\nbefore tree reconstruction',
+					pch='sequences excluded\nbefore tree reconstruction') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','MAETP_clumean_by_excludedtaxa.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	
+	tmp		<- subset(sa, GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS2','RUNGAPS_ExaML'))
+	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(0.5,.6,.7,.8,.9,1), labels=c(">50% unassembled sites",">60% unassembled sites",">70% unassembled sites",">80% unassembled sites",">90% unassembled sites","none"))])
+	tmp[, Y:=NTPAIR_PHCL_1/(TPAIR_PHCL_1+NTPAIR_PHCL_1)]
+	tmp		<- subset(tmp, !is.na(TPAIR_PHCL_1))
+	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
+								YM= predict(loess(Y~RUNGAPS, span=5, degree=1))), 
+						by='RUNGAPS_EXCL']
+	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','RUNGAPS'))			
+	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">60% unassembled sites",">80% unassembled sites",">90% unassembled sites","none")), aes(x=RUNGAPS)) +
+			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">80% unassembled sites","none")), aes(y=Y, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
+			geom_line(aes(y=YM, colour=RUNGAPS_EXCL)) +			
+			scale_colour_brewer(palette='Set1') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0)) +			
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='no transmission pair\n',
+					colour='sequences excluded\nbefore tree reconstruction',
+					pch='sequences excluded\nbefore tree reconstruction') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_clumean_by_excludedtaxa.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	#
+	# evaluate excluding taxa when x-axis is %unassembled after taxa excluded
+	#
+	tmp		<- subset(sa, GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS2','RUNGAPS_ExaML'))
+	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(0.5,.6,.7,.8,.9,1), labels=c(">50% unassembled sites",">60% unassembled sites",">70% unassembled sites",">80% unassembled sites",">90% unassembled sites","none"))])	
+	tmp2	<- tmp[, 	list(	UNASS_P= UNASS_P, 
+								YM= predict(loess(MAE_LSD~UNASS_P, span=5, degree=2))), 
+						by='RUNGAPS_EXCL']
+	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','UNASS_P'))			
+	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">60% unassembled sites",">80% unassembled sites",">90% unassembled sites","none")), aes(x=UNASS_P)) +
+			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">80% unassembled sites","none")), aes(y=MAE_LSD, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
+			geom_line(aes(y=YM, colour=RUNGAPS_EXCL)) +			
+			scale_colour_brewer(palette='Set1') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(expand=c(0,0), breaks=c(1,1.5,2,3,4,5,10), limits=c(0,10.5)) +			
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='mean absolute error (years)\n',
+					colour='sequences excluded\nbefore tree reconstruction',
+					pch='sequences excluded\nbefore tree reconstruction') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','MAETP_clumean_by_unassembledafterexclusion.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	
+	tmp		<- subset(sa, GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS2','RUNGAPS_ExaML'))
+	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(0.5,.6,.7,.8,.9,1), labels=c(">50% unassembled sites",">60% unassembled sites",">70% unassembled sites",">80% unassembled sites",">90% unassembled sites","none"))])
+	tmp[, Y:=NTPAIR_PHCL_1/(TPAIR_PHCL_1+NTPAIR_PHCL_1)]
+	tmp		<- subset(tmp, !is.na(TPAIR_PHCL_1))
+	tmp2	<- tmp[, 	list(	UNASS_P= UNASS_P, 
+								YM= predict(loess(Y~UNASS_P, span=5, degree=1))), 
+						by='RUNGAPS_EXCL']
+	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','UNASS_P'))			
+	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">60% unassembled sites",">80% unassembled sites",">90% unassembled sites","none")), aes(x=UNASS_P)) +
+			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">80% unassembled sites","none")), aes(y=Y, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
+			geom_line(aes(y=YM, colour=RUNGAPS_EXCL)) +			
+			scale_colour_brewer(palette='Set1') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0)) +			
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='no transmission pair\n',
+					colour='sequences excluded\nbefore tree reconstruction',
+					pch='sequences excluded\nbefore tree reconstruction') +
+			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_clumean_by_unassembledafterexclusion.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11

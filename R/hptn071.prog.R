@@ -179,7 +179,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)	#submit various
+	if(0)	#submit various
 	{
 		cmd			<- cmd.various()
 		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=171, hpc.mem="6000mb")
@@ -323,7 +323,7 @@ pipeline.various<- function()
 					Sys.sleep(1)
 				}, by='SC'])		
 	}
-	if(0)	#submit ExaML of partial sequences 
+	if(1)	#submit ExaML of partial sequences 
 	{
 		require(ape)
 		require(big.phylo)	
@@ -333,14 +333,15 @@ pipeline.various<- function()
 		indir		<- dirname(infile)
 		infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
 		infile[, OF:= paste(gsub('TRAIN1.*', '',gsub('150701','161125',basename(IF))),paste('TRAIN1_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
-		infile		<- subset(infile, PARTIAL_LEN>=1700)
+		infile		<- subset(infile, PARTIAL_LEN<=2900)
 		invisible(infile[, {																					
 							seq					<- read.dna(IF, format='fa')
 							ifp					<- paste(OF, '.fasta', sep='')
 							write.dna(seq[,1:PARTIAL_LEN], file=file.path(dirname(IF), ifp), format='fa', , colsep='', nbcol=-1)
 													
 							args.examl			<- "-f d -D -m GAMMA"
-							args.starttree.type	<- 'parsimony'
+							#args.starttree.type	<- 'parsimony'
+							args.starttree.type	<- 'random'
 							
 							partition			<- paste(OF,'_gene.txt',sep='')
 							if(PARTIAL_LEN>=4500)
@@ -354,7 +355,14 @@ pipeline.various<- function()
 							if(!is.na(partition))						
 								args.parser		<- paste("-m DNA -q",partition)
 							
-							cmd		<- cmd.examl.single(dirname(IF), ifp, outdir=dirname(IF), outfile= OF, args.starttree.type=args.starttree.type, args.parser=args.parser, args.examl=args.examl, bs.seed=42)
+							cmd		<- cmd.examl.single(	dirname(IF), 
+															ifp, 
+															outdir=dirname(IF), 
+															outfile= OF, 
+															args.starttree.type=args.starttree.type, 
+															args.parser=args.parser, 
+															args.examl=args.examl, 
+															bs.seed=42)
 							cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=129, hpc.q="pqeelab", hpc.mem="5800mb", hpc.nproc=1)
 							signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
 							cat(cmd)

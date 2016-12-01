@@ -1825,6 +1825,61 @@ project.PANGEA.treecomparison.runninggaps2.getfasta<- function()
 	
 }
 ##--------------------------------------------------------------------------------------------------------
+##	olli 17.11.16
+##--------------------------------------------------------------------------------------------------------
+project.PANGEA.treecomparison.runninggaps3.getfasta<- function()
+{
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
+	infiles	<- data.table(FFA=list.files(indir, pattern='fa$', full.names=TRUE))
+	infiles	<- subset(infiles, grepl('FULL',FFA))
+	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
+	#	
+	infiles[, DUMMY:= 1L]
+	infiles	<- merge(infiles, as.data.table(expand.grid(DUMMY=1L, EXCL=seq(0.3, 0.7, 0.2))), by='DUMMY', allow.cartesian=TRUE)
+	infiles[, DUMMY:=NULL]
+	infiles[, TRAIN_ID:= regmatches(FFA,regexpr('TRAIN[0-9]+', FFA))]
+	#	read each file, rm taxa with more than z missing sites
+	#	and write to file	
+	invisible(infiles[, {
+						#FFA		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations/150701_Regional_TRAIN260_FULL_SIMULATED.fa'
+						#EXCL		<- .4; TRAIN_ID<- 'TRAIN260'
+						cat('\nTRAIN_ID', TRAIN_ID[1])
+						sq	<- read.dna(FFA[1], format='fa')				
+						tmp	<- data.table(SITE=seq_len(ncol(sq)), UNASS_P=apply(as.character(sq),2,function(x) length(which(x=='?'))) / nrow(sq))
+						for(i in seq_along(EXCL))
+						{
+							tmp[, KEEP:= UNASS_P<EXCL[i]]
+							tmp[, SITE_NEW:= NA_real_]
+							set(tmp, tmp[, which(KEEP)], 'SITE_NEW', tmp[, as.double(seq_along(which(UNASS_P<EXCL[i])))])
+							# make fasta file
+							z	<- sq[, tmp$KEEP]
+							cat('\nnumber of columns in reduced data set', nrow(z))
+							zz	<- file.path(outdir, gsub(TRAIN_ID[i],paste(TRAIN_ID[i],'_EXCLSITES',100*EXCL[i],sep=''),basename(FFA)))
+							write.dna(z, file=zz, format='fa', colsep='', nbcol=-1)
+							# make partitions
+							z	<- data.table(	LOWER= c( subset(tmp, SITE<=1477)[, min(SITE_NEW, na.rm=1)], subset(tmp, SITE>1477 & SITE<=4290)[, min(SITE_NEW, na.rm=1)], subset(tmp, SITE>4290)[, min(SITE_NEW, na.rm=1)]),
+												UPPER= c(subset(tmp, SITE<=1477)[, max(SITE_NEW, na.rm=1)], subset(tmp, SITE>1477 & SITE<=4290)[, max(SITE_NEW, na.rm=1)], subset(tmp, SITE>4290)[, max(SITE_NEW, na.rm=1)]))
+							z[, LEN:= UPPER-LOWER+1L]	
+							z	<- subset(z, is.finite(LEN))
+							for(j in rev(seq_len(nrow(z))))
+								if(j>1 & z[j,LEN]<200)
+								{
+									set(z, j-1L, 'UPPER', z[j,UPPER])
+									set(z, j-1L, 'LEN', z[j-1L,LEN]+z[j,LEN])
+									set(z, j, 'LEN', NA_real_)
+								}
+							z	<- subset(z, !is.na(LEN))
+							if(nrow(z)>1)
+							{
+								z	<- paste( z[, list(PART=paste('DNA, p',LOWER,' = ',LOWER,'-',UPPER,'\n',sep='')), by='LOWER'][, PART], collapse='')
+								cat(z, file=gsub('\\.fa','_gene.txt',zz))
+							}												
+						}
+						NULL
+					}, by=c('FFA')])
+	
+}
+##--------------------------------------------------------------------------------------------------------
 ##	olli 22.06.15
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.treecomparison.simulation.pipeline<- function()
