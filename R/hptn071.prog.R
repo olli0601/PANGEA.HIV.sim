@@ -295,7 +295,7 @@ pipeline.various<- function()
 					signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
 					outfile	<- paste("ex3",signat,sep='.')
 					cat(cmd)
-					#hivc.cmd.hpccaller(outdir, outfile, cmd)
+					hivc.cmd.hpccaller(outdir, outfile, cmd)
 					Sys.sleep(1)
 					#stop()
 				}, by='FILE']	
