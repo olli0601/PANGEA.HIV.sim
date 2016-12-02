@@ -1938,8 +1938,9 @@ project.PANGEA.treecomparison.simulation.pipeline<- function()
 						#system(file)													
 					}											
 				}, by='label']
-		
-		
+		#
+		# same as above but no heterogeneity on codon positions
+		#
 		pipeline.args	<- sim.regional.args( 	seed=42, 
 				s.MODEL='Fixed2Prop', s.PREV.max.n=1600, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
 				report.prop.recent=1.0, epi.acute='low', epi.intervention='none', 
@@ -1948,9 +1949,6 @@ project.PANGEA.treecomparison.simulation.pipeline<- function()
 				wher.mu=log(0.002239075), wher.sigma=0, bwerm.mu=log(0.002239075), bwerm.sigma=0, 
 				er.gamma=4, er.gtr='GTR_POL_CP1',
 				dbg.GTRparam=1, dbg.rER=1, index.starttime.mode='fix1955', startseq.mode='one', seqtime.mode='AtDiag')
-		#
-		# same as above but no heterogeneity on codon positions
-		#
 		pipeline.vary	<- data.table(	label='2' )			
 		dummy			<- pipeline.vary[, {									
 					tmpdir			<- '/Users/Oliver/duke/tmp/150701_Regional_GTRFIX'	#low acute
@@ -1961,7 +1959,26 @@ project.PANGEA.treecomparison.simulation.pipeline<- function()
 					#stop()
 					system(file)																										
 				}, by='label']
-		
+		#
+		# same as above but much higher taxon sampling
+		#
+		pipeline.args	<- sim.regional.args( 	seed=42, 
+				s.MODEL='Prop2SuggestedSampling', s.PREV.max=0.99, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
+				report.prop.recent=1.0, epi.acute='low', epi.intervention='none', 
+				epi.import=0.05, root.edge.fixed=1,	
+				wher.mu=log(0.002239075)-0.3^2/2, wher.sigma=0.3, bwerm.mu=log(0.002239075)-0.3^2/2, bwerm.sigma=0.3, er.gtr='GTR_VARIABLE',
+				#wher.mu=log(0.002239075), wher.sigma=0, bwerm.mu=log(0.002239075), bwerm.sigma=0, er.gtr='GTR_POL_CP1', 
+				er.gamma=4, dbg.GTRparam=1, dbg.rER=1, index.starttime.mode='fix1955', startseq.mode='one', seqtime.mode='AtDiag')
+		pipeline.vary	<- data.table(	label='4' )			
+		dummy			<- pipeline.vary[, {									
+					tmpdir			<- '/Users/Oliver/duke/tmp/150701_Regional_TRAIN'	#low acute
+					tmpdir			<- paste(tmpdir,label,sep='')
+					dir.create(tmpdir, showWarnings=FALSE)																		
+					file			<- sim.regional(tmpdir, pipeline.args=pipeline.args)
+					cat(file)
+					#stop()
+					system(file)																										
+				}, by='label']
 		
 	}
 }
@@ -2344,16 +2361,66 @@ project.PANGEA.treecomparison.gaps.RobinsonFould.ByPartitionScheme<- function()
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.treecomparison.gaps.simulate.rungapdatasets<- function()
 {		
-	indir.simu		<- '/Users/Oliver/git/HPTN071sim/treecomparison/nogaps'
-	indir.gap		<-	'~/git/HPTN071sim/treecomparison/PANGEAcov'
-	infile.gap		<- '150623_PANGEAGlobal2681_C5.fa'
-	outdir			<- '/Users/Oliver/git/HPTN071sim/treecomparison/withgaps_160729'					
-	gap.symbol		<- '?'
-	gap.seed		<- 42
-	
 	if(1)
-	{	
-		gap.country		<- 'BW'
+	{
+		indir.simu		<- '/Users/Oliver/git/HPTN071sim/treecomparison/nogaps_161121'
+		indir.gap		<-	'~/git/HPTN071sim/treecomparison/PANGEAcov'
+		infile.gap		<- '150623_PANGEAGlobal2681_C5.fa'
+		outdir			<- '/Users/Oliver/git/HPTN071sim/treecomparison/withgaps_161121'					
+		gap.symbol		<- '?'
+		gap.seed		<- 42		
+		infile.gap		<- '151113_PANGEAGlobal4562_C10.fa'
+		
+		outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
+		infile.simu		<- '161121_Regional_TRAIN6_SIMULATED'				
+		#	align and rbind simulated and real sequences, rm gap rows and trailing gap cols too: 
+		ms				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, verbose=1)
+		write.dna(ms, file=paste(indir.simu,'/',gsub('_SIMULATED','_SIMULATED_RMGPS\\.fa',infile.simu),sep=''),format='fasta', colsep='', nbcol=-1)
+		
+		#	make allocations reproducible	
+		set.seed(gap.seed)
+		#	read chunks from selected gap country sequence (is NA, then read from all PANGEA seqs)		
+		sq				<- ms[ grepl('PG[0-9]+', rownames(ms)), ]
+		ch				<- seq.get.gap.chunks(sq, gap.symbol=c('?','n'))
+		setnames(ch, 'TAXON', 'PANGEA_ID')
+		ch[, SITE:= gsub('PG[0-9]+-','',regmatches(PANGEA_ID, regexpr('PG[0-9]+-[A-Z]+',PANGEA_ID))) ]
+		for(gap.p in seq(0.02, 0.6, 0.01))
+		{
+			cat('FULL',gap.p)
+			#	gap coverage per PANGEA id
+			chs				<- PANGEA.add.gaps.allocate.chunks.to.sequences(ch, ms)
+			#	select chunks that give actual coverage closest to requested coverage 
+			tmp				<- chs[which.min(abs(GAP_P-gap.p)), IDX_COARSE]
+			chs				<- subset(chs, IDX_COARSE<=tmp)
+			#	copy gaps into alignment
+			gs				<- as.character(ms)
+			for(i in seq_len(nrow(chs)))
+				gs[ chs[i,COPY_TO],  chs[i, seq.int(POS, len=REP)] ]	<- gap.symbol		
+			#	select simulated sequences 
+			gs				<- gs[which(grepl('IDPOP|HOUSE|HXB2',rownames(gs))), ]		
+			tmp				<- apply(gs[which(grepl('IDPOP|HOUSE',rownames(gs))), ],2,function(x) !all(x%in%c('?','n','-')))
+			gs				<- gs[,tmp]		
+			gap.p.sim		<- round( sum(gs=='?') / (nrow(gs)*ncol(gs)), d=2 )
+			#	determine gene start and end positions
+			tmp				<- c(	regexpr('agataggggggcaac', paste(gs[which(grepl('HXB2',rownames(gs))), ], collapse='') ),
+									regexpr('atgagagtgaaggagaa', paste(gs[which(grepl('HXB2',rownames(gs))), ], collapse='') )	)
+			gene.pos		<- data.table(GENE=c('gag','pol','env'), START=c(1,tmp[1],tmp[2]), END=c(tmp[1]-1L,tmp[2]-1L,ncol(gs)))
+			#	write to file	
+			gs				<- as.DNAbin(gs)
+			outfile			<- paste(gsub('_SIMULATED','',infile.simu), sprintf('%02g',gap.p*100), '_FULL_SIMULATED.fa', sep='')
+			write.dna(gs, file=file.path(outdir, outfile), format='fasta', colsep='', nbcol=-1)			
+			tmp				<- gene.pos[, list(STR=paste('DNA, ',GENE,' = ',START,'-',END,sep='')), by='GENE']
+			cat(paste( tmp[, STR], collapse='\n'), file=file.path(outdir, gsub('.fa','_gene.txt',outfile)))
+		}
+	}	
+	if(0)
+	{		
+		indir.simu		<- '/Users/Oliver/git/HPTN071sim/treecomparison/nogaps'
+		indir.gap		<-	'~/git/HPTN071sim/treecomparison/PANGEAcov'
+		infile.gap		<- '150623_PANGEAGlobal2681_C5.fa'
+		outdir			<- '/Users/Oliver/git/HPTN071sim/treecomparison/withgaps_160729'					
+		gap.symbol		<- '?'
+		gap.seed		<- 42		
 		infile.gap		<- '151113_PANGEAGlobal4562_C10.fa'
 		
 		outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
@@ -2758,6 +2825,27 @@ project.PANGEA.treecomparison.gaps.simulate<- function()
 					NULL
 				}, by='SIMU']				
 	}	
+	if(0)
+	{
+		indir.simu		<- '/Users/Oliver/git/HPTN071sim/treecomparison/nogaps_161121'				
+		outdir			<- '/Users/Oliver/git/HPTN071sim/treecomparison/withgaps_161121'
+		#	store non-gappy alignments as BWC0 		
+		files			<- data.table(FILE=list.files(indir.simu, pattern='TRAIN.*\\.fa.*$'))			
+		files[, SIMU:=files[, regmatches(FILE,regexpr('TRAIN[0-9]', FILE))]]
+		files[, GENE:=files[, sapply(strsplit(FILE,'_'), '[[', 5)]]
+		set(files, NULL, 'GENE', toupper(files[, substr(GENE,1,nchar(GENE)-3)]))
+		set(files, NULL, 'GENE', files[, factor(GENE, levels=c('GAG','POL','ENV'), labels=c('GAG','POL','ENV'))])
+		setkey(files, SIMU, GENE)
+		#	concatenate simu seqs
+		files[, {
+					gag	<- read.dna( paste(indir.simu, FILE[1], sep='/'), format='fasta' )
+					pol	<- read.dna( paste(indir.simu, FILE[2], sep='/'), format='fasta' )
+					env	<- read.dna( paste(indir.simu, FILE[3], sep='/'), format='fasta' )
+					tmp	<- cbind(gag, pol, env)
+					write.dna( tmp, file=paste(outdir, '/', gsub('_gag','',FILE[1]), sep=''), format='fasta', colsep='', nbcol=-1)
+					NULL
+				}, by='SIMU']				
+	}
 }	
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 03.07.15
