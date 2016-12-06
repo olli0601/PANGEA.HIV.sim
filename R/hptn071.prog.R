@@ -224,7 +224,7 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(0)	#run LSD
+	if(1)	#run LSD
 	{
 		require(ape)
 		require(data.table)
@@ -268,14 +268,15 @@ pipeline.various<- function()
 					if(GENE=='POL')
 						ali.nrow	<- 2850						
 					cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
-					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=40, hpc.mem="11800mb")
+					#cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=40, hpc.mem="11800mb")
+					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeph', hpc.walltime=40, hpc.mem="3600mb")
 					cat(cmd)		
 					cmd.hpccaller(wdir, paste("lsd",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)					
 					#quit('no')
 				}, by='IDX']		
 		quit('no')
 	}
-	if(1)	#	run ExamML with partition for tree comparison
+	if(0)	#	run ExamML with partition for tree comparison
 	{		
 		require(big.phylo)		
 		#indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
@@ -292,7 +293,7 @@ pipeline.various<- function()
 					if(file.exists(file.path(indir.wgaps, PARTITION)))
 						args.parser		<- paste("-m DNA -q",PARTITION)					
 					cmd		<- cmd.examl.single(indir.wgaps, FILE, outdir=outdir, args.parser=args.parser, args.starttree.type=args.starttree.type, args.examl="-m GAMMA -f d -D", verbose=1)
-					cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=571, hpc.q=NA, hpc.mem="23850mb", hpc.nproc=4)
+					cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=571, hpc.q="pqeelab", hpc.mem="23850mb", hpc.nproc=4)
 					signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
 					outfile	<- paste("ex3",signat,sep='.')
 					cat(cmd)
