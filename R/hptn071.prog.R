@@ -287,7 +287,7 @@ pipeline.various<- function()
 		#indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps'
 		infiles		<- data.table(FILE=list.files(indir.wgaps, pattern='\\.fasta$|\\.fa$'))
 		infiles[, PARTITION:= gsub('\\.fasta|\\.fa','_gene.txt',FILE)]
-		infiles	<- subset(infiles, !grepl('TRAIN4',FILE))
+		infiles	<- subset(infiles, grepl('TRAIN64',FILE))
 		outdir		<- indir.wgaps	 			
 		infiles[, {	
 					args.starttree.type	<- 'parsimony'
