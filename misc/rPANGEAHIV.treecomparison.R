@@ -6753,29 +6753,29 @@ treecomparison.ana.161130.sclu<- function()
 	#
 	load(file.path(edir,'submitted_160713_09SBRL.rda'))
 	sc				<- copy(sclu.info)
-	load(file.path(edir,'submitted_161123_09SBRL.rda'))
+	sa				<- copy(submitted.info)
+	load(file.path(edir,'submitted_161123_07MSELSD.rda'))
 	sclu.info[, MSE_GD:=NULL]
 	sclu.info[, MAE_GD:=NULL]
 	sclu.info[, MSE_TP_GD:=NULL]
 	sclu.info[, MAE_TP_GD:=NULL]
-	sc				<- rbind(sc, sclu.info, use.names=TRUE, fill=TRUE)
 	set(sc, sc[, which(grepl('gag+pol+env',FILE,fixed=1))], 'GENE', 'GAG+POL+ENV')
-	#	get RUNGAPS etc columns
+	sc				<- rbind(sc, sclu.info, use.names=TRUE, fill=TRUE)
+	#	get RUNGAPS column
 	sc[, RUNGAPS:=NA_real_]	
-	tmp				<- sc[, which(TEAM=='RUNGAPS_ExaML')]
+	tmp				<- sc[, which(grepl('RUNGAPS',TEAM))]
 	set(sc, tmp, 'RUNGAPS', sc[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])	
+	#	get RUNGAPS_EXCL column
 	sc[, RUNGAPS_EXCL:=NA_real_]	
-	tmp				<- sc[, which(TEAM=='RUNGAPS2')]
+	set(sc, sc[, which(TEAM=='RUNGAPS_ExaML')], 'RUNGAPS_EXCL', 1)	
+	tmp				<- sc[, which(TEAM=='RUNGAPS_EXCLTAXA')]
 	set(sc, tmp, 'RUNGAPS_EXCL', sc[tmp, as.numeric(gsub('.*TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',FILE))/100])
+	tmp				<- sc[, which(TEAM=='RUNGAPS_EXCLSITE')]
+	set(sc, tmp, 'RUNGAPS_EXCL', sc[tmp, as.numeric(gsub('.*EXCLSITES([0-9][0-9]).*','\\1',FILE))/100])
+	#	get PLEN column
 	sc[, PLEN:=NA_real_]	
 	tmp				<- sc[, which(TEAM=='PLEN')]
 	set(sc, tmp, 'PLEN', sc[tmp, as.numeric(gsub('PL','',regmatches(FILE, regexpr('PL[0-9]+',FILE))))])
-	#	fixup RUNGAPS
-	tmp		<- sc[, which(TEAM=='RUNGAPS2')]
-	set(sc, tmp, 'RUNGAPS', sc[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
-	tmp		<- sc[, which(TEAM=='RUNGAPS_ExaML')]
-	set(sc, tmp, 'RUNGAPS_EXCL', 1)
-	
 	#	merge trungps
 	set(trungps, NULL, 'SC', trungps[, gsub('Regional','REGIONAL',gsub('_P17|_GAG|_FULL','',SC))])
 	set(trungps, NULL, 'GENE', trungps[, gsub('FULL','GAG+POL+ENV',GENE)])	
@@ -6785,11 +6785,6 @@ treecomparison.ana.161130.sclu<- function()
 	#
 	sc		<- copy(sclu.info)			
 	sc		<- merge(sc, data.table(GENE=c('P17','GAG','GAG+PARTIALPOL','POL','GAG+POL+ENV'), GENE_L=c(396, 1440, 3080, 2843, 6807)), by='GENE')	
-	tmp		<- unique( subset(tinfo, BRL_T=='subst' & grepl('REG',SC), select=c(SC, TAXA, ENV_GAPS_P, FULL_GAPS_P,  GAG_GAPS_P, POL_GAPS_P)) )
-	tmp		<- tmp[, list(FULL_GAPS_P=mean(FULL_GAPS_P), GAG_GAPS_P=mean(GAG_GAPS_P), POL_GAPS_P=mean(POL_GAPS_P), ENV_GAPS_P=mean(ENV_GAPS_P)), by='SC']
-	tmp		<- melt(tmp, id.vars=c('SC'), variable.name='GENE', value.name='GAPS_P')
-	set(tmp, NULL, 'GENE', tmp[, gsub('FULL','GAG+POL+ENV',gsub('_GAPS_P','',GENE))])	
-	sc		<- merge(sc, tmp, by=c('SC','GENE'), all.x=1)
 	#
 	#tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N=CLU_N[1], MXGPS_CLU= max(GPS), MDGPS_CLU=median(GPS)), by=c('SC','IDCLU')]
 	#sc		<- merge(sc, tmp, by=c('SC','IDCLU'))	
@@ -6809,13 +6804,6 @@ treecomparison.ana.161130.sclu<- function()
 	set(sc, NULL, 'EXT', sc[, factor(EXT, levels=c('~0pc','5pc'),labels=c('~ 0%/year','5%/year'))])
 	set(sc, NULL, 'ART', sc[, factor(ART, levels=c('none','fast'),labels=c('none','fast'))])
 	sc		<- subset(sc, OTHER=='N')	
-	#	fixup GENE
-	tmp		<- sc[, which(TEAM=='GTRFIXED' & grepl('_P17_',FILE))]
-	set(sc, tmp, 'GENE', 'gag (p17)')
-	tmp		<- sc[, which(TEAM=='GTRFIXED' & grepl('_GAG_',FILE))]
-	set(sc, tmp, 'GENE', 'gag')
-	tmp		<- sc[, which(TEAM=='GTRFIXED' & grepl('_FULL_',FILE))]
-	set(sc, tmp, 'GENE', 'gag+pol+env')
 	#
 	sc		<- sc[, list( 	NRFme=mean(NRFC, na.rm=TRUE), 	
 					NQDme=mean(NQDC, na.rm=TRUE), 	
@@ -6825,7 +6813,7 @@ treecomparison.ana.161130.sclu<- function()
 					NQDmd=median(NQDC, na.rm=TRUE), 
 					NPDmd=median(NPD, na.rm=TRUE), 	
 					NPDSQmd=median(NPDSQ, na.rm=TRUE)
-			), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','GAPS_P','ACTG_P','UNASS_P','RUNGAPS','RUNGAPS_EXCL','PLEN','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
+			), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','ACTG_P','UNASS_P','RUNGAPS','RUNGAPS_EXCL','PLEN','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
 	sc		<- subset(sc, MODEL=='Model: Regional')
 	#
 	#	patchy vs partial sequences
@@ -6850,7 +6838,7 @@ treecomparison.ana.161130.sclu<- function()
 					y='proportion among all subtrees with 4 taxa\n',
 					colour='distribution of unassembled sites') +
 			theme_bw() + theme(legend.position='bottom') 
-	file	<- file.path(edir, paste(timetag,'_','QD_clumean__by_missingsites.pdf',sep=''))
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_missingsites.pdf',sep=''))
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
 	#
 	#	repeat QD dist with control run (no model misspec)
@@ -6870,6 +6858,8 @@ treecomparison.ana.161130.sclu<- function()
 					colour='part of simulated genome\nused for tree reconstruction',
 					pch='tree reconstruction\nmethod') +
 			theme_bw() + theme(legend.position='bottom')
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_missingsites_withGTRfixed.pdf',sep=''))
+	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)	
 	#
 	#	consider excluding taxa with most gaps, x-axis before taxa excluded
 	#
