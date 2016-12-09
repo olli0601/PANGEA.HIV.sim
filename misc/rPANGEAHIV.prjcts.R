@@ -2424,10 +2424,11 @@ project.PANGEA.treecomparison.gaps.simulate.rungapdatasets<- function()
 		infile.gap		<- '151113_PANGEAGlobal4562_C10.fa'
 		
 		outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
-		infile.simu		<- '150701_Regional_TRAIN2_SIMULATED'				
+		infile.simu		<- '150701_Regional_TRAIN2_SIMULATED'
+		infile.simu		<- '150701_Regional_TRAIN1_SIMULATED'
 		#	align and rbind simulated and real sequences, rm gap rows and trailing gap cols too: 
 		ms				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, verbose=1)
-		write.dna(ms, file=paste(indir.simu,'/',gsub('\\.fa','_RMGPS\\.fa',outfile),sep=''),format='fasta', colsep='', nbcol=-1)
+		write.dna(ms, file=paste(indir.simu,'/',infile.simu,'_RMGPS.fa',sep=''),format='fasta', colsep='', nbcol=-1)
 		#	this now includes HXB2 --> easy to define start + end of gag pol env (or any other restriction that I want to specify)
 		
 		#
@@ -2443,6 +2444,7 @@ project.PANGEA.treecomparison.gaps.simulate.rungapdatasets<- function()
 		ch[, SITE:= gsub('PG[0-9]+-','',regmatches(PANGEA_ID, regexpr('PG[0-9]+-[A-Z]+',PANGEA_ID))) ]
 		
 		for(gap.p in seq(0.02, 0.6, 0.01))
+		#for(gap.p in seq(0.5, 0.6, 0.01))
 		{
 			cat('FULL',gap.p)
 			#	gap coverage per PANGEA id
@@ -2471,6 +2473,9 @@ project.PANGEA.treecomparison.gaps.simulate.rungapdatasets<- function()
 			cat(paste( tmp[, STR], collapse='\n'), file=file.path(outdir, gsub('.fa','_gene.txt',outfile)))
 		}
 		
+		#fi	<- data.table(F=list.files('/Users/Oliver/git/HPTN071sim/treecomparison/withgaps_160729', full.names=TRUE, pattern='^TMP'))
+		#fi[, O:= gsub('TRAIN1_conc.fa|TRAIN1_conc_gene.txt','TRAIN1',gsub('TMP15','15',F))]
+		#fi[, file.rename(F,O), by='F']
 		#
 		#	process p17 genome runs
 		#

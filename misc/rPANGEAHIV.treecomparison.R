@@ -6927,16 +6927,12 @@ treecomparison.ana.161130.strs<- function()
 	#
 	load(file.path(edir,'submitted_160713_09SBRL.rda'))
 	sa				<- copy(submitted.info)
-	load(file.path(edir,'submitted_161123_09SBRL.rda'))
+	#load(file.path(edir,'submitted_161123_09SBRL.rda'))
+	load(file.path(edir,'submitted_161123_07MSELSD.rda'))
 	set(submitted.info, NULL, c('MSE_GD','MAE_GD','MSE_TP_GD','MAE_TP_GD','RUNGGAPS_EXCL'), NULL)
 	sa				<- rbind(sa, submitted.info, use.names=TRUE, fill=TRUE)
 	submitted.info	<- copy(sa)
 	#	sa<- copy(submitted.info)
-	#	fixup RUNGAPS
-	tmp		<- sa[, which(TEAM=='RUNGAPS2')]
-	set(sa, tmp, 'RUNGAPS', sa[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
-	tmp		<- sa[, which(TEAM=='RUNGAPS_ExaML')]
-	set(sa, tmp, 'RUNGAPS_EXCL', 1)	
 	#	merge trungps
 	set(trungps, NULL, 'SC', trungps[, gsub('Regional','REGIONAL',gsub('_P17|_GAG|_FULL','',SC))])
 	set(trungps, NULL, 'GENE', trungps[, gsub('FULL','GAG+POL+ENV',GENE)])	
