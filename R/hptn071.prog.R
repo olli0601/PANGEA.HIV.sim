@@ -278,7 +278,7 @@ pipeline.various<- function()
 				}, by='IDX']		
 		quit('no')
 	}
-	if(1)	#	run ExamML with partition for tree comparison
+	if(0)	#	run ExamML with partition for tree comparison
 	{		
 		require(big.phylo)		
 		#indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
@@ -433,21 +433,24 @@ pipeline.various<- function()
 					Sys.sleep(1)
 				}, by='SC'])		
 	}
-	if(0)	#submit ExaML of partial sequences 
+	if(1)	#submit ExaML of partial sequences 
 	{
 		require(ape)
 		require(big.phylo)	
 		
 		infile		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN1_SIMULATED.fa'
 		infile		<- '/work/or105/Gates_2014/tree_comparison/partiallen/150701_Regional_TRAIN1_SIMULATED.fa'
+		infile		<- '/work/or105/Gates_2014/tree_comparison/rungaps4/161121_Regional_TRAIN600_SIMULATED.fa'
 		indir		<- dirname(infile)
 		infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
-		infile[, OF:= paste(gsub('TRAIN1.*', '',gsub('150701','161125',basename(IF))),paste('TRAIN1_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
-		infile		<- subset(infile, PARTIAL_LEN<=2900)
+		#infile[, OF:= paste(gsub('TRAIN1.*', '',gsub('150701','161125',basename(IF))),paste('TRAIN1_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
+		infile[, OF:= paste(gsub('TRAIN6.*', '',gsub('161121','161125',basename(IF))),paste('TRAIN6_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
+		#infile		<- subset(infile, PARTIAL_LEN<=2900)
+		print(infile)
 		invisible(infile[, {																					
 							seq					<- read.dna(IF, format='fa')
 							ifp					<- paste(OF, '.fasta', sep='')
-							write.dna(seq[,1:PARTIAL_LEN], file=file.path(dirname(IF), ifp), format='fa', , colsep='', nbcol=-1)
+							write.dna(seq[,1:PARTIAL_LEN], file=file.path(dirname(IF), ifp), format='fa', colsep='', nbcol=-1)
 													
 							args.examl			<- "-f d -D -m GAMMA"
 							#args.starttree.type	<- 'parsimony'
@@ -473,10 +476,11 @@ pipeline.various<- function()
 															args.parser=args.parser, 
 															args.examl=args.examl, 
 															bs.seed=42)
-							cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=129, hpc.q="pqeelab", hpc.mem="5800mb", hpc.nproc=1)
+							#cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=129, hpc.q="pqeelab", hpc.mem="5800mb", hpc.nproc=1)
+							cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=71, hpc.q=NA, hpc.mem="15850mb", hpc.nproc=24)
 							signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
 							cat(cmd)
-							cmd.hpccaller(indir, paste("exa",signat,sep='.'), cmd)
+							cmd.hpccaller(indir, paste("expl",signat,sep='.'), cmd)
 							Sys.sleep(1)
 						}, by='OF'])				
 	}

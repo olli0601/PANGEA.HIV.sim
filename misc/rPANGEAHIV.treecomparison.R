@@ -6932,6 +6932,13 @@ treecomparison.ana.161130.strs<- function()
 	set(submitted.info, NULL, c('MSE_GD','MAE_GD','MSE_TP_GD','MAE_TP_GD','RUNGGAPS_EXCL'), NULL)
 	sa				<- rbind(sa, submitted.info, use.names=TRUE, fill=TRUE)
 	submitted.info	<- copy(sa)
+	#	fixup RUNGAPS		
+	tmp		<- sa[, which(grepl('RUNGAPS',TEAM))]
+	set(sa, tmp, 'RUNGAPS', sa[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
+	
+	tmp		<- submitted.info[, which('PLEN'==TEAM)]
+	set(submitted.info, tmp, 'RUNGAPS', 0)	
+	
 	#	sa<- copy(submitted.info)
 	#	merge trungps
 	set(trungps, NULL, 'SC', trungps[, gsub('Regional','REGIONAL',gsub('_P17|_GAG|_FULL','',SC))])
@@ -7021,7 +7028,7 @@ treecomparison.ana.161130.strs<- function()
 	class(phs) 	<- "multiPhylo"	
 	names(phs)	<- c('True phylogeny',paste('Simulated phylogeny\nfrom partial sequences of length', tmp$PLEN))
 	p	<- ggtree(phs, size=0.1) + facet_wrap(~.id, ncol=10)				
-	pdf(file=file.path(edir, paste(timetag,'_strs_rtt_plen.pdf',sep='')), w=40, h=nrow(tmp)/10*12)
+	pdf(file=file.path(edir, paste(timetag,'_strs_rtt_plen2.pdf',sep='')), w=40, h=nrow(tmp)/10*12)
 	print(p)
 	dev.off()	
 	#
@@ -7112,6 +7119,35 @@ treecomparison.ana.161130.strs<- function()
 			theme_bw() + theme(legend.position='bottom')
 	file	<- file.path(edir, paste(timetag,'_','pTransPairAmong1PCDist_clumean_by_unassembledafterexclusion.pdf',sep=''))
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	
+	#
+	#
+	#
+	lba.su		<- merge(lba, subset(sa, TEAM=='RUNGAPS_EXCLTAXA' | TEAM=='RUNGAPS_EXCLSITE', c(IDX, TAXAN, RUNGAPS, RUNGAPS_EXCL, OTHER)), by='IDX')
+	set(lba.su, NULL, 'GAPS', lba.su[, factor(GAPS, levels=c('none','low','high'),labels=c('none','as for\nBotswana\nsequences','as for\nUganda\nsequences'))])		
+	set(lba.su, lba.su[, which(GENE=='P17')], 'GENE', 'gag (p17)')
+	set(lba.su, lba.su[, which(GENE=='GAG')], 'GENE', 'gag')
+	set(lba.su, lba.su[, which(GENE=='GAG+PARTIALPOL')], 'GENE', 'gag + pol (prot,p51)')		
+	set(lba.su, lba.su[, which(GENE=='POL')], 'GENE', 'pol')
+	set(lba.su, lba.su[, which(GENE=='GAG+POL+ENV')], 'GENE', 'gag+pol+env')
+	set(lba.su, lba.su[, which(TEAM=='IQTree')], 'TEAM', 'IQ-TREE')
+	set(lba.su, lba.su[, which(TEAM=='RAXML')], 'TEAM', 'RAxML')	
+	lba.su[, ERR:= DEPTH_T-DEPTH]
+	ref.box		<- c(-0.04,0.04)
+	tmp			<- lba.su[, list(TAXAN=length(ERR), OUTLIER_P=mean(ERR<ref.box[1] | ERR>ref.box[2])), by=c('MODEL','SC','TEAM','GAPS','GENE','IDX')]
+	tmp[, OUTLIER_N:=TAXAN*OUTLIER_P]
+	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM)])
+	set(tmp, NULL, 'GENE', tmp[, factor(GENE, levels=c('gag','pol','gag+pol+env'))])		
+	ggplot(tmp, aes(x=GAPS, y=OUTLIER_P, colour=GENE)) + 
+			geom_jitter(position=position_jitter(w=0.8, h = 0), size=1) +
+			scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +			
+			scale_colour_manual(values=c('gag'='red','pol'="grey60", 'gag+pol+env'="#3F4788FF")) + 			
+			scale_y_continuous(labels = scales::percent) +
+			facet_grid(TEAM~GENE, scales='free_y')  + theme_bw() + theme(legend.position='bottom') +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='branch length to root\n50% too small or too large\n(% of all taxa in tree)\n')
+	file	<- file.path(edir, paste(timetag,'_','longbranches.pdf',sep=''))
+	ggsave(file=file, w=10, h=10, useDingbats=FALSE)
 	
 }
 ##--------------------------------------------------------------------------------------------------------
