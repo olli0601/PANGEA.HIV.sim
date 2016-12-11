@@ -4610,8 +4610,10 @@ treecomparison.submissions.161123<- function()
 	#
 	#	get submitted trees
 	#	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps2'
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps'
 	infiles	<- list.files(indir, pattern='newick$', recursive=1, full.names=1)
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps2'
+	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))	
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simple_GTR'
 	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/partiallen'
@@ -4634,6 +4636,7 @@ treecomparison.submissions.161123<- function()
 	# 	set team
 	#			
 	submitted.info[, TEAM:=NA_character_]
+	set(submitted.info, submitted.info[, which(grepl('running_gaps/',FILE))], 'TEAM', 'RUNGAPS_ExaML')
 	set(submitted.info, submitted.info[, which(grepl('running_gaps2',FILE))], 'TEAM', 'RUNGAPS_EXCLTAXA')
 	set(submitted.info, submitted.info[, which(grepl('running_gaps3',FILE))], 'TEAM', 'RUNGAPS_EXCLSITE')
 	set(submitted.info, submitted.info[, which(grepl('simple_GTR',FILE))], 'TEAM', 'GTRFIXED')	
@@ -4647,7 +4650,7 @@ treecomparison.submissions.161123<- function()
 	set(submitted.info, tmp, 'SC', submitted.info[tmp, gsub('161121_','161121_REGIONAL_',regmatches(FILE, regexpr('161121_GTRFIXED[0-9]',FILE)))])
 	tmp		<- submitted.info[, which(grepl('150701_Regional_TRAIN2', FILE))]
 	set(submitted.info, tmp, 'SC', submitted.info[tmp, regmatches(FILE, regexpr('150701_Regional_TRAIN2',FILE))])
-	tmp		<- submitted.info[, which(grepl('161125_Regional_TRAIN1', FILE))]
+	tmp		<- submitted.info[, which(grepl('150701_Regional_TRAIN1|161125_Regional_TRAIN1', FILE))]
 	set(submitted.info, tmp, 'SC', '150701_REGIONAL_TRAIN1')
 	set(submitted.info, NULL, 'SC', submitted.info[, toupper(SC)])
 	stopifnot( submitted.info[, length(which(is.na(SC)))==0] )
@@ -4659,7 +4662,7 @@ treecomparison.submissions.161123<- function()
 	set(submitted.info, tmp, 'RUNGAPS', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
 	tmp		<- submitted.info[, which('PLEN'==TEAM)]
 	set(submitted.info, tmp, 'RUNGAPS', 0)	
-	stopifnot( nrow(subset(submitted.info, is.na(RUNGAPS) & grepl('RUNGAPS',TEAM))) )
+	stopifnot( !nrow(subset(submitted.info, is.na(RUNGAPS) & grepl('RUNGAPS',TEAM))) )
 	#
 	#	define running gaps2 selected fraction
 	#
@@ -4670,7 +4673,7 @@ treecomparison.submissions.161123<- function()
 	set(submitted.info, tmp, 'RUNGAPS_EXCL', submitted.info[tmp, as.numeric(gsub('EXCLSITES','',regmatches(FILE, regexpr('EXCLSITES[0-9]+',FILE))))/100])
 	tmp		<- submitted.info[, which(TEAM=='RUNGAPS_ExaML')]
 	set(submitted.info, tmp, 'RUNGAPS_EXCL', 1)	
-	stopifnot( nrow(subset(submitted.info, is.na(RUNGAPS) & grepl('RUNGAPS',TEAM))) )
+	stopifnot( !nrow(subset(submitted.info, is.na(RUNGAPS) & grepl('RUNGAPS',TEAM))) )
 	#
 	#	define partial length
 	#
@@ -4726,7 +4729,7 @@ treecomparison.submissions.161123<- function()
 	setnames(tmp, c('subst','time'), c("SUB_IDX_T","TIME_IDX_T"))
 	submitted.info	<- merge(submitted.info, tmp, by='SC')
 	submitted.info	<- merge(submitted.info, unique(subset(tfiles, select=c('SC','TAXAN_T'))), by='SC')	
-	stopifnot(nrow(subset(submitted.info, TAXAN>TAXAN_T))==0)
+	#stopifnot(nrow(subset(submitted.info, TAXAN>TAXAN_T))==0)
 	#
 	#	fix taxa names that teams have changed
 	#

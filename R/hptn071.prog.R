@@ -225,7 +225,7 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(0)	#run LSD
+	if(1)	#run LSD
 	{
 		require(ape)
 		require(data.table)
@@ -433,7 +433,7 @@ pipeline.various<- function()
 					Sys.sleep(1)
 				}, by='SC'])		
 	}
-	if(1)	#submit ExaML of partial sequences 
+	if(0)	#submit ExaML of partial sequences 
 	{
 		require(ape)
 		require(big.phylo)	
