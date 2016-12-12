@@ -32,6 +32,8 @@ treedist.MSE.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 	ans	<- df[, {
 				#IDX<- 724; TIME_IDX_T<- 13; SUB_IDX_T<- 2
 				#IDX<- 241; TIME_IDX_T<- 6; SUB_IDX_T<- 4
+				tmp2	<- tmp3	<- mse	<- mae	<- mse.tp	<- mae.tp	<- NULL
+				gc()
 				cat('\nLSD distances IDX at', IDX)
 				tidx	<- ifelse(use.brl, SUB_IDX_T, TIME_IDX_T)				
 				stree	<- s[[IDX]]				
@@ -64,7 +66,7 @@ treedist.MSE.wrapper<- function(df, s, tbrl, tinfo, use.brl=TRUE)
 				set(tmp3,NULL,'IDTR',tmp3[, as.integer(gsub('IDPOP_','',IDTR))])					
 				tmp2	<- merge(tmp2,tmp3,by=c('IDPOP','IDTR'))
 				mse.tp	<- tmp2[, mean((PD-PD_SIM)*(PD-PD_SIM))]
-				mae.tp	<- tmp2[, mean(abs(PD-PD_SIM))]
+				mae.tp	<- tmp2[, mean(abs(PD-PD_SIM))]				
 				list(MSE=mse, MAE=mae, MSE_TP=mse.tp, MAE_TP=mae.tp, TAXA_NJ=Ntip(stree), EDGE_NJ=nrow(tmp2))				
 			}, by='IDX']
 	ans
