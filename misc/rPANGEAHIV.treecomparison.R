@@ -5634,6 +5634,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
 		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_07MSELSD_noTBRL.rda',file))
 	}
 	
 	options(show.error.messages = FALSE)		
@@ -5657,7 +5658,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 		tmp[, EDGE_NC:=NULL]
 		sclu.info		<- merge(sclu.info, tmp, by=c('IDX','IDCLU'), all.x=1)
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_08MSEGD.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_08MSEGD.rda',file))
 	}
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_09SBRL.rda',file))))
@@ -5683,7 +5684,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 				}, by=c('IDX')]
 		submitted.info	<- merge(submitted.info, tmp, by='IDX')
 		#	save intermediate	
-		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_09SBRL.rda',file))
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_09SBRL.rda',file))
 	}
 	#
 	#	ADD other summaries

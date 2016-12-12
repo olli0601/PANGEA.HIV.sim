@@ -179,7 +179,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(0)	#submit various
+	if(1)	#submit various
 	{
 		cmd			<- cmd.various()
 		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="63000mb")
@@ -225,7 +225,7 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(1)	#run LSD
+	if(0)	#run LSD
 	{
 		require(ape)
 		require(data.table)
