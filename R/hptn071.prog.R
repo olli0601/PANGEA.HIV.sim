@@ -259,7 +259,10 @@ pipeline.various<- function()
 					infile.dates	<- file.path(wdir, paste('IDX_',IDX,'.txt',sep=''))
 					outfile			<- file.path(wdir, paste('IDX_',IDX,'_LSD',sep=''))
 					cat(tmp, file=infile.dates)
-					write.tree(ph, file=infile.tree)
+					ph				<- write.tree(ph, file='')
+					if(substr(ph,nchar(ph)-1,nchar(ph)-1)!=')')
+						ph			<- paste('(', substr(ph,1,nchar(ph)-1), ');', sep='')
+					cat(ph, infile.tree)
 					ali.nrow		<- 6800
 					if(GENE=='GAG')
 						ali.nrow	<- 1440	
