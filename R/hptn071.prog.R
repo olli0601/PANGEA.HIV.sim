@@ -262,7 +262,7 @@ pipeline.various<- function()
 					ph				<- write.tree(ph, file='')
 					if(substr(ph,nchar(ph)-1,nchar(ph)-1)!=')')
 						ph			<- paste('(', substr(ph,1,nchar(ph)-1), ');', sep='')
-					cat(ph, infile.tree)
+					cat(ph, file=infile.tree)
 					ali.nrow		<- 6800
 					if(GENE=='GAG')
 						ali.nrow	<- 1440	
