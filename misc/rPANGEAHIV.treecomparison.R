@@ -4383,8 +4383,7 @@ treecomparison.submissions.161123<- function()
 							GENE='FULL',
 							RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
 							RUNGAPS_EXCL= as.numeric(gsub('TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100
-							)
-	
+							)	
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
@@ -4415,7 +4414,17 @@ treecomparison.submissions.161123<- function()
 							RUNGAPS_EXCL= NA_real_
 							)
 	trungps	<- rbind(trungps, tmp)	
-	#	TODO need to process TRAIN6
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations4'
+	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_FULL_SIMULATED.fa$')
+	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
+							TEAM= 'RUNGAPS_ExaML',
+							SC=toupper(gsub('[0-9][0-9]_FULL_SIMULATED.fa|_SIMULATED.fasta','',basename(tmp))),
+							GENE=gsub('\\.fa$','FULL',regmatches(tmp,regexpr('\\.fa$|FULL|GAG|GAGPP|P17|FULL',tmp))),
+							RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
+							RUNGAPS_EXCL= 1
+							)
+	trungps	<- rbind(trungps, tmp)	
+	#
 	trungps	<- trungps[, {
 							#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
 							cat('\n',FILE_SEQ_T)
@@ -4622,6 +4631,9 @@ treecomparison.submissions.161123<- function()
 	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps3'
 	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps4'
+	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))	
+	
 	infiles	<- data.table(FILE=infiles)
 	strs	<- lapply(infiles[, FILE], function(x)
 			{
@@ -4643,6 +4655,8 @@ treecomparison.submissions.161123<- function()
 	set(submitted.info, submitted.info[, which(grepl('running_gaps3',FILE))], 'TEAM', 'RUNGAPS_EXCLSITE')
 	set(submitted.info, submitted.info[, which(grepl('simple_GTR',FILE))], 'TEAM', 'GTRFIXED')	
 	set(submitted.info, submitted.info[, which(grepl('partiallen',FILE))], 'TEAM', 'PLEN')
+	set(submitted.info, submitted.info[, which(grepl('running_gaps4',FILE) & !grepl('_PL[0-9]+_',FILE))], 'TEAM', 'RUNGAPS_ExaML')
+	set(submitted.info, submitted.info[, which(grepl('running_gaps4',FILE) & grepl('_PL[0-9]+_',FILE))], 'TEAM', 'PLEN')
 	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )	
 	#
 	#	scenario
@@ -4654,6 +4668,8 @@ treecomparison.submissions.161123<- function()
 	set(submitted.info, tmp, 'SC', submitted.info[tmp, regmatches(FILE, regexpr('150701_Regional_TRAIN2',FILE))])
 	tmp		<- submitted.info[, which(grepl('150701_Regional_TRAIN1|161125_Regional_TRAIN1', FILE))]
 	set(submitted.info, tmp, 'SC', '150701_REGIONAL_TRAIN1')
+	tmp		<- submitted.info[, which(grepl('161125_Regional_TRAIN6|161121_Regional_TRAIN6', FILE))]
+	set(submitted.info, tmp, 'SC', '161121_REGIONAL_TRAIN6')	
 	set(submitted.info, NULL, 'SC', submitted.info[, toupper(SC)])
 	stopifnot( submitted.info[, length(which(is.na(SC)))==0] )
 	#
@@ -4681,7 +4697,8 @@ treecomparison.submissions.161123<- function()
 	#
 	submitted.info[, PLEN:=NA_real_]	
 	tmp		<- submitted.info[, which(TEAM=='PLEN')]
-	set(submitted.info, tmp, 'PLEN', submitted.info[tmp, as.numeric(gsub('PL','',regmatches(FILE, regexpr('PL[0-9]+',FILE))))])	
+	set(submitted.info, tmp, 'PLEN', submitted.info[tmp, as.numeric(gsub('PL','',regmatches(FILE, regexpr('PL[0-9]+',FILE))))])
+	stopifnot( !nrow(subset(submitted.info, is.na(PLEN) & grepl('PLEN',TEAM))) )	
 	#
 	#	set covariates of scenarios
 	#
@@ -4700,7 +4717,8 @@ treecomparison.submissions.161123<- function()
 	set(submitted.info, submitted.info[, which(grepl('_FULL_', FILE))], 'GENE', 'GAG+POL+ENV')	
 	set(submitted.info, submitted.info[, which(grepl('_GAG_', FILE))], 'GENE', 'GAG')
 	set(submitted.info, submitted.info[, which(grepl('_P17_', FILE))], 'GENE', 'P17')	
-	set(submitted.info, submitted.info[, which(grepl('TRAIN1_PL', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(grepl('TRAIN1_PL|TRAIN6_PL', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(grepl('161121_Regional_TRAIN600', FILE))], 'GENE', 'GAG+POL+ENV')
 	stopifnot(nrow(subset(submitted.info, is.na(GENE)))==0)
 	#subset(submitted.info, TEAM=='GTRFIXED')
 	#
@@ -4773,6 +4791,7 @@ treecomparison.submissions.161123<- function()
 	}
 	#
 	#	check labels and remove labels that do not appear in the observed tree
+	#	if additional labels are HXB2, root tree at HXB2
 	#
 	tmp	<- submitted.info[, {				
 				stree		<- unroot(strs[[IDX]])
@@ -4782,14 +4801,27 @@ treecomparison.submissions.161123<- function()
 			}, by='IDX']
 	tmp	<- merge(subset(tmp, !CHECK), submitted.info, by='IDX')
 	for(i in seq_len(nrow(tmp)))
-	{
+	{		
 		j			<- tmp[i, IDX]
 		cat('\n',j)		
 		otree		<- tmp[i, TIME_IDX_T]
 		stree		<- unroot(strs[[j]])
 		otree		<- unroot(ttrs[[otree]])					
-		z			<- merge( data.table(TAXA=stree$tip.label, TYPE='s'), data.table(TAXA=otree$tip.label, TYPE='o'), by='TAXA', all=1)			
-		strs[[j]]	<- drop.tip(stree, subset( z, is.na(TYPE.y))[, TAXA])		
+		z			<- merge( data.table(TAXA=stree$tip.label, TYPE='s'), data.table(TAXA=otree$tip.label, TYPE='o'), by='TAXA', all=1)
+		z			<- subset( z, is.na(TYPE.y))[, TAXA]
+		if(any(grepl('HXB2',z)))
+		{
+			
+			zz		<- z[grepl('HXB2',z)]			
+			stree	<- phytools:::reroot(stree, which(stree$tip.label==zz))
+			stree	<- drop.tip(stree, zz)
+			z		<- setdiff(zz,z)
+		}
+		if(length(z))
+		{
+			stree	<- drop.tip(stree, z)
+		}
+		strs[[j]]	<- stree		
 	}
 	submitted.info[, TAXAN:= sapply(strs, Ntip)]
 	#
@@ -6760,7 +6792,7 @@ treecomparison.ana.161130.sclu<- function()
 	load(file.path(edir,'submitted_160713_09SBRL.rda'))
 	sc				<- copy(sclu.info)
 	sa				<- copy(submitted.info)
-	load(file.path(edir,'submitted_161123_07MSELSD.rda'))
+	load(file.path(edir,'submitted_161123_07MSELSD_noTBRL.rda'))
 	sclu.info[, MSE_GD:=NULL]
 	sclu.info[, MAE_GD:=NULL]
 	sclu.info[, MSE_TP_GD:=NULL]
@@ -6784,8 +6816,11 @@ treecomparison.ana.161130.sclu<- function()
 	set(sc, tmp, 'PLEN', sc[tmp, as.numeric(gsub('PL','',regmatches(FILE, regexpr('PL[0-9]+',FILE))))])
 	#	merge trungps
 	set(trungps, NULL, 'SC', trungps[, gsub('Regional','REGIONAL',gsub('_P17|_GAG|_FULL','',SC))])
-	set(trungps, NULL, 'GENE', trungps[, gsub('FULL','GAG+POL+ENV',GENE)])	
-	sc		<- merge(sc, subset(trungps, !is.na(RUNGAPS) & !is.na(RUNGAPS_EXCL), c(SC, TEAM, GENE, RUNGAPS, RUNGAPS_EXCL, ACTG_P, UNASS_P)), by=c('SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL'), all.x=1)	
+	set(trungps, NULL, 'GENE', trungps[, gsub('FULL','GAG+POL+ENV',GENE)])
+	tmp		<- subset(trungps, !is.na(RUNGAPS) & !is.na(RUNGAPS_EXCL), c(SC, TEAM, GENE, RUNGAPS, RUNGAPS_EXCL, ACTG_P, UNASS_P))
+	setkey(tmp,  SC, TEAM, GENE, RUNGAPS, RUNGAPS_EXCL)
+	tmp		<- unique(tmp)
+	sc		<- merge(sc, tmp, by=c('SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL'), all.x=1)	
 	#
 	sclu.info		<- copy(sc)
 	#
@@ -6824,8 +6859,9 @@ treecomparison.ana.161130.sclu<- function()
 	#
 	#	patchy vs partial sequences
 	#
-	tmp		<- subset(sc, 	(TEAM=='RUNGAPS_ExaML' & grepl('gag+pol+env',GENE,fixed=1)) | 
-							(TEAM=='PLEN'))
+	tmp		<- subset(sc, 	SC=='sc 1' & 
+							((TEAM=='RUNGAPS_ExaML' & grepl('gag+pol+env',GENE,fixed=1)) | 
+							(TEAM=='PLEN')))
 	tmp[, MISSING_P:= NA_real_]
 	tmp2	<- tmp[, which(TEAM=='RUNGAPS_ExaML')]
 	set(tmp, tmp2,'MISSING_P', tmp[tmp2, (RUNGAPS*GENE_L + (6807-GENE_L))/6807])		
@@ -6834,8 +6870,9 @@ treecomparison.ana.161130.sclu<- function()
 	set(tmp, NULL, 'TEAM', tmp[, factor(TEAM, levels=c('RUNGAPS_ExaML','PLEN'), labels=c('patchy gag+pol+env sequences','partial sequences'))])	
 	
 	ggplot(tmp, aes(x=MISSING_P)) +
+			geom_vline(aes(xintercept=1-1503/6807)) +	
+			geom_text(x=1-1503/6807, y=0.05, label='HIV-1 gag gene', hjust=-.1, size=3) +				
 			geom_point(aes(y=NQDme, colour=TEAM), size=2, pch=8) +
-			#geom_line(aes(y=YM, colour=GENE), size=0.5) +						
 			scale_colour_manual(values=c('partial sequences'='red','patchy gag+pol+env sequences'="#3F4788FF")) +			
 			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
 			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.25)) +
