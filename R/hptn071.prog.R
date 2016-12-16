@@ -537,10 +537,10 @@ prog.treecomparison<- function()
 		file		<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'		
 		#treedist.quartets.add(file=file, with.save=1)
 		hpc.select	<- NA
-		if(exists("args"))
+		if(exists("argv"))
 		{
 			#	args input
-			tmp		<- na.omit(sapply(args,function(arg)
+			tmp		<- na.omit(sapply(argv,function(arg)
 							{	switch(substr(arg,2,11),
 										hpc.select= return(as.numeric(substr(arg,13,nchar(arg)))),NA)	}))
 			if(length(tmp)>0) hpc.select<- tmp[1]		
