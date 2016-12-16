@@ -5493,21 +5493,52 @@ treecomparison.submissions.160627.stuffoncluster<- function(file)
 	options(show.error.messages = TRUE)			
 	if( inherits(readAttempt, "try-error") )
 	{
+		#	re-root to the root from LSD
 		options(warn=2)
 		strs_rtt	<- vector('list', length(strs))		
 		for(i in submitted.info[, IDX])
 		{
-			cat('\n',i)
-			#i	<- 628 ; i<- 241; i<- 571
-			ph				<- strs[[i]]
-			tmp				<- data.table(TAXA=ph$tip.label)
-			set(tmp, NULL, 'T_SEQ', tmp[, as.numeric(regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA))) ])					
-			#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
-			phr				<- rtt(ph, tmp[, T_SEQ], ncpu=1)	#this may drop a tip!
-			strs_rtt[[i]]	<- phr
-		}		
-		names(strs_rtt)	<- names(strs)
-		options(warn=0)
+			cat('\n',i)			
+			ph	<- strs[[i]]
+			phl	<- strs_lsd[[i]]
+			#	figure out taxon with shortest heigh in rooted lsd tree
+			tmp				<- Ancestors(phl, seq_len(Ntip(phl)), type="all")
+			tmp2			<- sapply(tmp, length)
+			root.pivot		<- which.min(tmp2)
+			root.pivot.name	<- phl$tip.label[root.pivot]
+			#	determine how many edges down from root.pivot the root is located
+			root.descend	<- length(tmp[[root.pivot]])-1
+			#	calculate 1 minus the proportion of the corresponding edge in ph to the root location		 
+			root.pos		<- phl$edge.length[ which( phl$edge[,1]==rev(tmp[[root.pivot]])[1] ) ]
+			root.children	<- phl$edge[which( phl$edge[,1]==rev(tmp[[root.pivot]])[1] ),2]
+			tmp				<- sapply(root.children, function(x) x %in% c(tmp[[root.pivot]], root.pivot))		
+			root.pos		<- 1 - root.pos[tmp] / sum(root.pos)
+			#	find the root child in ph	
+			tmp				<- which(ph$tip.label==root.pivot.name)
+			tmp2			<- Ancestors(ph, tmp, type="all")		
+			root.node.child	<- ifelse(root.descend==0, tmp, tmp2[root.descend])
+			#	find the length of the branch to the root.child
+			#	and get the bit at which the root is to be placed
+			root.pos		<- root.pos * ph$edge.length[ which(ph$edge[,2]==root.node.child) ]
+			#	reroot ph
+			ph				<- reroot(ph, root.node.child, position=root.pos)
+			strs_rtt[[i]]	<- ph 
+		}
+		#options(warn=2)
+		#strs_rtt	<- vector('list', length(strs))		
+		#for(i in submitted.info[, IDX])
+		#{
+		#	cat('\n',i)
+		#	#i	<- 628 ; i<- 241; i<- 571
+		#	ph				<- strs[[i]]
+		#	tmp				<- data.table(TAXA=ph$tip.label)
+		#	set(tmp, NULL, 'T_SEQ', tmp[, as.numeric(regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA))) ])					
+		#	#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
+		#	phr				<- rtt(ph, tmp[, T_SEQ], ncpu=1)	#this may drop a tip!
+		#	strs_rtt[[i]]	<- phr
+		#}
+		#options(warn=0)
+		names(strs_rtt)	<- names(strs)		
 		#
 		#	ladderize all trees
 		#		

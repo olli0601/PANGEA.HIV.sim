@@ -520,7 +520,8 @@ prog.treecomparison<- function()
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'
-		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
+		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
+		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123b.rda'
 		#treedist.quartets.add(file=file, with.save=1)
 		treecomparison.submissions.160627.stuffoncluster(file)
 		#treedist.billera.add(file=file, with.save=1)		
