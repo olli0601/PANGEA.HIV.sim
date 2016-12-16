@@ -5535,7 +5535,32 @@ treecomparison.submissions.160627.stuffoncluster<- function(file, hpc.select=NA)
 		submitted.info	<- subset(submitted.info, HPC==hpc.select)
 		file			<- gsub('\\.rda',paste('_hpc',hpc.select,'.rda',sep=''),file)
 	}		
-	
+	#
+	#	re-root simulated trees with rtt
+	#		
+	options(show.error.messages = FALSE)		
+	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_01rerooted.rda',file))))
+	options(show.error.messages = TRUE)			
+	if( inherits(readAttempt, "try-error") )
+	{
+		options(warn=2)
+		strs_rtt	<- vector('list', length(strs))		
+		for(i in submitted.info[, IDX])
+		{
+			cat('\n',i)
+			#i	<- 628 ; i<- 241; i<- 571
+			ph				<- strs[[i]]
+			tmp				<- data.table(TAXA=ph$tip.label)
+			set(tmp, NULL, 'T_SEQ', tmp[, as.numeric(regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA))) ])					
+			#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
+			phr				<- rtt(ph, tmp[, T_SEQ], ncpu=1)	#this may drop a tip!
+			strs_rtt[[i]]	<- ladderize(phr)
+		}		
+		names(strs_rtt)	<- names(strs)
+		options(warn=0)
+		#	save intermediate	
+		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, file=gsub('.rda','_01rerooted.rda',file))
+	}	#	
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_03RF.rda',file))))
 	options(show.error.messages = TRUE)			
@@ -5571,10 +5596,10 @@ treecomparison.submissions.160627.stuffoncluster<- function(file, hpc.select=NA)
 		#
 		#	compute Robinson Fould of complete tree
 		#
-		tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs_rtt)
+		tmp				<- treedist.robinsonfould.wrapper(submitted.info, ttrs, strs)
 		submitted.info	<- merge(submitted.info, tmp, by='IDX')
 		#	compute Robinson Fould of clusters, then take sum
-		tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs_rtt, tinfo)
+		tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
 		sclu.info		<- merge(subset(submitted.info, select=c("IDX","SC","FILE","TEAM","MODEL","SEQCOV","ACUTE","GAPS","ART","EXT","BEST","OTHER","GENE","TAXAN","ROOTED","BRL","SUB_IDX_T","TIME_IDX_T","TAXAN_T")), tmp, by='IDX')	
 		#	save intermediate	
 		save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=gsub('.rda','_03RF.rda',file))
