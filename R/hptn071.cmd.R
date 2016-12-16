@@ -50,7 +50,7 @@ cmd.treecomparison<- function(prog= PR.EVAL.TREECOMPARISON, hpc.select=NA)
 	cmd		<- "#######################################################
 # start: run EVAL.TREECOMPARISON
 			#######################################################"
-	cmd		<- paste(cmd, '\n', prog, ' -hpc.select ',hpc.select,'\n', sep='')
+	cmd		<- paste(cmd, '\n', prog, ' -hpc.select=',hpc.select,'\n', sep='')
 	cmd		<- paste(cmd,"#######################################################
 # end: run EVAL.TREECOMPARISON
 #######################################################\n",sep='')

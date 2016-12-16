@@ -537,7 +537,6 @@ prog.treecomparison<- function()
 		file		<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'		
 		#treedist.quartets.add(file=file, with.save=1)
 		hpc.select	<- NA
-		print(argv)
 		if(exists("argv"))
 		{
 			#	args input
