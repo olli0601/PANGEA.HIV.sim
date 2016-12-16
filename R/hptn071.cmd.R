@@ -12,6 +12,7 @@ PR.HPTN071.LOWACUTE.PAR		<- system.file(package=PR.PACKAGE, "ext", "PangeaParams
 PR.HPTN071.HIGHACUTE		<- system.file(package=PR.PACKAGE, "ext", "popart-highacute")
 PR.HPTN071.HIGHACUTE.PAR	<- system.file(package=PR.PACKAGE, "ext", "PangeaParamsHighAcute")
 PR.VARIOUS					<- paste(PR.STARTME," -exe=VARIOUS",sep='')
+PR.EVAL.TREECOMPARISON		<- paste(PR.STARTME," -exe=EVALTC",sep='')
 PR.GENDIST					<- paste('Rscript',system.file(package=PR.PACKAGE, "PANGEA.GenDist.calculator.Rscript"),sep=' ')
 
 HPC.MPIRUN					<- {tmp<- c("mpirun","mpiexec"); names(tmp)<- c("debug","cx1.hpc.ic.ac.uk"); tmp}
@@ -34,9 +35,24 @@ cmd.various<- function(prog= PR.VARIOUS)
 	cmd		<- "#######################################################
 # start: run VARIOUS
 #######################################################"
-	cmd		<- paste(cmd, '\n', prog, '\n', sep='')
+	cmd		<- paste(cmd, '\n', prog,'\n', sep='')
 	cmd		<- paste(cmd,"#######################################################
 # end: run VARIOUS
+#######################################################\n",sep='')
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
+##	call to various 
+##	olli originally written 06-08-2015
+##--------------------------------------------------------------------------------------------------------
+cmd.treecomparison<- function(prog= PR.EVAL.TREECOMPARISON, hpc.select=NA)
+{
+	cmd		<- "#######################################################
+# start: run EVAL.TREECOMPARISON
+			#######################################################"
+	cmd		<- paste(cmd, '\n', prog, ' -hpc.select ',hpc.select,'\n', sep='')
+	cmd		<- paste(cmd,"#######################################################
+# end: run EVAL.TREECOMPARISON
 #######################################################\n",sep='')
 	cmd
 }

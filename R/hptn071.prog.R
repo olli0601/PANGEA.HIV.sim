@@ -179,7 +179,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)	#submit various
+	if(0)	#submit various
 	{
 		cmd			<- cmd.various()
 		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="119000mb")
@@ -189,6 +189,20 @@ pipeline.various<- function()
 		outfile		<- paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
+	}	
+	if(1)	#submit evaluation of tree comparison
+	{
+		for(i in 1:84)
+		{
+			cmd			<- cmd.treecomparison(hpc.select=i)
+			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="5800mb")
+			#cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="99000mb")
+			cat(cmd)		
+			outdir		<- paste(HOME,"tmp",sep='/')
+			outfile		<- paste("tc",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
+			cmd.hpccaller(outdir, outfile, cmd)
+			stop()
+		}				
 	}	
 	#	split into individual distances and run MVR on HPC because MDS needs a ton of RAM
 	if(0)
@@ -517,13 +531,21 @@ prog.treecomparison<- function()
 {
 	if(1)
 	{
-		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
-		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
-		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'
-		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
-		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123b.rda'
+		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
+		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
+		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'
+		file		<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'		
 		#treedist.quartets.add(file=file, with.save=1)
-		treecomparison.submissions.160627.stuffoncluster(file)
+		hpc.select	<- NA
+		if(exists("args"))
+		{
+			#	args input
+			tmp		<- na.omit(sapply(args,function(arg)
+							{	switch(substr(arg,2,11),
+										hpc.select= return(as.numeric(substr(arg,13,nchar(arg)))),NA)	}))
+			if(length(tmp)>0) hpc.select<- tmp[1]		
+		}
+		treecomparison.submissions.160627.stuffoncluster(file, hpc.select=hpc.select)
 		#treedist.billera.add(file=file, with.save=1)		
 	}
 	if(0)

@@ -59,6 +59,7 @@ if(length(args))
 					SKYGRID					= "project.PANGEA.TEST.SSApg.CLUSTERBEAST.skygrid",
 					SIMGAPS					= "project.PANGEA.treecomparison.gaps.simulate",
 					VARIOUS					= "prog.treecomparison",
+					EVALTC					= "prog.treecomparison",
 					HAIRCUT.CALL			= "haircutprog.get.call.for.PNG_ID"	
 					)
 	}
