@@ -190,7 +190,7 @@ pipeline.various<- function()
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
-	if(1)	#submit evaluation of tree comparison
+	if(0)	#submit evaluation of tree comparison
 	{
 		for(i in 1:84)
 		{
@@ -204,6 +204,11 @@ pipeline.various<- function()
 			stop()
 		}				
 	}	
+	if(1)	# combine evaluations
+	{
+		treecomparison.combine.stuffoncluster.161123()
+		quit('no')
+	}
 	#	split into individual distances and run MVR on HPC because MDS needs a ton of RAM
 	if(0)
 	{

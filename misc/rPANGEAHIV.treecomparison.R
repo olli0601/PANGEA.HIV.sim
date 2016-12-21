@@ -3056,6 +3056,22 @@ treecomparison.explaingaps.collect.data<- function()
 		
 	}
 	#
+	#	map new IDs to old IDs	
+	#
+	if(0)
+	{
+				
+		infile.new	<- '~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_NewIDs_161212.fasta'		
+		sn			<- read.dna(infile.new, format='fa')
+		#	check seqences are in order
+		tmp			<- sapply(seq_len(nrow(sq)), function(i)	dist.dna(rbind(sq[i,],sn[i,]), model='raw')	)
+		stopifnot(!any(tmp>0))
+		#	map IDs
+		sqi[, PANGEA_ID2:= rownames(sn)]		
+		#
+		save(sq, sqp, sqi, dgene, dpan, file=file.path(wdir,wfile))		
+	}	
+	#
 	#	calculate number of mutations in primers and gaps in gene regions
 	#
 	if(0)
@@ -3279,7 +3295,7 @@ treecomparison.explaingaps.collect.data<- function()
 	#
 	if(0)
 	{
-		dm	<- unique(subset(dgd, select=TAXA))
+		dm	<- unique(subset(dgd, select=TAXA), by='TAXA')
 		dm[, PANGEA_ID:=gsub('-S.*','',TAXA)]		
 		#	add RCCS data
 		load("~/Dropbox (Infectious Disease)/Rakai Pangea Meta Data/Data for Fish Analysis Working Group/RakaiPangeaMetaData.rda")
@@ -3288,7 +3304,7 @@ treecomparison.explaingaps.collect.data<- function()
 		setnames(rccsData, c('Pangea.id','RCCS_studyid','REGION','date','birthyr','firstPosDate','arvStartDate','recentVL','recentVLdate',"AGEYRS"), c('PANGEA_ID','STUDY_ID','LOC','SAMPLEDATE','DOB','FIRSTPOSDATE','ARTSTART','RECENTVL','RECENTVLDATE',"AGE"))
 		rccsData	<- subset(rccsData, !is.na(PANGEA_ID))
 		setkey(rccsData, PANGEA_ID)
-		rccsData	<- unique(rccsData)	#remove 4 duplicates "K104085" "E106462" "F030186" "F101874"
+		rccsData	<- unique(rccsData, by='PANGEA_ID')	#remove 4 duplicates "K104085" "E106462" "F030186" "F101874"		
 		rccsData[, COHORT:='RCCS']
 		set(rccsData, NULL, 'SAMPLEDATE', rccsData[,hivc.db.Date2numeric(SAMPLEDATE)])	
 		set(rccsData, NULL, 'FIRSTPOSDATE', rccsData[,hivc.db.Date2numeric(FIRSTPOSDATE)])
@@ -3305,7 +3321,33 @@ treecomparison.explaingaps.collect.data<- function()
 		setnames(acp, 'PANGEAID', 'PANGEA_ID')
 		set(acp, NULL, c('REASONSAMPLING','LATESTARTREGIMEN','CIRCUMCISED','LASTNEGDATE','LASTNUMSEXUALPARTNERS','LATESTARTREGIMENSTARTED'), NULL)		
 		tmp			<- rbind(tmp, acp, use.names=TRUE, fill=TRUE)
+		#	add metadata from UCL
+		load('~/Dropbox (Infectious Disease)/PANGEA_metadata/processed_metadata/PANGEA_meta_161128.rda')
+		set(dfp, NULL, 'NEW_PANGEA_ID', dfp[, gsub('-[0-9]+$','',NEW_PANGEA_ID)])
+		tmp			<- data.table(PANGEA_ID2=setdiff( subset(sqi, PNG=='Y')[, PANGEA_ID2], dfp[, NEW_PANGEA_ID] ))
+		tmp			<- merge(sqi, tmp, by='PANGEA_ID2')
+		write.csv(tmp, file='~/Dropbox (Infectious Disease)/PANGEA_metadata/processed_metadata/check_keys_OR_161219.csv')
+		#
+		#
+		#
+		subset(dfp, grepl('A33162', NEW_PANGEA_ID))
+		
+		set(dfp, NULL, c('SEQUENCE','SAMPLE_REASON','ART_REGIMEN','NGS_METHOD','PIPELINE','N_CUT_OFF','LC_CUT_OFF'), NULL)
+				
+		setkey(dfp, NEW_PANGEA_ID)
+		dfp			<- unique(dfp)
+		setnames(dfp, 'NEW_PANGEA_ID', 'PANGEA_ID2')
+		dfp			<- merge(sqi, dfp, by='PANGEA_ID2', all.x=1)		
+		dfp			<- subset(dfp, COHORT_ID%in%c("MRC-FF-Nsazi","MRC-SUP-INF","MRC-SI-MAS","MRC_GPC","MRC-HIVCOMB","UVRI-MOHDR"))
+		setnames(dfp, c('PANGEA_ID2','TAXA','COHORT_ID','SAMPLE_DATE','DOB_YEAR','GENDER','GEO_COUNTRY','GEO_CITY','ON_ART','CD4_DATE','VL_DATE','VL_U','VL_L','CD4_U','CD4_L'), c('STUDY_ID','TAXA2','COHORT','SAMPLEDATE','DOB','SEX','GEO_COUNTRY','LOC','CURRENTLYONART','RECENTCD4DATE','RECENTVLDATE','RECENTVL_U','RECENTVL_L','RECENTCD4COUNT_U','RECENTCD4COUNT_L'))
+		set(dfp, NULL, c('DUMMY','COV','PNG','SITE','CD4_RANGE','VL_RANGE'), NULL)
+		set(dfp, NULL, 'PANGEA_ID', dfp[, gsub('-S[0-9]+$','',PANGEA_ID)])
+		dfp			<- unique(dfp, by='PANGEA_ID')				
+		tmp			<- rbind(tmp, dfp, use.names=TRUE, fill=TRUE)
 		dm			<- merge(dm, tmp, by='PANGEA_ID', all.x=1)
+		#	temporary fixup of non-unique keys in UCL data
+		dm			<- subset(dm, !((PANGEA_ID=='PG14-UG500795' & STUDY_ID=='PANGEA-N25977-UG2014') | 
+									(PANGEA_ID=='PG14-UG502774' & STUDY_ID=='PANGEA-K17754-UG2012')))
 		#	add CLASS subtype data
 		subtypeSummaryData	<- as.data.table(subtypeSummaryData)
 		setnames(subtypeSummaryData, 'RCCS_studyid', 'STUDY_ID')
@@ -3325,13 +3367,6 @@ treecomparison.explaingaps.collect.data<- function()
 		set(dm, dm[, which(is.na(COMET_3F4F))],'COMET_3F4F','short')
 		set(dm, dm[, which(is.na(COMET_4F3R))],'COMET_4F3R_N',0L)
 		set(dm, dm[, which(is.na(COMET_4F3R))],'COMET_4F3R','short')
-		#	add REGA subtype data
-		load("~/Dropbox (Infectious Disease)/PANGEA_alignments/Rega Subtype Analysis/Gag REGA results/regaGag.rda")
-		regaGag		<- as.data.table(regaGag)
-		regaGag		<- subset(regaGag, select=c(TAXA, assignment, support, pure, pure_support))
-		set(regaGag, NULL, 'assignment', regaGag[, gsub('Check the Report|Check the report|Check the bootscan','Check bootscan', gsub('Subtype ','', gsub('HIV-1 ','', assignment)))])
-		setnames(regaGag, c('assignment','support','pure','pure_support'),c('REGA_GAG_A','REGA_GAG_AS','REGA_GAG_PURE','REGA_GAG_PURES'))
-		dm			<- merge(dm, regaGag, by='TAXA',all.x=1)
 		#	add Sanger processing data etc
 		dc			<- data.table(read.csv("~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_Summary.csv"))		
 		setnames(dc, c('Sanger.ID','PANGEA.ID','reference.for.mapping','clinical.genome.coverage'), c('SANGER_ID','PANGEA_ID','REF_4_MAPPING','COV'))		
@@ -4309,6 +4344,48 @@ treecomparison.submissions.160713<- function()
 	tinfo	<- merge(tinfo, tmp, by=c('SC','TAXA'), all.x=1)
 	
 	save(strs, strs_rtt, ttrs, tinfo, tfiles, tinfo.pairs, submitted.info, sclu.info, lba, file=file.path(edir, 'submitted_160713_RFPDQDTP.rda'))
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.combine.stuffoncluster.161123<- function()	
+{
+	require(ape)
+	require(data.table)
+	
+	indir	<- '~/duke/tmp/tc'
+	infiles	<- list.files(indir, pattern='hpc[0-9]+_07MSELSD_noTBRL.rda$',full.names=TRUE)
+	cat('\n use as first batch', infiles[1])
+	load( infiles[1] )	
+	#	load first batch
+	#	"strs", "strs_rtt", "strs_lsd", "ttrs", "trungps", "tinfo", "tfiles", "submitted.info", "sclu.info", "lba"
+	submitted.info.all	<- copy(submitted.info)
+	sclu.info.all		<- copy(sclu.info)
+	lba.all				<- copy(lba)
+	strs_rtt.all		<- copy(strs_rtt)
+	#	add next batches
+	infiles				<- infiles[-1]
+	for( i in seq_along(infiles))
+	{
+		#i	<- 2
+		cat('\n add next batch', infiles[i])
+		load( infiles[i] )	
+		submitted.info.all		<- rbind(submitted.info.all, submitted.info)
+		sclu.info.all			<- rbind(sclu.info.all, sclu.info)
+		lba.all					<- rbind(lba.all, lba)
+		tmp						<- unname(which(!sapply(strs_rtt, is.null)))
+		for(j in tmp)
+			strs_rtt.all[[j]]	<- strs_rtt[[j]]
+		gc()
+	}
+	#	save
+	submitted.info		<- copy(submitted.info.all)
+	sclu.info			<- copy(sclu.info.all)
+	lba					<- copy(lba.all)
+	strs_rtt			<- copy(strs_rtt.all)
+	tmp					<- gsub('_hpc[0-9]+','',infiles[i])
+	cat('\nsave combined output to', tmp)
+	save(strs,strs_rtt,strs_lsd,ttrs,trungps,tinfo,tfiles,submitted.info,sclu.info,lba, file=tmp)
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.16
