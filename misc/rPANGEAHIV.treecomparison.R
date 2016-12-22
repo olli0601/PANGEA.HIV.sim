@@ -198,7 +198,7 @@ treedist.quartetdifference.wrapper<- function(submitted.info, ttrs, strs_rtt)
 #--------------------------------------------------------------------------------------------------------
 #	olli 01.08.16	compute quartet differences on sub trees
 #--------------------------------------------------------------------------------------------------------
-treedist.quartetdifference.clusters.wrapper<- function(submitted.info, ttrs, strs_rtt, tinfo)
+treedist.quartetdifference.clusters.wrapper<- function(submitted.info, ttrs, strs_rtt, tinfo, pr.qdist='/apps/qdist/2.0/bin/qdist')
 {
 	setkey(tinfo, IDX_T)
 	tmp		<- subset(submitted.info, MODEL=='R')[, {
@@ -221,7 +221,7 @@ treedist.quartetdifference.clusters.wrapper<- function(submitted.info, ttrs, str
 					ans		<- z[, {								
 								sclu	<- unroot(drop.tip(stree, setdiff(stree$tip.label,TAXA)))
 								oclu	<- unroot(drop.tip(otree, union( setdiff(otree$tip.label, stree$tip.label), setdiff(otree$tip.label,TAXA))))
-								z		<- quartets.distance.cmd(oclu, sclu)
+								z		<- quartets.distance.cmd(oclu, sclu, PROG.QDIST=pr.qdist)
 								list(NQDC=z['NQD'], TAXA_NC=Ntip(oclu))
 							}, by='IDCLU']	
 				}
@@ -452,16 +452,18 @@ quartets.distance <- function (t1,t2) {
 	}
 	d
 }
+
 quartets.distance.cmd	<- function(otree, stree, PROG.QDIST='/apps/qdist/2.0/bin/qdist')
 {
 	file1	<- paste( getwd(), '/tree1', sep='')
 	file2	<- paste( getwd(), '/tree2', sep='')
 	write.tree(otree,file=file1)
 	write.tree(stree,file=file2)
-	cmd<- paste(PROG.QDIST,file1,file2)
+	cmd		<- paste(PROG.QDIST,file1,file2)
 	tmp		<- system(cmd, intern=TRUE)
 	c('TAXA_NJ'=Ntip(otree), 'NQD'=as.numeric(tail(unlist(strsplit(tmp[2],'\t')),1)))
 }
+
 treedist.get.tree.100bs<- function(phr, phs, tmpdir)
 {
 	require(ggtree)
@@ -5593,6 +5595,24 @@ treecomparison.submissions.160627.addLSDtrees<- function()
 	RF.dist(str1, str2, check.labels=TRUE)
 	
 }
+
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.16
+##--------------------------------------------------------------------------------------------------------
+treecomparison.submissions.161223.stuffoncluster<- function(file)	
+{
+	
+	require(data.table)
+	require(ape)
+	require(adephylo)
+	require(phangorn)
+	
+	load(file)		
+	tmp2	<- treedist.quartetdifference.clusters.wrapper(tmp, ttrs, ph_tmp, tinfo)
+	save(tmp, ttrs, ph_tmp, tinfo, tmp2, file=gsub('.rda','_01extra.rda',file))
+	
+}
+
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.16
 ##--------------------------------------------------------------------------------------------------------
@@ -6908,6 +6928,7 @@ treecomparison.ana.161130.sclu<- function()
 	load(file.path(edir,'submitted_160713_09SBRL.rda'))
 	sc				<- copy(sclu.info)
 	sa				<- copy(submitted.info)
+	strs_rtt.160713	<- copy(strs_rtt)
 	load(file.path(edir,'submitted_161123_07MSELSD_noTBRL.rda'))
 	sclu.info[, MSE_GD:=NULL]
 	sclu.info[, MAE_GD:=NULL]
@@ -6971,7 +6992,7 @@ treecomparison.ana.161130.sclu<- function()
 					NQDmd=median(NQDC, na.rm=TRUE), 
 					NPDmd=median(NPD, na.rm=TRUE), 	
 					NPDSQmd=median(NPDSQ, na.rm=TRUE)
-			), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','ACTG_P','UNASS_P','RUNGAPS','RUNGAPS_EXCL','PLEN','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER')]
+			), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','UNASS_P','RUNGAPS','RUNGAPS_EXCL','PLEN','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER','SUB_IDX_T')]
 	sc		<- subset(sc, MODEL=='Model: Regional')
 	#
 	#	patchy vs partial sequences on TRAIN1
@@ -6991,8 +7012,8 @@ treecomparison.ana.161130.sclu<- function()
 			geom_point(aes(y=NQDme, colour=TEAM, pch=SC), size=2) +
 			scale_shape_manual(values=c('sc 1'=17)) +
 			scale_colour_manual(values=c('partial sequences'="#35978F",'patchy gag+pol+env sequences'="#3F4788FF")) +			
-			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
-			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.25)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.609), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.2)) +
 			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
 			labs(	x='\nproportion of missing sites, relative to gag+pol+env genome', 
 					y='proportion among all subtrees with 4 taxa\n',
@@ -7019,8 +7040,8 @@ treecomparison.ana.161130.sclu<- function()
 			geom_point(aes(y=NQDme, colour=TEAM, pch=SC), size=2) +
 			scale_shape_manual(values=c('sc 6'=16)) +
 			scale_colour_manual(values=c('partial sequences'="#35978F",'patchy gag+pol+env sequences'="#3F4788FF")) +			
-			scale_x_continuous(labels = scales::percent, expand=c(0,0), breaks=seq(0,1,0.1)) +
-			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.25)) +
+			scale_x_continuous(labels = scales::percent, expand=c(0,0), limits=c(0, 0.609), breaks=seq(0,1,0.1)) +
+			scale_y_continuous(labels = scales::percent, expand=c(0,0), limits=c(0,0.2)) +
 			#scale_shape_manual(values=c('IQ-TREE'=15, 'PhyML'=12, 'RAxML'=8, 'MetaPIGA'=17)) +
 			labs(	x='\nproportion of missing sites, relative to gag+pol+env genome', 
 					y='proportion among all subtrees with 4 taxa\n',
@@ -7060,7 +7081,7 @@ treecomparison.ana.161130.sclu<- function()
 			by='RUNGAPS_EXCL']
 	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','RUNGAPS'))			
 	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">20% unassembled characters",">30% unassembled characters",">50% unassembled characters","none")), aes(x=RUNGAPS)) +
-			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">20% unassembled characters","none")), aes(y=NQDme, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
+			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">20% unassembled characters",">30% unassembled characters",">50% unassembled characters","none")), aes(y=NQDme, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
 			geom_line(aes(y=YM, colour=RUNGAPS_EXCL)) +			
 			scale_colour_brewer(palette='Set1') +
 			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
@@ -7069,9 +7090,34 @@ treecomparison.ana.161130.sclu<- function()
 					y='proportion among all subtrees with 4 taxa\n',
 					colour='alignment columns excluded\nbefore tree reconstruction',
 					pch='alignment columns excluded\nbefore tree reconstruction') +
-			theme_bw() + theme(legend.position='bottom')
+			theme_bw() + theme(legend.position='bottom') +
+			facet_grid(~RUNGAPS_EXCL)
 	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedsites.pdf',sep=''))
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
+	#
+	#	consider excluding taxa with most gaps, x-axis before taxa excluded
+	#	and re-calculate Quartet distance only on common phylogeny
+	#
+	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_EXCLTAXA', c(TEAM, RUNGAPS, RUNGAPS_EXCL,IDX, SUB_IDX_T))
+	tmp		<- dcast.data.table(tmp, RUNGAPS+RUNGAPS_EXCL+SUB_IDX_T~TEAM, value.var='IDX')
+	tmp2	<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_ExaML', c(RUNGAPS, IDX))	
+	tmp		<- merge(tmp, tmp2, by='RUNGAPS')	
+	tmp[, IDX_NEW:= seq_len(nrow(tmp))]
+	#	create new vector of trees without taxa that are not in the excluded analysis
+	ph_tmp	<- vector('list', nrow(tmp))	#	the trees for RUNGAPS_ExaML are stored in the 160713 version 
+	for(i in seq_len(nrow(tmp)))
+	{
+		#i						<- 1
+		ph.full					<- strs_rtt.160713[[tmp[i,IDX]]]
+		ph.excl					<- strs_rtt[[tmp[i,RUNGAPS_EXCLTAXA]]]
+		ph						<- drop.tip(ph.full, setdiff(ph.full$tip.label, ph.excl$tip.label))
+		stopifnot( Ntip(ph)==Ntip(ph.excl) )
+		ph_tmp[[i]]				<- ph
+	}
+	#	run quartet distances on cluster
+	setnames(tmp, c('IDX','IDX_NEW'), c("IDX_OLD",'IDX'))
+	save(ph_tmp, tmp, ttrs, tinfo, file=file.path(edir, paste0(timetag,'_extraQD.rda')))
+	
 	#
 	#	consider excluding taxa with most gaps, x-axis before taxa excluded
 	#

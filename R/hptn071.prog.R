@@ -179,11 +179,11 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(0)	#submit various
+	if(1)	#submit various
 	{
 		cmd			<- cmd.various()
-		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="119000mb")
-		#cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="64000mb")
+		#cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="119000mb")
+		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="12000mb")
 		cat(cmd)		
 		outdir		<- paste(HOME,"tmp",sep='/')
 		outfile		<- paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
@@ -307,12 +307,12 @@ pipeline.various<- function()
 	{		
 		require(big.phylo)		
 		#indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
-		#indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps3'
-		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps4'
+		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps3'
+		#indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps4'
 		#indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps'
 		infiles		<- data.table(FILE=list.files(indir.wgaps, pattern='\\.fasta$|\\.fa$'))
 		infiles[, PARTITION:= gsub('\\.fasta|\\.fa','_gene.txt',FILE)]
-		infiles	<- subset(infiles, grepl('TRAIN63',FILE))
+		#infiles	<- subset(infiles, grepl('TRAIN63',FILE))
 		outdir		<- indir.wgaps	 			
 		infiles[, {	
 					args.starttree.type	<- 'parsimony'
@@ -321,11 +321,11 @@ pipeline.various<- function()
 					if(file.exists(file.path(indir.wgaps, PARTITION)))
 						args.parser		<- paste("-m DNA -q",PARTITION)					
 					cmd		<- cmd.examl.single(indir.wgaps, FILE, outdir=outdir, args.parser=args.parser, args.starttree.type=args.starttree.type, args.examl="-m GAMMA -f d -D", verbose=1)
-					cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=571, hpc.q="pqeelab", hpc.mem="23850mb", hpc.nproc=12)
+					cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=171, hpc.q="pqeelab", hpc.mem="5850mb", hpc.nproc=1)
 					#cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=71, hpc.q=NA, hpc.mem="15850mb", hpc.nproc=24)
 					#cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=571, hpc.q="pqeelab", hpc.mem="5850mb", hpc.nproc=1)
 					signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
-					outfile	<- paste("exr4",signat,sep='.')
+					outfile	<- paste("exr3",signat,sep='.')
 					cat(cmd)
 					cmd.hpccaller(outdir, outfile, cmd)
 					Sys.sleep(1)
@@ -535,6 +535,11 @@ pipeline.various<- function()
 prog.treecomparison<- function()
 {
 	if(1)
+	{	
+		file		<- '/work/or105/Gates_2014/tree_comparison/161123_extraQD.rda'
+		treecomparison.submissions.161223.stuffoncluster(file)
+	}
+	if(0)
 	{
 		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
 		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
