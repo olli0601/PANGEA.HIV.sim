@@ -1161,12 +1161,6 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 	df.inds				<- copy(tmp$df.inds)
 	df.sample			<- copy(tmp$df.sample)
 	#
-	tmp2				<- df.epi[, {
-										tmp2	<- df.inds[ which( df.inds$DOD>YR & floor(df.inds$TIME_TR)<YR ),]
-										tmp3	<- df.inds[ which( df.inds$DOD>YR & floor(df.inds$TIME_TR)<YR & floor(df.inds$DIAG_T)<YR),]
-										list(SCOV= ifelse(nrow(tmp2)==0, 0, tmp2[, length(which(!is.na(TIME_SEQ)))/length(TIME_SEQ) ]), 
-											 SCOV_DIAG= ifelse(nrow(tmp3)==0, 0, tmp3[, length(which(!is.na(TIME_SEQ)))/length(TIME_SEQ) ]))				
-									} , by='YR']
 	sc.alive20.infl20	<- subset(tmp2, YR==pipeline.args['yr.end',][, as.numeric(v)]-1)[, SCOV]
 	df.sample			<- merge(df.sample, tmp2, by='YR')
 	tmp2				<- subset( df.inds, floor(TIME_TR)>=2000 & floor(TIME_TR)<pipeline.args['yr.end',][, as.numeric(v)])

@@ -204,7 +204,7 @@ pipeline.various<- function()
 			stop()
 		}				
 	}	
-	if(1)	# combine evaluations
+	if(0)	# combine evaluations
 	{
 		treecomparison.combine.stuffoncluster.161123()
 		quit('no')
@@ -470,7 +470,7 @@ pipeline.various<- function()
 		infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
 		#infile[, OF:= paste(gsub('TRAIN1.*', '',gsub('150701','161125',basename(IF))),paste('TRAIN1_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
 		infile[, OF:= paste(gsub('TRAIN6.*', '',gsub('161121','161125',basename(IF))),paste('TRAIN6_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
-		#infile		<- subset(infile, PARTIAL_LEN<=2900)
+		infile		<- subset(infile, PARTIAL_LEN>5105)
 		print(infile)
 		invisible(infile[, {																					
 							seq					<- read.dna(IF, format='fa')
