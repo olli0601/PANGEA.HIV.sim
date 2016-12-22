@@ -458,7 +458,7 @@ pipeline.various<- function()
 					Sys.sleep(1)
 				}, by='SC'])		
 	}
-	if(0)	#submit ExaML of partial sequences 
+	if(1)	#submit ExaML of partial sequences 
 	{
 		require(ape)
 		require(big.phylo)	
