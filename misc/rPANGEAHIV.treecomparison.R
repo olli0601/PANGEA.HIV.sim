@@ -5608,6 +5608,7 @@ treecomparison.submissions.161223.stuffoncluster<- function(file)
 	require(phangorn)
 	
 	load(file)		
+	tmp[, MODEL:='R']
 	tmp2	<- treedist.quartetdifference.clusters.wrapper(tmp, ttrs, ph_tmp, tinfo)
 	save(tmp, ttrs, ph_tmp, tinfo, tmp2, file=gsub('.rda','_01extra.rda',file))
 	
