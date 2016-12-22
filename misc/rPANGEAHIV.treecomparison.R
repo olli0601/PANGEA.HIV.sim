@@ -5609,6 +5609,7 @@ treecomparison.submissions.161223.stuffoncluster<- function(file)
 	
 	load(file)		
 	tmp[, MODEL:='R']
+	setnames(tmp, c('IDX','IDX_NEW'), c('IDX_OLD','IDX'))
 	tmp2	<- treedist.quartetdifference.clusters.wrapper(tmp, ttrs, ph_tmp, tinfo)
 	save(tmp, ttrs, ph_tmp, tinfo, tmp2, file=gsub('.rda','_01extra.rda',file))
 	
