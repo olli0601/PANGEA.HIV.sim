@@ -1969,7 +1969,7 @@ project.PANGEA.treecomparison.simulation.pipeline<- function()
 					system(file)																										
 				}, by='label']
 		#
-		# same as above but much higher taxon sampling
+		# same as above but 60% taxon sampling of all PLWH 2020
 		#
 		pipeline.args	<- sim.regional.args( 	seed=42, 
 				s.MODEL='Prop2SuggestedSampling', s.PREV.max=0.99, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
@@ -1988,7 +1988,27 @@ project.PANGEA.treecomparison.simulation.pipeline<- function()
 					#stop()
 					system(file)																										
 				}, by='label']
-		
+		#
+		# same as above but 30% taxon sampling of all PLWH 2020
+		#
+		pipeline.args	<- sim.regional.args( 	seed=42, 
+				s.MODEL='Prop2SuggestedSampling', s.PREV.max=NA, s.INTERVENTION.prop=0.25, s.INTERVENTION.start=2015, s.INTERVENTION.mul= NA, s.ARCHIVAL.n=50,
+				report.prop.recent=1.0, epi.acute='low', epi.intervention='none', 
+				epi.import=0.05, root.edge.fixed=1,	
+				wher.mu=log(0.002239075)-0.3^2/2, wher.sigma=0.3, bwerm.mu=log(0.002239075)-0.3^2/2, bwerm.sigma=0.3, er.gtr='GTR_VARIABLE',
+				#wher.mu=log(0.002239075), wher.sigma=0, bwerm.mu=log(0.002239075), bwerm.sigma=0, er.gtr='GTR_POL_CP1', 
+				er.gamma=4, dbg.GTRparam=1, dbg.rER=1, index.starttime.mode='fix1955', startseq.mode='one', seqtime.mode='AtDiag')
+		pipeline.vary	<- data.table(	s.PREV.max=c(0.5, 0.25), label=c('7','8') )			
+		dummy			<- pipeline.vary[, {	
+					set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.PREV.max))
+					tmpdir			<- '/Users/Oliver/duke/tmp/150701_Regional_TRAIN'	#low acute
+					tmpdir			<- paste(tmpdir,label,sep='')
+					dir.create(tmpdir, showWarnings=FALSE)																		
+					file			<- sim.regional(tmpdir, pipeline.args=pipeline.args)
+					cat(file)
+					#stop()
+					system(file)																										
+				}, by='label']
 	}
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -2381,7 +2401,9 @@ project.PANGEA.treecomparison.gaps.simulate.rungapdatasets<- function()
 		infile.gap		<- '151113_PANGEAGlobal4562_C10.fa'
 		
 		outfile.cov		<- regmatches(infile.gap,regexpr('C[0-9]+',basename(infile.gap)))
-		infile.simu		<- '161121_Regional_TRAIN6_SIMULATED'				
+		infile.simu		<- '161121_Regional_TRAIN6_SIMULATED'
+		infile.simu		<- '161121_Regional_TRAIN7_SIMULATED'
+		infile.simu		<- '161121_Regional_TRAIN8_SIMULATED'
 		#	align and rbind simulated and real sequences, rm gap rows and trailing gap cols too: 
 		ms				<- PANGEA.add.gaps.merge.and.maintain.triplets(indir.simu, indir.gap, infile.simu, infile.gap, verbose=1)
 		write.dna(ms, file=paste(indir.simu,'/',gsub('_SIMULATED','_SIMULATED_RMGPS\\.fa',infile.simu),sep=''),format='fasta', colsep='', nbcol=-1)

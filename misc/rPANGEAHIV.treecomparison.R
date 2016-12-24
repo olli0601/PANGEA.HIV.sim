@@ -7076,11 +7076,32 @@ treecomparison.ana.161130.sclu<- function()
 	#
 	#	consider excluding columns with most gaps, x-axis before taxa excluded
 	#
-	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS_EXCLSITE','RUNGAPS_ExaML'))
-	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(.2,.3,.4,.5, 1.), labels=c(">20% unassembled characters",">30% unassembled characters",">40% unassembled characters",">50% unassembled characters","none"))])	
-	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
-					YM= predict(loess(NQDme~RUNGAPS, span=5, degree=2))), 
-			by='RUNGAPS_EXCL']
+	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_EXCLSITE',c(TEAM,RUNGAPS_EXCL,RUNGAPS,NQDme))
+	tmp2	<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_ExaML',c(TEAM,RUNGAPS_EXCL,RUNGAPS,NQDme))
+	setnames(tmp2, 'RUNGAPS_EXCL','DUMMY')
+	tmp2	<- merge(tmp2, as.data.table(expand.grid(RUNGAPS_EXCL=c(0.2,0.3,0.4,0.5), DUMMY=1)), by='DUMMY', allow.cartesian=TRUE)
+	tmp2[, DUMMY:=NULL]
+	tmp		<- rbind(tmp, tmp2)
+	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(.2,.3,.4,.5), labels=c("alignment positions with\n>20% unassembled characters\nexcluded","alignment positions with\n>30% unassembled characters\nexcluded","alignment positions with\n>40% unassembled characters\nexcluded","alignment positions with\n>50% unassembled characters\nexcluded"))])
+	ggplot(tmp, aes(x=RUNGAPS)) +			
+			geom_point(aes(y=NQDme, colour=TEAM)) +
+			scale_colour_manual(values=c('RUNGAPS_ExaML'="grey50",'RUNGAPS_EXCLSITE'="#FF7F00")) +
+			#scale_colour_brewer(palette='Paired') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0), limits=c(0, 0.35), breaks=seq(0,1,0.05), minor_breaks=seq(0,1,0.01)) +						
+			facet_grid(~RUNGAPS_EXCL) +
+			theme_bw() + theme(legend.position='bottom') +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='incorrectly estimated subtrees with 4 taxa\n(proportion)\n',
+					colour='alignment columns excluded\nbefore tree reconstruction',
+					pch='alignment columns excluded\nbefore tree reconstruction') 
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedsites.pdf',sep=''))
+	ggsave(file=file, w=12, h=5, useDingbats=FALSE)	
+	
+	
+	#tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
+	#				YM= predict(loess(NQDme~RUNGAPS, span=5, degree=2))), 
+	#		by='RUNGAPS_EXCL']
 	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','RUNGAPS'))			
 	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">20% unassembled characters",">30% unassembled characters",">50% unassembled characters","none")), aes(x=RUNGAPS)) +
 			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">20% unassembled characters",">30% unassembled characters",">50% unassembled characters","none")), aes(y=NQDme, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
@@ -7119,7 +7140,28 @@ treecomparison.ana.161130.sclu<- function()
 	#	run quartet distances on cluster
 	setnames(tmp, c('IDX','IDX_NEW'), c("IDX_OLD",'IDX'))
 	save(ph_tmp, tmp, ttrs, tinfo, file=file.path(edir, paste0(timetag,'_extraQD.rda')))
-	
+	load(file.path(edir,'161123_extraQD_01extra.rda'))
+	tmp		<- merge(tmp, tmp2, by='IDX')
+	tmp3	<- tmp[, list(NQDme=mean(NQDC, na.rm=TRUE)), by=c('IDX','IDX_OLD','RUNGAPS','RUNGAPS_EXCL','RUNGAPS_EXCLTAXA')]	
+	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS_EXCLTAXA'), c(TEAM,RUNGAPS_EXCL,RUNGAPS,NQDme))
+	tmp3[, TEAM:='RUNGAPS_ExaML']
+	tmp		<- rbind(tmp,subset(tmp3, select=c(TEAM, RUNGAPS_EXCL, RUNGAPS, NQDme)))
+	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(0.5,.6,.7,.8,.9), labels=c(">50% unassembled sites",">60% unassembled sites",">70% unassembled sites",">80% unassembled sites",">90% unassembled sites"))])
+	set(tmp, NULL, 'LEGEND', tmp[, paste('sequences with\n',as.character(RUNGAPS_EXCL),'\nexcluded')])
+	ggplot(subset(tmp,RUNGAPS_EXCL!=">50% unassembled sites"), aes(x=RUNGAPS)) +			
+			geom_point(aes(y=NQDme, colour=TEAM)) +
+			scale_colour_manual(values=c('RUNGAPS_ExaML'="grey50",'RUNGAPS_EXCLTAXA'="#FF7F00")) +
+			#scale_colour_brewer(palette='Paired') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0), limits=c(0, 0.25), breaks=seq(0,1,0.05), minor_breaks=seq(0,1,0.01)) +						
+			facet_grid(~LEGEND) +
+			theme_bw() + theme(legend.position='bottom') +
+			labs(	x='\nUnassembled sites in simulated sequences', 
+					y='incorrectly estimated common subtrees with 4 taxa\n(proportion)\n',
+					colour='sequences excluded\nbefore tree reconstruction',
+					pch='sequences excluded\nbefore tree reconstruction') 
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedtaxa_samenumbertaxa.pdf',sep=''))
+	ggsave(file=file, w=12, h=5, useDingbats=FALSE)	
 	#
 	#	consider excluding taxa with most gaps, x-axis before taxa excluded
 	#
@@ -7128,8 +7170,7 @@ treecomparison.ana.161130.sclu<- function()
 	tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
 								YM= predict(loess(NQDme~RUNGAPS, span=5, degree=2))), 
 						by='RUNGAPS_EXCL']
-	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','RUNGAPS'))		
-	
+	tmp		<- merge(tmp, tmp2, by=c('RUNGAPS_EXCL','RUNGAPS'))			
 	ggplot(subset(tmp, RUNGAPS_EXCL%in%c(">60% unassembled sites",">80% unassembled sites",">90% unassembled sites","none")), aes(x=RUNGAPS)) +
 			geom_point(data=subset(tmp, RUNGAPS_EXCL%in%c(">80% unassembled sites","none")), aes(y=NQDme, colour=RUNGAPS_EXCL, pch=RUNGAPS_EXCL), size=2, show.legend=FALSE) +
 			geom_line(aes(y=YM, colour=RUNGAPS_EXCL)) +			

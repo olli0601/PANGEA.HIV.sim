@@ -676,7 +676,7 @@ PANGEA.ImportSimulator.SimulateIndexCase<- function(df.ind, df.trm, epi.import)
 	setnames(tmp2, 'IDREC', 'IDPOP')
 	tmp		<- rbind( tmp, tmp2 )
 	setkey(tmp, IDPOP)
-	df.ind	<- merge( df.ind, unique(tmp), by=c('IDPOP','TIME_TR'), all.x=TRUE, all.y=TRUE )
+	df.ind	<- merge( df.ind, unique(tmp, by='IDPOP'), by=c('IDPOP','TIME_TR'), all.x=TRUE, all.y=TRUE )
 	#	
 	cat(paste('\nProportion of imported transmissions, p=', (nrow(subset(df.trm, IDTR<0))-1)/nrow(df.trm) ))
 	stopifnot( length(setdiff(df.trm[, IDTR], df.ind[, IDPOP]))==0 )
@@ -1161,6 +1161,10 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 	df.inds				<- copy(tmp$df.inds)
 	df.sample			<- copy(tmp$df.sample)
 	#
+	tmp2				<- df.epi[, {
+										tmp2	<- df.inds[ which( df.inds$DOD>YR & floor(df.inds$TIME_TR)<YR ),]
+										list(SCOV= ifelse(nrow(tmp2)==0, 0, tmp2[, length(which(!is.na(TIME_SEQ)))/length(TIME_SEQ) ]))				
+									} , by='YR']
 	sc.alive20.infl20	<- subset(tmp2, YR==pipeline.args['yr.end',][, as.numeric(v)]-1)[, SCOV]
 	df.sample			<- merge(df.sample, tmp2, by='YR')
 	tmp2				<- subset( df.inds, floor(TIME_TR)>=2000 & floor(TIME_TR)<pipeline.args['yr.end',][, as.numeric(v)])
@@ -1204,7 +1208,7 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 	tmp			<- subset( df.trms, select=c(IDREC, IDTR, IDCLU) )
 	tmp			<- subset( melt(tmp, id.var='IDCLU', value.name='IDPOP'), select=c(IDPOP, IDCLU))
 	setkey(tmp, IDPOP, IDCLU)
-	tmp			<- unique(tmp)
+	tmp			<- unique(tmp, by=c('IDPOP','IDCLU'))
 	df.inds		<- merge( df.inds, tmp, by='IDPOP', all.x=TRUE )
 	#
 	#	PLOTS
@@ -1230,7 +1234,7 @@ PANGEA.Seqsampler.v4<- function(df.ind, df.trm, pipeline.args, outfile.ind, outf
 		tmp[, YR:= floor(DIAG_T)]
 		tmp	<- merge(tmp, tmp[, list(DIAG_CD4_ME=mean(DIAG_CD4)), by='YR'], by='YR')
 		setkey(tmp, YR)
-		ggplot(tmp) + geom_point(aes(x=DIAG_T, y=DIAG_CD4)) + geom_step(data=unique(tmp), aes(x=YR, y=DIAG_CD4_ME), col='red', size=1.5) + scale_y_continuous(breaks=seq(100,1000,100))		
+		ggplot(tmp) + geom_point(aes(x=DIAG_T, y=DIAG_CD4)) + geom_step(data=unique(tmp, by='YR'), aes(x=YR, y=DIAG_CD4_ME), col='red', size=1.5) + scale_y_continuous(breaks=seq(100,1000,100))		
 		file<- paste(substr(outfile.ind, 1, nchar(outfile.ind)-7),'INFO_CD4.pdf',sep='')
 		cat(paste('\nPlotting to file',file))
 		ggsave(file=file, w=8, h=8)					
@@ -1354,7 +1358,7 @@ PANGEA.RootSeq.create.sampler<- function(root.ctime.grace= 0.5, sample.grace= 3)
 		tmp		<- do.call('rbind',tmp)
 		#	get unique seqs
 		setkey(tmp, LABEL)
-		tmp				<- unique(tmp)	
+		tmp				<- unique(tmp, by='LABEL')	
 		anc.seq.draw	<- do.call( 'cbind', list( rANCSEQ.args$anc.seq.gag[tmp[, LABEL], ], rANCSEQ.args$anc.seq.pol[tmp[, LABEL], ], rANCSEQ.args$anc.seq.env[tmp[, LABEL], ] ) ) 
 		anc.seq.draw	<- seq.unique(anc.seq.draw)
 		#	check if at least one seq for each draw
@@ -1991,7 +1995,7 @@ PANGEA.RootSeqSim.get.ancestral.seq.pg<- function(tree, node.stat, tree.id.sep='
 	stopifnot( tmp[, list(CHECK=all(CPM==CPM[1])), by='GENE'][, all(CHECK)] )
 	setkey(tmp, GENE)
 	#	truncate to following size of coding regions (if necessary)
-	tmp			<- unique(tmp)[, list(STAT=paste(GENE,'.CP',1:3,sep=''), CPM=CPM), by='GENE']
+	tmp			<- unique(tmp, by='GENE')[, list(STAT=paste(GENE,'.CP',1:3,sep=''), CPM=CPM), by='GENE']
 	node.stat	<- merge(node.stat, subset(tmp, select=c(STAT, CPM)), by='STAT')
 	set(node.stat, NULL, 'VALUE', node.stat[, substr(VALUE,1,CPM)])
 	set(node.stat, NULL, 'CPM', NULL)
@@ -2257,7 +2261,7 @@ PANGEA.SeqGen.createInputFile<- function(indir.epi, infile.epi, indir.vts, infil
 		if(grepl('fix',pipeline.args['index.starttime.mode',][,v]))
 		{
 			setkey(df.nodestat, IDPOP)
-			tmp				<- merge(subset(unique(df.nodestat), select=c(IDCLU, LABEL)), unique(df.nodestat)[, list(IDCLU_N=length(which(!is.na(TIME_SEQ)))), by='IDCLU'], by='IDCLU')
+			tmp				<- merge(subset(unique(df.nodestat, by='IDPOP'), select=c(IDCLU, LABEL)), unique(df.nodestat, by='IDPOP')[, list(IDCLU_N=length(which(!is.na(TIME_SEQ)))), by='IDCLU'], by='IDCLU')
 			tmp[, LABEL_NEW:= tmp[, paste(IDCLU,'_',IDCLU_N,label.sep,LABEL,sep='')]]
 			setkey(tmp, LABEL)			
 			phd$tip.label	<- tmp[ phd$tip.label, ][, LABEL_NEW]
@@ -2341,7 +2345,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 		set(tmp, NULL, 'mu', 1)
 		set(tmp, NULL, c('GENE','CODON_POS','IDX'), NULL)
 		tmp[, DUMMY:=1L]
-		log.df	<- unique(subset(log.df, select=c(GENE, CODON_POS)))
+		log.df	<- unique(subset(log.df, select=c(GENE, CODON_POS)), by=c('GENE','CODON_POS'))
 		log.df[, DUMMY:=1L]
 		log.df	<- merge(log.df, tmp, by='DUMMY',allow.cartesian=TRUE)
 		log.df[, DUMMY:=NULL]
@@ -2547,7 +2551,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 		if(nrow(df.seq)>=2000)
 		{
 			cat(paste('\nToo many seqs for quick NJ tree calculation, selecting first 2000'))
-			df.seq.nj	<- unique(subset(df.seq, select=c(IDCLU, IDCLU_N)))			
+			df.seq.nj	<- unique(subset(df.seq, select=c(IDCLU, IDCLU_N)), by=c('IDCLU','IDCLU_N'))			
 			df.seq.nj[, IDCLU_CN:=df.seq.nj[, cumsum(IDCLU_N)]]
 			df.seq.nj	<- df.seq.nj[seq_len(max(1, which(IDCLU_CN>2000)[1]-1)), ]
 			df.seq.nj	<- merge(subset(df.seq.nj, select=IDCLU), df.seq, by='IDCLU')
@@ -2714,7 +2718,7 @@ PANGEA.HPTN071.input.parser.v4<- function(indir, infile.ind, infile.trm, outdir,
 	tmp		<- subset(df.ind, select=c(IDPOP, TIME_TR))
 	setnames(tmp, c('IDPOP','TIME_TR'), c('IDTR','IDTR_TIME_INFECTED') )
 	setkey(tmp, IDTR)
-	df.trm	<- merge(df.trm, unique(tmp), by='IDTR', all.x=TRUE)
+	df.trm	<- merge(df.trm, unique(tmp, by='IDTR'), by='IDTR', all.x=TRUE)
 	stopifnot( df.trm[, !any(TIME_TR<=IDTR_TIME_INFECTED, na.rm=TRUE)] )
 	#	simulate time individual ready for sequencing
 	df.ind	<- PANGEA.Seqsampler.SimulateGuideToSamplingTimes.v2(df.ind, seqtime.mode= pipeline.args['seqtime.mode',][,v])	
@@ -2798,7 +2802,7 @@ PANGEA.RootSeqSim.get.ancestral.seq<- function(tree, node.stat, tree.id.sep='_',
 	stopifnot( tmp[, list(CHECK=all(CPM==CPM[1])), by='GENE'][, all(CHECK)] )
 	setkey(tmp, GENE)
 	#	truncate to following size of coding regions (if necessary)
-	tmp			<- unique(tmp)[, list(STAT=paste(GENE,'.CP',1:3,sep=''), CPM=CPM), by='GENE']
+	tmp			<- unique(tmp, by='GENE')[, list(STAT=paste(GENE,'.CP',1:3,sep=''), CPM=CPM), by='GENE']
 	node.stat	<- merge(node.stat, subset(tmp, select=c(STAT, CPM)), by='STAT')
 	set(node.stat, NULL, 'VALUE', node.stat[, substr(VALUE,1,CPM)])
 	set(node.stat, NULL, 'CPM', NULL)

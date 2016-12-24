@@ -179,7 +179,7 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)	#submit various
+	if(0)	#submit various
 	{
 		cmd			<- cmd.various()
 		#cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="119000mb")
@@ -303,20 +303,21 @@ pipeline.various<- function()
 				}, by='IDX']		
 		quit('no')
 	}
-	if(0)	#	run ExamML with partition for tree comparison
+	if(1)	#	run ExamML with partition for tree comparison
 	{		
 		require(big.phylo)		
 		#indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps3'
 		#indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps4'
+		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps5'
 		#indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps'
 		infiles		<- data.table(FILE=list.files(indir.wgaps, pattern='\\.fasta$|\\.fa$'))
 		infiles[, PARTITION:= gsub('\\.fasta|\\.fa','_gene.txt',FILE)]
 		#infiles	<- subset(infiles, grepl('TRAIN63',FILE))
 		outdir		<- indir.wgaps	 			
 		infiles[, {	
-					args.starttree.type	<- 'parsimony'
-					#args.starttree.type	<- 'random'
+					#args.starttree.type	<- 'parsimony'
+					args.starttree.type	<- 'random'
 					args.parser			<- "-m DNA "
 					if(file.exists(file.path(indir.wgaps, PARTITION)))
 						args.parser		<- paste("-m DNA -q",PARTITION)					
@@ -325,7 +326,7 @@ pipeline.various<- function()
 					#cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=71, hpc.q=NA, hpc.mem="15850mb", hpc.nproc=24)
 					#cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=571, hpc.q="pqeelab", hpc.mem="5850mb", hpc.nproc=1)
 					signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
-					outfile	<- paste("exr3",signat,sep='.')
+					outfile	<- paste("exr5",signat,sep='.')
 					cat(cmd)
 					cmd.hpccaller(outdir, outfile, cmd)
 					Sys.sleep(1)
