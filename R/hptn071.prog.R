@@ -303,7 +303,7 @@ pipeline.various<- function()
 				}, by='IDX']		
 		quit('no')
 	}
-	if(1)	#	run ExamML with partition for tree comparison
+	if(0)	#	run ExamML with partition for tree comparison
 	{		
 		require(big.phylo)		
 		#indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
@@ -467,33 +467,31 @@ pipeline.various<- function()
 		infile		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN1_SIMULATED.fa'
 		infile		<- '/work/or105/Gates_2014/tree_comparison/partiallen/150701_Regional_TRAIN1_SIMULATED.fa'
 		infile		<- '/work/or105/Gates_2014/tree_comparison/rungaps4/161121_Regional_TRAIN600_SIMULATED.fa'
+		infile		<- '/work/or105/Gates_2014/tree_comparison/rungaps5/161121_Regional_TRAIN700_FULL_SIMULATED.fa'
 		indir		<- dirname(infile)
+		#infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
 		infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
 		#infile[, OF:= paste(gsub('TRAIN1.*', '',gsub('150701','161125',basename(IF))),paste('TRAIN1_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
-		infile[, OF:= paste(gsub('TRAIN6.*', '',gsub('161121','161125',basename(IF))),paste('TRAIN6_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
-		infile		<- subset(infile, PARTIAL_LEN>5105)
+		infile[, OF:= paste(gsub('TRAIN7.*', '',gsub('161121','161125',basename(IF))),paste('TRAIN7_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
+		#infile		<- subset(infile, PARTIAL_LEN>5105)
 		print(infile)
 		invisible(infile[, {																					
 							seq					<- read.dna(IF, format='fa')
 							ifp					<- paste(OF, '.fasta', sep='')
-							write.dna(seq[,1:PARTIAL_LEN], file=file.path(dirname(IF), ifp), format='fa', colsep='', nbcol=-1)
-													
+							write.dna(seq[,1:PARTIAL_LEN], file=file.path(dirname(IF), ifp), format='fa', colsep='', nbcol=-1)													
 							args.examl			<- "-f d -D -m GAMMA"
 							#args.starttree.type	<- 'parsimony'
-							args.starttree.type	<- 'random'
-							
+							args.starttree.type	<- 'random'							
 							partition			<- paste(OF,'_gene.txt',sep='')
 							if(PARTIAL_LEN>=4500)
 								cat(paste('DNA, gag = 1-1440\nDNA, pol = 1441-4284\nDNA, env = 4285-',PARTIAL_LEN,'\n',sep=''), file=file.path(indir, partition))
 							if(PARTIAL_LEN>=1700 & PARTIAL_LEN<4500)
 								cat(paste('DNA, gag = 1-1440\nDNA, pol = 1441-',PARTIAL_LEN,'\n',sep=''), file=file.path(indir, partition))
 							if(PARTIAL_LEN<1700)
-								partition		<- NA
-							
+								partition		<- NA							
 							args.parser			<- paste("-m DNA")
 							if(!is.na(partition))						
-								args.parser		<- paste("-m DNA -q",partition)
-							
+								args.parser		<- paste("-m DNA -q",partition)							
 							cmd		<- cmd.examl.single(	dirname(IF), 
 															ifp, 
 															outdir=dirname(IF), 
