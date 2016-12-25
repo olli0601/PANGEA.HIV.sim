@@ -502,8 +502,8 @@ pipeline.various<- function()
 															args.parser=args.parser, 
 															args.examl=args.examl, 
 															bs.seed=42)
-							#cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=129, hpc.q="pqeelab", hpc.mem="5800mb", hpc.nproc=1)
-							cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=71, hpc.q=NA, hpc.mem="15850mb", hpc.nproc=24)
+							cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=329, hpc.q="pqeelab", hpc.mem="5800mb", hpc.nproc=1)
+							#cmd		<- cmd.hpcwrapper(cmd, hpc.walltime=71, hpc.q=NA, hpc.mem="15850mb", hpc.nproc=24)
 							signat	<- paste(strsplit(date(),split=' ')[[1]],collapse='_',sep='')
 							cat(cmd)
 							cmd.hpccaller(indir, paste("expl",signat,sep='.'), cmd)
