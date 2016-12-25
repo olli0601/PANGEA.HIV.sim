@@ -468,11 +468,13 @@ pipeline.various<- function()
 		infile		<- '/work/or105/Gates_2014/tree_comparison/partiallen/150701_Regional_TRAIN1_SIMULATED.fa'
 		infile		<- '/work/or105/Gates_2014/tree_comparison/rungaps4/161121_Regional_TRAIN600_SIMULATED.fa'
 		infile		<- '/work/or105/Gates_2014/tree_comparison/rungaps5/161121_Regional_TRAIN700_FULL_SIMULATED.fa'
+		infile		<- '/work/or105/Gates_2014/tree_comparison/rungaps5/161121_Regional_TRAIN800_FULL_SIMULATED.fa'
 		indir		<- dirname(infile)
 		#infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
 		infile		<- as.data.table(expand.grid(PARTIAL_LEN=round(seq(0.05, .99, 0.01)*6807), IF=infile, stringsAsFactors=FALSE))
 		#infile[, OF:= paste(gsub('TRAIN1.*', '',gsub('150701','161125',basename(IF))),paste('TRAIN1_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
-		infile[, OF:= paste(gsub('TRAIN7.*', '',gsub('161121','161125',basename(IF))),paste('TRAIN7_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
+		#infile[, OF:= paste(gsub('TRAIN7.*', '',gsub('161121','161125',basename(IF))),paste('TRAIN7_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
+		infile[, OF:= paste(gsub('TRAIN7.*', '',gsub('161121','161125',basename(IF))),paste('TRAIN8_PL',PARTIAL_LEN,'_SIMULATED',sep=''), sep='')]
 		#infile		<- subset(infile, PARTIAL_LEN>5105)
 		print(infile)
 		invisible(infile[, {																					
