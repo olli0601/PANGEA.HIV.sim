@@ -195,7 +195,7 @@ pipeline.various<- function()
 		for(i in 1:30)
 		{
 			cmd			<- cmd.treecomparison(hpc.select=i)
-			cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="5800mb")
+			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="5800mb")
 			#cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="99000mb")
 			cat(cmd)		
 			outdir		<- paste(HOME,"tmp",sep='/')
