@@ -3059,8 +3059,7 @@ treecomparison.explaingaps.collect.data<- function()
 	#	map new IDs to old IDs	
 	#
 	if(0)
-	{
-				
+	{				
 		infile.new	<- '~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_NewIDs_161212.fasta'		
 		sn			<- read.dna(infile.new, format='fa')
 		#	check seqences are in order
@@ -3315,45 +3314,69 @@ treecomparison.explaingaps.collect.data<- function()
 		load("~/duke/2016_AC/PANGEA_160826/160826_PANGEA_BW_corevariables_n373.rda")
 		setnames(bwp, 'PANGEAID', 'PANGEA_ID')
 		set(bwp, NULL, 'SEQID', NULL)
-		tmp			<- rbind(rccsData, bwp, use.names=TRUE, fill=TRUE) 
+		meta		<- rbind(rccsData, bwp, use.names=TRUE, fill=TRUE) 
 		#	add AC data
 		load("~/duke/2016_AC/PANGEA_160826/160826_PANGEA_AC_corevariables_n2940.rda")
 		setnames(acp, 'PANGEAID', 'PANGEA_ID')
 		set(acp, NULL, c('REASONSAMPLING','LATESTARTREGIMEN','CIRCUMCISED','LASTNEGDATE','LASTNUMSEXUALPARTNERS','LATESTARTREGIMENSTARTED'), NULL)		
-		tmp			<- rbind(tmp, acp, use.names=TRUE, fill=TRUE)
+		meta		<- rbind(meta, acp, use.names=TRUE, fill=TRUE)
 		#	add metadata from UCL
 		load('~/Dropbox (Infectious Disease)/PANGEA_metadata/processed_metadata/PANGEA_meta_161128.rda')
+		#	add info for missing meta-data
+		tmp	<- as.data.table(read.csv('~/Dropbox (Infectious Disease)/PANGEA_metadata/original_161128/MetaData_161219_Noexistingshareddata_resolved_sites.csv', stringsAsFactors=FALSE))
+		setnames(tmp, c('PANGEA_ID2','Site'), c('NEW_PANGEA_ID','COHORT_ID'))
+		tmp	<- subset(tmp, select=c('NEW_PANGEA_ID','COHORT_ID'))
+		dfp	<- rbind(dfp, tmp, fill=TRUE)
+		#	fixup NEW_PANGEA_ID duplicates to own ID	
+		#sqi[, which(grepl('PG15-UG001328',PANGEA_ID2))]
+		#
+		#	check we have data for all sequences in alignment
+		#
 		set(dfp, NULL, 'NEW_PANGEA_ID', dfp[, gsub('-[0-9]+$','',NEW_PANGEA_ID)])
 		tmp			<- data.table(PANGEA_ID2=setdiff( subset(sqi, PNG=='Y')[, PANGEA_ID2], dfp[, NEW_PANGEA_ID] ))
 		tmp			<- merge(sqi, tmp, by='PANGEA_ID2')
-		write.csv(tmp, file='~/Dropbox (Infectious Disease)/PANGEA_metadata/processed_metadata/check_keys_OR_161219.csv')
+		#write.csv(tmp, file='~/Dropbox (Infectious Disease)/PANGEA_metadata/processed_metadata/check_keys_OR_161219.csv')
+		stopifnot(!nrow(tmp))
 		#
-		#
-		#
-		subset(dfp, grepl('A33162', NEW_PANGEA_ID))
-		
 		set(dfp, NULL, c('SEQUENCE','SAMPLE_REASON','ART_REGIMEN','NGS_METHOD','PIPELINE','N_CUT_OFF','LC_CUT_OFF'), NULL)
-				
-		setkey(dfp, NEW_PANGEA_ID)
-		dfp			<- unique(dfp, by='NEW_PANGEA_ID')
+		dfp			<- unique(dfp, by=c('NEW_PANGEA_ID','COHORT_ID','DOB_YEAR','GENDER','GEO_COUNTRY','GEO_CITY','SAMPLE_DATE'))
+		dfp[, ROW:=seq_len(nrow(dfp))]
+		#	reset duplicate NEW_PANGEA_IDs
+		set(dfp, dfp[, which(grepl('PANGEA-N25977-UG2014',NEW_PANGEA_ID) & DOB_YEAR==1972)], 'NEW_PANGEA_ID', 'PANGEA-N25977OR2-UG2014')
+		set(dfp, dfp[, which(grepl('PANGEA-K17754-UG2012',NEW_PANGEA_ID) & DOB_YEAR==1979)], 'NEW_PANGEA_ID', 'PANGEA-K17754OR2-UG2012')
+		set(sqi, sqi[, which(grepl('PG15-UG001328',PANGEA_ID))], 'NEW_PANGEA_ID', 'PANGEA-N25977OR2-UG2014')
+		set(sqi, sqi[, which(grepl('PG15-UG000698',PANGEA_ID))], 'NEW_PANGEA_ID', 'PANGEA-K17754OR2-UG2012')
+		#	remove arbitrarily with more missing data / unclear DOB or gender
+		set(dfp, c(7343L, 7225L, 5705L, 7190L, 7438L, 12024L, 7456L, 5606L, 7153L, 12172L), 'NEW_PANGEA_ID', NA_character_)
+		dfp			<- subset(dfp, !is.na(NEW_PANGEA_ID))
+		dfp			<- merge(dfp, dfp[, list(DUMMY2=length(COHORT_ID)), by='NEW_PANGEA_ID'],by='NEW_PANGEA_ID')
+		#	there are still a few duplicates ...
+		subset(dfp, DUMMY2>1)
+		#
 		setnames(dfp, 'NEW_PANGEA_ID', 'PANGEA_ID2')
-		dfp			<- merge(sqi, dfp, by='PANGEA_ID2', all.x=1)		
-		dfp			<- subset(dfp, COHORT_ID%in%c("MRC-FF-Nsazi","MRC-SUP-INF","MRC-SI-MAS","MRC_GPC","MRC-HIVCOMB","UVRI-MOHDR"))
+		dfp			<- merge(sqi, dfp, by='PANGEA_ID2', all.x=1)	
+		#	there is still 1 duplicate but in Rakai data, where I have the actual true data point.
+		negcontrols	<- subset(dfp, grepl('position',COHORT_ID))
+		dfp			<- subset(dfp, grepl('MRC|Rakai',COHORT_ID))	
+		#	remove one entry where we also have the Rakai original data
+		dfp			<- subset(dfp, PANGEA_ID2!='PANGEA-V10270-UG2012')
 		setnames(dfp, c('PANGEA_ID2','TAXA','COHORT_ID','SAMPLE_DATE','DOB_YEAR','GENDER','GEO_COUNTRY','GEO_CITY','ON_ART','CD4_DATE','VL_DATE','VL_U','VL_L','CD4_U','CD4_L'), c('STUDY_ID','TAXA2','COHORT','SAMPLEDATE','DOB','SEX','GEO_COUNTRY','LOC','CURRENTLYONART','RECENTCD4DATE','RECENTVLDATE','RECENTVL_U','RECENTVL_L','RECENTCD4COUNT_U','RECENTCD4COUNT_L'))
 		set(dfp, NULL, c('DUMMY','COV','PNG','SITE','CD4_RANGE','VL_RANGE'), NULL)
 		set(dfp, NULL, 'PANGEA_ID', dfp[, gsub('-S[0-9]+$','',PANGEA_ID)])
-		dfp			<- unique(dfp, by='PANGEA_ID')				
-		tmp			<- rbind(tmp, dfp, use.names=TRUE, fill=TRUE)
-		dm			<- merge(dm, tmp, by='PANGEA_ID', all.x=1)
-		#	temporary fixup of non-unique keys in UCL data
-		dm			<- subset(dm, !((PANGEA_ID=='PG14-UG500795' & STUDY_ID=='PANGEA-N25977-UG2014') | 
-									(PANGEA_ID=='PG14-UG502774' & STUDY_ID=='PANGEA-K17754-UG2012')))
+		dfp			<- merge(dfp, dfp[, list(DUMMY3=length(COHORT)), by='PANGEA_ID'],by='PANGEA_ID')
+		#	manual check: all remaining PANGEA_ID duplicates have same meta-data and are sequence replicates
+		subset(dfp, DUMMY3>1)
+		dfp			<- unique(dfp, by='PANGEA_ID')	
+		set(dfp, NULL, c('DUMMY2','DUMMY3','ROW'), NULL)
+		meta		<- rbind(meta, dfp, use.names=TRUE, fill=TRUE)
+		dm			<- merge(dm, meta, by='PANGEA_ID', all.x=1)
+		#z			<- merge(dm, dm[, list(DUMMY3=length(COHORT)), by='TAXA'],by='TAXA')
 		#	add CLASS subtype data
 		subtypeSummaryData	<- as.data.table(subtypeSummaryData)
 		setnames(subtypeSummaryData, 'RCCS_studyid', 'STUDY_ID')
 		dst					<- subset(subtypeSummaryData, select=c(STUDY_ID, gp.class, gag.class, pol.class, vpu.class, env.class, comp.class))
 		setkey(dst, STUDY_ID)
-		dst					<- unique(dst, by='STUYD_ID')	#no duplicates here
+		dst					<- unique(dst, by='STUDY_ID')	#no duplicates here
 		dst					<- melt(dst, id.var='STUDY_ID')
 		set(dst, NULL, 'value', dst[, gsub('\\s','',gsub('Complex','',gsub('Subtype', '',value)))])
 		set(dst, NULL, 'variable', dst[, paste('SUBTYPE_',toupper(gsub('\\.class','',variable)),sep='')])	
@@ -3368,14 +3391,14 @@ treecomparison.explaingaps.collect.data<- function()
 		set(dm, dm[, which(is.na(COMET_4F3R))],'COMET_4F3R_N',0L)
 		set(dm, dm[, which(is.na(COMET_4F3R))],'COMET_4F3R','short')
 		#	add Sanger processing data etc
-		dc			<- data.table(read.csv("~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_Summary.csv"))		
-		setnames(dc, c('Sanger.ID','PANGEA.ID','reference.for.mapping','clinical.genome.coverage'), c('SANGER_ID','PANGEA_ID','REF_4_MAPPING','COV'))		
+		ds			<- data.table(read.csv("~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_Summary.csv"))		
+		setnames(ds, c('Sanger.ID','PANGEA.ID','reference.for.mapping','clinical.genome.coverage'), c('SANGER_ID','PANGEA_ID','REF_4_MAPPING','COV'))		
 		tmp			<- data.table(read.csv('~/Dropbox (Infectious Disease)/PANGEA_data/PAN_iva_dependencies_9861.txt', sep='\t'))
 		setnames(tmp, 'LaneID', 'SANGER_ID')
 		set(tmp, NULL, 'SANGER_ID', tmp[, gsub('#','_',SANGER_ID)])
-		dc			<- merge(dc, tmp, by='SANGER_ID', all.x=1)
-		set(dc, NULL, 'TAXA', dc[, gsub('\\s$','',gsub('^\\s','',as.character(PANGEA_ID)))])
-		set(dc, NULL, 'PANGEA_ID', dc[, gsub('-S.*','',TAXA)])		
+		ds			<- merge(ds, tmp, by='SANGER_ID', all.x=1)
+		set(ds, NULL, 'TAXA', ds[, gsub('\\s$','',gsub('^\\s','',as.character(PANGEA_ID)))])
+		set(ds, NULL, 'PANGEA_ID', ds[, gsub('-S.*','',TAXA)])		
 		#	some of the PANGEA IDs are duplicates and cannot be resolved. Use the coverage.
 		tmp			<- as.character(sqp)
 		tmp2		<- apply(tmp, 1, function(x) sum(!x%in%c('?','-')))
@@ -3395,19 +3418,27 @@ treecomparison.explaingaps.collect.data<- function()
 		set(tmp2, tmp2[, which(TAXA=='PG14-UG500536-S02540-R2')], 'COV', 8210L)
 		set(tmp2, tmp2[, which(TAXA=='PG14-UG500541-S02545-R2')], 'COV', 5086L)		
 		z			<- subset(tmp2, grepl('-R2',TAXA))
-		z			<- merge(subset(dc, COV>0, select=which(colnames(dc)!='TAXA')), subset(z,grepl("PG",TAXA) & COV>0, select=c(PANGEA_ID,TAXA,COV)), by=c('PANGEA_ID','COV'))
+		z			<- merge(subset(ds, COV>0, select=which(colnames(ds)!='TAXA')), subset(z,grepl("PG",TAXA) & COV>0, select=c(PANGEA_ID,TAXA,COV)), by=c('PANGEA_ID','COV'))
 		setnames(z, 'TAXA','TAXA_NEW')
-		dc			<- merge(dc, subset(z, select=c(SANGER_ID,TAXA_NEW)), by='SANGER_ID', all.x=1)
-		tmp2		<- dc[, which(!is.na(TAXA_NEW))]
-		set(dc, tmp2, 'TAXA', dc[tmp2,TAXA_NEW])
-		dc			<- subset(dc, COV>0)
-		setkey(dc, TAXA)
-		set(dc, NULL, c('TAXA_NEW','COV','PANGEA_ID'), NULL)				
-		dm			<- merge(dm, dc, by='TAXA', all.x=1)
+		ds			<- merge(ds, subset(z, select=c(SANGER_ID,TAXA_NEW)), by='SANGER_ID', all.x=1)
+		tmp2		<- ds[, which(!is.na(TAXA_NEW))]
+		set(ds, tmp2, 'TAXA', ds[tmp2,TAXA_NEW])
+		ds			<- subset(ds, COV>0)
+		setkey(ds, TAXA)
+		set(ds, NULL, c('TAXA_NEW','COV','PANGEA_ID'), NULL)				
+		dm			<- merge(dm, ds, by='TAXA', all.x=1)
 		stopifnot( nrow(subset(dm, is.na(SANGER_ID)))==0 )
+		#	remove neg controls
+		dm			<- subset(dm, !TAXA%in%negcontrols$TAXA)
+		sq			<- sq[ !rownames(sq)%in%negcontrols$TAXA, ]
+		sqp			<- sqp[ !rownames(sqp)%in%negcontrols$TAXA, ]
+		sqi			<- subset(sqi, !TAXA%in%negcontrols$TAXA)
+		sqi[, DUMMY:=NULL]
+		dpand		<- subset(dpand, !TAXA%in%negcontrols$TAXA)
+		dgd			<- subset(dgd, !TAXA%in%negcontrols$TAXA)		
 		#	complete COHORT
-		set(dm, dm[, which(grepl('UG',PANGEA_ID) & is.na(COHORT))], 'COHORT', 'UG-MRC')
 		set(dm, dm[, which(grepl('ZA',PANGEA_ID) & is.na(COHORT))], 'COHORT', 'AC_Resistance')
+		stopifnot( !nrow(subset(dm, is.na(COHORT))) )
 		#	add extraction ID		
 		dm[, EXTRACT_ID:= dm[,gsub('-S','',regmatches(TAXA,regexpr('-S[0-9]+', TAXA)))]]		
 		#	save
@@ -4145,6 +4176,65 @@ treecomparison.bootstrap.gd.dev<- function()
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.11
+treecomparison.saturation<- function()
+{	
+	if.seqs	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa'
+	if.tree	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SUBSTTREE.newick'
+	if.int	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R'
+	#	last gag: 1440; pol length: 2844; env length: 2523
+	#	all gene codons are complete, so we can count through
+	
+	#seq		<- read.dna(if.seqs, format='fa')
+	load(if.int)
+	tmp				<- tolower(do.call('rbind',strsplit(df.seq[, GAG],'')))
+	rownames(tmp)	<- df.seq[, LABEL]
+	df.seq.gag		<- as.DNAbin(tmp)
+	tmp				<- tolower(do.call('rbind',strsplit(df.seq[, POL],'')))
+	rownames(tmp)	<- df.seq[, LABEL]
+	df.seq.pol		<- as.DNAbin(tmp)
+	tmp				<- tolower(do.call('rbind',strsplit(df.seq[, ENV],'')))
+	rownames(tmp)	<- df.seq[, LABEL]
+	df.seq.env		<- as.DNAbin(tmp)
+	seq				<- cbind(df.seq.gag,df.seq.pol,df.seq.env)
+	
+	seq		<- seq[,1:1440]
+	#seq		<- seq[,1441:4284]
+	ph		<- read.tree(if.tree)
+	tmp		<- cophenetic.phylo(ph)
+	ds		<- as.data.table(melt(as.matrix(tmp), stringsAsFactors=FALSE))
+	setnames(ds, c('Var1','Var2','value'), c('TAXA1','TAXA2','PATRISTIC_T'))	
+	seq1	<- seq[,seq.int(1,ncol(seq),3)]
+	seq2	<- seq[,seq.int(2,ncol(seq),3)]
+	seq3	<- seq[,seq.int(3,ncol(seq),3)]
+	tmp		<- dist.dna(seq1, model='raw', pairwise.deletion=TRUE)
+	tmp		<- as.data.table(melt(as.matrix(tmp), stringsAsFactors=FALSE))
+	setnames(tmp, c('Var1','Var2','value'), c('TAXA1','TAXA2','RAW1_T'))
+	ds		<- merge(ds, tmp, by=c('TAXA1','TAXA2'))
+	tmp		<- dist.dna(seq2, model='raw', pairwise.deletion=TRUE)
+	tmp		<- as.data.table(melt(as.matrix(tmp), stringsAsFactors=FALSE))
+	setnames(tmp, c('Var1','Var2','value'), c('TAXA1','TAXA2','RAW2_T'))
+	ds		<- merge(ds, tmp, by=c('TAXA1','TAXA2'))
+	tmp		<- dist.dna(seq3, model='raw', pairwise.deletion=TRUE)
+	tmp		<- as.data.table(melt(as.matrix(tmp), stringsAsFactors=FALSE))
+	setnames(tmp, c('Var1','Var2','value'), c('TAXA1','TAXA2','RAW3_T'))
+	ds		<- merge(ds, tmp, by=c('TAXA1','TAXA2'))
+	set(ds, NULL, 'TAXA1', ds[, as.character(TAXA1)])
+	set(ds, NULL, 'TAXA2', ds[, as.character(TAXA2)])
+	ds		<- subset(ds, TAXA1<TAXA2)
+	dsm1	<- lm(RAW1_T~PATRISTIC_T, data=ds)
+	dsm2	<- lm(RAW2_T~PATRISTIC_T, data=ds)
+	dsm3	<- lm(RAW3_T~PATRISTIC_T, data=ds)
+	#	... there is no real saturation in the third codon position in the model!
+	
+	dsp		<- melt(ds, id.vars=c('TAXA1','TAXA2','PATRISTIC_T'))
+	ggplot(dsp, aes(x=PATRISTIC_T, y=value)) +
+			geom_point() +
+			theme_bw() + theme() +
+			facet_grid(~variable) +
+			labs(x='true patristic distance\n(substitutions / site)\n', y='distance between sequences\n(substitutions / site)\n')
+}
+##--------------------------------------------------------------------------------------------------------
+##	olli 27.06.11
 treecomparison.create.metadata<- function()
 {	
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
@@ -4464,6 +4554,7 @@ treecomparison.submissions.161123<- function()
 							)	
 	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
+	tmp		<- tmp[!grepl('WORST',tmp)]
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 							TEAM= 'RUNGAPS_EXCLSITE',
 							SC='150701_Regional_TRAIN2',
@@ -4476,7 +4567,7 @@ treecomparison.submissions.161123<- function()
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 							TEAM= 'RUNGAPS_ExaML',
-							SC='150701_Regional_TRAIN2',
+							SC=gsub('(150701_Regional_TRAIN[0-9]).*','\\1',basename(tmp)),
 							GENE=regmatches(tmp,regexpr('FULL|GAG|GAGPP|P17|FULL',tmp)),
 							RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
 							RUNGAPS_EXCL= 1
@@ -4508,9 +4599,12 @@ treecomparison.submissions.161123<- function()
 							cat('\n',FILE_SEQ_T)
 							z		<- read.dna(FILE_SEQ_T, format='fasta')	
 							ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))							
-							list(TAXA=rownames(z), ACTG_P=apply(ans[c('a','c','t','g'),], 2, sum), UNASS_P=ans['?',])				
+							list(	TAXA=rownames(z), 
+									ACTG_P=apply(ans[c('a','c','t','g'),], 2, sum), 
+									UNASS_P=ans['?',],
+									NCOL=ncol(z))				
 					 	}, by=c('FILE_SEQ_T','SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL')]
-	trungps	<- trungps[, list(ACTG_P=mean(ACTG_P), UNASS_P=mean(UNASS_P)), by=c('FILE_SEQ_T','SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL')]						
+	trungps	<- trungps[, list(ACTG_P=mean(ACTG_P), UNASS_P=mean(UNASS_P), SITES_N=NCOL[1]), by=c('FILE_SEQ_T','SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL')]						
 	#
 	# to tinfo add actual transmitters
 	#
@@ -4910,6 +5004,622 @@ treecomparison.submissions.161123<- function()
 	#
 	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	#save(strs, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_161123.rda'))
+	#
+	#	read LSD trees
+	#
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_2'
+	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick$', full.names=TRUE))
+	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
+	setkey(infiles, IDX)	
+	strs_lsd		<- vector('list', submitted.info[, max(IDX)])
+	for(i in seq_len(nrow(infiles)))		
+	{
+		#	i<- 439
+		IDX						<- infiles[i,IDX]
+		FILE					<- infiles[i,FILE]
+		cat('\n',IDX)
+		ph						<- read.tree(FILE)
+		stopifnot( !is.null(ph) )
+		stopifnot( identical(sort(strs[[IDX]]$tip.label), sort(ph$tip.label)) )
+		strs_lsd[[IDX]]			<- ph
+		#names(strs_lsd[[IDX]])	<- FILE					
+	}
+	setkey(submitted.info, IDX)
+	submitted.info[, WITH_LSD:= factor(sapply(strs_lsd, is.null), levels=c(TRUE,FALSE), labels=c('N','Y'))]
+	submitted.info	<- subset(submitted.info, WITH_LSD=='Y')
+	#
+	#	re-root simulated trees at root of LSD tree
+	#
+	strs_rtt	<- vector('list', length(strs))		
+	for(i in submitted.info[, IDX])
+	{
+		cat('\n',i)			
+		ph	<- strs[[i]]
+		phl	<- strs_lsd[[i]]
+		#	figure out taxon with shortest heigh in rooted lsd tree
+		tmp				<- Ancestors(phl, seq_len(Ntip(phl)), type="all")
+		tmp2			<- sapply(tmp, length)
+		root.pivot		<- which.min(tmp2)
+		root.pivot.name	<- phl$tip.label[root.pivot]
+		#	determine how many edges down from root.pivot the root is located
+		root.descend	<- length(tmp[[root.pivot]])-1
+		#	calculate 1 minus the proportion of the corresponding edge in ph to the root location		 
+		root.pos		<- phl$edge.length[ which( phl$edge[,1]==rev(tmp[[root.pivot]])[1] ) ]
+		root.children	<- phl$edge[which( phl$edge[,1]==rev(tmp[[root.pivot]])[1] ),2]
+		tmp				<- sapply(root.children, function(x) x %in% c(tmp[[root.pivot]], root.pivot))		
+		root.pos		<- 1 - root.pos[tmp] / sum(root.pos)
+		#	find the root child in ph	
+		tmp				<- which(ph$tip.label==root.pivot.name)
+		tmp2			<- Ancestors(ph, tmp, type="all")		
+		root.node.child	<- ifelse(root.descend==0, tmp, tmp2[root.descend])
+		#	find the length of the branch to the root.child
+		#	and get the bit at which the root is to be placed
+		root.pos		<- root.pos * ph$edge.length[ which(ph$edge[,2]==root.node.child) ]
+		#	reroot ph
+		ph				<- reroot(ph, root.node.child, position=root.pos)
+		strs_rtt[[i]]	<- ph 
+	}
+	names(strs_rtt)	<- names(strs)		
+	#
+	#	ladderize all trees
+	#		
+	ttrs	<- lapply(ttrs, ladderize)
+	strs	<- lapply(strs, ladderize)
+	strs_rtt<- lapply(strs_rtt, function(ph){
+				if(!is.null(ph))
+					ph	<- ladderize(ph)
+				ph
+			} )		
+	#
+	#	SAVE so far
+	#
+	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	save(strs, strs_lsd, strs_rtt, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_161123.rda'))	
+}
+treecomparison.submissions.170101<- function()	
+{
+	require(data.table)
+	require(ape)
+	require(adephylo)
+	require(phangorn)
+	require(parallel)
+	#
+	#	get true trees
+	#
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees'
+	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
+	
+	
+	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('.*DATEDTREE', tfiles) ] )
+	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
+	tmp		<- rbind( subset(tfiles, SC=='VILL_99_APR15'), subset(tfiles, SC=='VILL_99_APR15'), subset(tfiles, SC=='VILL_99_APR15') )
+	set(tmp, NULL, 'SC', c('150701_VILL_SCENARIO-C','150701_VILL_SCENARIO-D','150701_VILL_SCENARIO-E'))
+	tfiles	<- rbind(tfiles, tmp)
+	#tmp		<- list.files(indir, pattern='newick$', full.names=TRUE)
+	#tmp		<- data.table( FILE_T= tmp[ grepl('*DATEDTREE', tmp) ] )
+	#tmp[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
+	#tfiles	<- rbind(tfiles, tmp)
+	tfiles[, BRL_T:= 'time']	
+	set(tfiles, NULL, 'SC', tfiles[, gsub('161121_GTR','161121_REGIONAL_GTR',SC)])
+	set(tfiles, tfiles[, which(grepl('REG',SC) & grepl('SUBST',FILE_T))], 'BRL_T', 'subst')	
+	ttrs	<- lapply(tfiles[, FILE_T], function(x)	read.tree(file=x) )
+	names(ttrs)	<- tfiles[, SC]	
+	for(z in c('VILL_99_APR15','150701_VILL_SCENARIO-C','150701_VILL_SCENARIO-D','150701_VILL_SCENARIO-E'))
+		ttrs[[z]]	<- root(ttrs[[z]], node=Ntip(ttrs[[z]])+2, resolve.root=1)	
+	tfiles[, IDX_T:=seq_along(ttrs)]
+	tfiles[, TAXAN_T:= sapply(ttrs, Ntip)]
+	#	patristic distances on true trees (by time and subst/site)
+	tbrl	<- NULL		
+	#	info on true trees
+	tinfo	<- merge(tfiles, do.call('rbind',lapply(seq_along(ttrs), function(i) data.table(TAXA=ttrs[[i]]$tip.label, IDX_T=i))), by='IDX_T')	
+	tinfo[, IDPOP:=NA_character_]
+	tmp		<- tinfo[, which(grepl('REGIONAL',SC))]
+	set(tinfo, tmp, 'IDPOP', tinfo[tmp,regmatches(TAXA, regexpr('IDPOP_[0-9]+',TAXA))])
+	tmp		<- tinfo[, which(!grepl('REGIONAL',SC))]
+	set(tinfo, tmp, 'IDPOP', tinfo[tmp, regmatches(TAXA, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',TAXA))])		
+	stopifnot(subset(tinfo, grepl('VILL',SC))[, length(which(substring(TAXA,1,10)!=substring(IDPOP,1,10)))]==0)	
+	stopifnot( tinfo[, length(which(is.na(IDPOP)))==0] )	
+	set(tinfo, NULL, 'IDPOP', tinfo[,toupper(IDPOP)])
+	set(tinfo, NULL, 'TAXA', tinfo[,toupper(TAXA)])
+	#	read cluster membership from DATEDCLUTREES	
+	tmp		<- list.files(indir, pattern='DATEDCLUTREES', full.names=TRUE)
+	tmp		<- rbind( data.table( 	FILE_CLU_T= tmp, 
+					SC= gsub('161121_GTR','161121_REGIONAL_GTR',toupper(gsub('_DATEDCLUTREES','',gsub('.newick','',basename(tmp))))),
+					BRL_T= 'time'),
+			data.table( 	FILE_CLU_T= tmp, 
+					SC= gsub('161121_GTR','161121_REGIONAL_GTR',toupper(gsub('_DATEDCLUTREES','',gsub('.newick','',basename(tmp))))),
+					BRL_T= 'subst') )
+	tfiles	<- merge(tfiles, tmp, by=c('SC','BRL_T'), all=1)	
+	tmp		<- subset(tfiles, !is.na(FILE_CLU_T))[, {
+				z		<- read.tree(FILE_CLU_T)
+				do.call('rbind',lapply(seq_along(z), function(i) data.table(IDCLU=i, TAXA=z[[i]]$tip.label)))				
+			}, by=c('SC','BRL_T')]	
+	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all=1)
+	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N= length(IDPOP)), by=c('SC','BRL_T','IDCLU')]
+	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','IDCLU'), all=1)
+	#	read sequences and determine %gappiness in full alignment
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
+	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
+	trungps	<- data.table( 	FILE_SEQ_T= tmp, 
+			TEAM= 'RUNGAPS_EXCLTAXA',
+			SC='150701_Regional_TRAIN2',
+			GENE='FULL',
+			RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
+			RUNGAPS_EXCL= as.numeric(gsub('TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100
+	)	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
+	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
+	tmp		<- tmp[!grepl('WORST',tmp)]
+	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
+			TEAM= 'RUNGAPS_EXCLSITE',
+			SC='150701_Regional_TRAIN2',
+			GENE=regmatches(tmp,regexpr('FULL|GAG|GAGPP|P17|FULL',tmp)),
+			RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
+			RUNGAPS_EXCL= as.numeric(gsub('EXCLSITES','',regmatches(tmp,regexpr('EXCLSITES[0-9]+',tmp))))/100
+	)
+	trungps	<- rbind(trungps, tmp)							
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
+	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
+	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
+			TEAM= 'RUNGAPS_ExaML',
+			SC=gsub('(150701_Regional_TRAIN[0-9]).*','\\1',basename(tmp)),
+			GENE=regmatches(tmp,regexpr('FULL|GAG|GAGPP|P17|FULL',tmp)),
+			RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
+			RUNGAPS_EXCL= 1
+	)
+	trungps	<- rbind(trungps, tmp)	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$|GTRFIXED.*_SIMULATED.fasta$')
+	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
+			TEAM= NA_real_,
+			SC=gsub('161121_','161121_REGIONAL_',toupper(gsub('_SIMULATED.fa|_SIMULATED.fasta','',basename(tmp)))),
+			GENE=gsub('\\.fa$','FULL',regmatches(tmp,regexpr('\\.fa$|FULL|GAG|GAGPP|P17|FULL',tmp))),
+			RUNGAPS= NA_real_,
+			RUNGAPS_EXCL= NA_real_
+	)
+	trungps	<- rbind(trungps, tmp)	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations4'
+	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_FULL_SIMULATED.fa$')
+	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
+			TEAM= 'RUNGAPS_ExaML',
+			SC=toupper(gsub('[0-9][0-9]_FULL_SIMULATED.fa|_SIMULATED.fasta','',basename(tmp))),
+			GENE=gsub('\\.fa$','FULL',regmatches(tmp,regexpr('\\.fa$|FULL|GAG|GAGPP|P17|FULL',tmp))),
+			RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
+			RUNGAPS_EXCL= 1
+	)
+	trungps	<- rbind(trungps, tmp)	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations5'
+	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
+	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
+			TEAM= 'RUNGAPS_ExaML',
+			SC=gsub('(161121_Regional_TRAIN[0-9]).*','\\1',basename(tmp)),
+			GENE=regmatches(tmp,regexpr('FULL|GAG|GAGPP|P17|FULL',tmp)),
+			RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
+			RUNGAPS_EXCL= 1
+	)
+	trungps	<- rbind(trungps, tmp)	
+	#
+	trungps	<- trungps[, {
+				#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
+				cat('\n',FILE_SEQ_T)
+				z		<- read.dna(FILE_SEQ_T, format='fasta')	
+				ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))							
+				list(	TAXA=rownames(z), 
+						ACTG_P=apply(ans[c('a','c','t','g'),], 2, sum), 
+						UNASS_P=ans['?',],
+						NCOL=ncol(z))				
+			}, by=c('FILE_SEQ_T','SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL')]
+	trungps	<- trungps[, list(ACTG_P=mean(ACTG_P), UNASS_P=mean(UNASS_P), SITES_N=NCOL[1]), by=c('FILE_SEQ_T','SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL')]						
+	#
+	# to tinfo add actual transmitters
+	#
+	# check TRAIN1
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tinfo.add		<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tinfo.add		<- merge(tinfo.add, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
+	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
+	# check TRAIN2
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='150701_REGIONAL_TRAIN2']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN4
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN4' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )	
+	tmp[, SC:='150701_REGIONAL_TRAIN4']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN3
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN3' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='150701_REGIONAL_TRAIN3']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN5
+	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN5' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	tmp[, SC:='150701_REGIONAL_TRAIN5']
+	tinfo.add		<- rbind(tinfo.add, tmp)	
+	# check TRAIN6
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN6_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_TRAIN6' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_TRAIN6']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN7
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN7_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_TRAIN7' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_TRAIN7']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check TRAIN8
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN8_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_TRAIN8' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_TRAIN8']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	# check GTRFIXED2
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED2_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED2' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )	
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_GTRFIXED2']
+	tinfo.add		<- rbind(tinfo.add, tmp)	
+	# check GTRFIXED3
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED3_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED3' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )	
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_GTRFIXED3']
+	tinfo.add		<- rbind(tinfo.add, tmp)	
+	# check GTRFIXED1
+	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED1_SIMULATED_INTERNAL.R' )	
+	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED1' & BRL_T=='time', TAXA)
+	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
+	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
+	ch[, DOB_CH:= as.numeric(gsub('DOB_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',3)))]
+	ch[, TIME_SEQ_CH:= as.numeric(sapply(strsplit(TAXA,'|',fixed=1),'[[',4))]
+	ch				<- merge(subset(df.inds, select=c(IDPOP, GENDER, DOB, TIME_SEQ)), ch, by='IDPOP')	
+	stopifnot( ch[, all(abs(DOB-DOB_CH)<=2*.Machine$double.eps)], ch[, all(GENDER==GENDER_CH)], ch[, all(abs(TIME_SEQ-TIME_SEQ_CH)<=0.001)] )	
+	# OK :-) schedule adding IDPOP_T
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDREC,sep='')]]
+	tmp				<- subset(df.trms, select=c(IDPOP, IDTR))	
+	df.trms[, IDPOP:= df.trms[, paste('IDPOP_',IDTR,sep='')]]
+	tmp				<- merge(tmp, subset(df.trms, select=c(IDPOP, IDREC)), by='IDPOP', all=1)
+	set(ch, NULL, 'IDPOP', ch[, paste('IDPOP_',IDPOP,sep='')])
+	tmp		<- merge(tmp, subset(ch, select=IDPOP), by='IDPOP')
+	tmp[, SC:='161121_REGIONAL_GTRFIXED1']
+	tinfo.add		<- rbind(tinfo.add, tmp)
+	#
+	# 	add transmitters for regional to tinfo
+	#
+	tinfo			<- merge(tinfo, tinfo.add, by=c('IDPOP', 'SC'), all.x=1)
+	#
+	#	add true node depths to tinfo
+	#
+	tmp				<- tinfo[,	{
+				cat(IDX_T,'\n')
+				ph<- ttrs[[IDX_T]]
+				list(DEPTH_T=node.depth.edgelength(ph)[seq_len(Ntip(ph))], TAXA=ph$tip.label)
+			}, by='IDX_T']
+	tinfo			<- merge(tinfo, tmp, by=c('IDX_T','TAXA'), all.x=1)
+	#
+	# compute closest individual on true trees
+	#
+	tmp				<- unique(subset(tinfo, select=c(SC, BRL_T, IDX_T)))	
+	tmp				<- tmp[, {
+				print(IDX_T)
+				ph			<- ttrs[[IDX_T]]
+				model.reg	<- grepl('REGIONAL',SC)
+				treedist.closest.ind(ph, model.reg)
+			}, by=c('SC','BRL_T','IDX_T')]
+	tinfo			<- merge(tinfo, tmp, by=c('SC','BRL_T','IDX_T','IDPOP'))
+	set(tinfo, NULL, 'IDPOP_CL', tinfo[, gsub('IDPOP_','',IDPOP_CL)])	
+	#
+	#	add if transmitter sampled
+	#
+	tmp				<- subset(tinfo, grepl('REGIONAL',SC))	
+	set(tmp, NULL, 'IDPOP', tmp[,as.integer(gsub('IDPOP_','',IDPOP))])
+	tmp	<- unique(tmp, by=c('IDX_T','IDPOP'))[, {
+				z	<- IDX_T
+				list(IDTR_SAMPLED=ifelse(IDTR%in%subset(tmp, IDX_T==z)[['IDPOP']], 'Y', 'N'))
+			}, by=c('IDX_T','IDPOP')]
+	set(tmp, NULL, 'IDPOP', tmp[, paste('IDPOP_',IDPOP,sep='')])
+	tinfo	<- merge(tinfo, tmp, by=c('IDX_T','IDPOP'),all.x=1)
+	#
+	#	get submitted trees
+	#	
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps5'
+	infiles	<- list.files(indir, pattern='newick$', recursive=1, full.names=1)
+	
+	infiles	<- data.table(FILE=infiles)
+	strs	<- lapply(infiles[, FILE], function(x)
+			{
+				cat('\n',x)
+				read.tree(file=x)	
+			})
+	names(strs)	<- infiles[, FILE]
+	#
+	#
+	#
+	submitted.info			<- data.table(FILE=names(strs))
+	submitted.info[, IDX:=seq_along(strs)]
+	#
+	# 	set team
+	#			
+	submitted.info[, TEAM:=NA_character_]	
+	set(submitted.info, submitted.info[, which(grepl('running_gaps5',FILE) & !grepl('_PL[0-9]+_',FILE))], 'TEAM', 'RUNGAPS_ExaML')
+	set(submitted.info, submitted.info[, which(grepl('running_gaps5',FILE) & grepl('_PL[0-9]+_',FILE))], 'TEAM', 'PLEN')
+	stopifnot( submitted.info[, length(which(is.na(TEAM)))==0] )	
+	#
+	#	scenario
+	#	
+	submitted.info[, SC:=NA_character_]	
+	tmp		<- submitted.info[, which(grepl('161125_Regional_TRAIN7|161121_Regional_TRAIN7', FILE))]
+	set(submitted.info, tmp, 'SC', '161121_REGIONAL_TRAIN7')
+	tmp		<- submitted.info[, which(grepl('161125_Regional_TRAIN8|161121_Regional_TRAIN8', FILE))]
+	set(submitted.info, tmp, 'SC', '161121_REGIONAL_TRAIN8')		
+	set(submitted.info, NULL, 'SC', submitted.info[, toupper(SC)])
+	stopifnot( submitted.info[, length(which(is.na(SC)))==0] )
+	#
+	#	define running gaps for the running gaps analyses
+	#
+	submitted.info[, RUNGAPS:=NA_real_]	
+	tmp		<- submitted.info[, which(grepl('RUNGAPS',TEAM))]
+	set(submitted.info, tmp, 'RUNGAPS', submitted.info[tmp, as.numeric(gsub('.*TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(FILE,regexpr('TRAIN[0-9]+',FILE))))/100])
+	tmp		<- submitted.info[, which('PLEN'==TEAM)]
+	set(submitted.info, tmp, 'RUNGAPS', 0)	
+	stopifnot( !nrow(subset(submitted.info, is.na(RUNGAPS) & grepl('RUNGAPS',TEAM))) )
+	#
+	#	define running gaps2 selected fraction
+	#
+	submitted.info[, RUNGAPS_EXCL:=NA_real_]	
+	tmp		<- submitted.info[, which(TEAM=='RUNGAPS_ExaML')]
+	set(submitted.info, tmp, 'RUNGAPS_EXCL', 1)	
+	stopifnot( !nrow(subset(submitted.info, is.na(RUNGAPS) & grepl('RUNGAPS',TEAM))) )
+	#
+	#	define partial length
+	#
+	submitted.info[, PLEN:=NA_real_]	
+	tmp		<- submitted.info[, which(TEAM=='PLEN')]
+	set(submitted.info, tmp, 'PLEN', submitted.info[tmp, as.numeric(gsub('PL','',regmatches(FILE, regexpr('PL[0-9]+',FILE))))])
+	stopifnot( !nrow(subset(submitted.info, is.na(PLEN) & grepl('PLEN',TEAM))) )	
+	#
+	#	set covariates of scenarios
+	#
+	tmp		<- data.table(	SC=		c("150701_REGIONAL_TRAIN1","150701_REGIONAL_TRAIN2","161121_REGIONAL_GTRFIXED1","161121_REGIONAL_GTRFIXED2","161121_REGIONAL_GTRFIXED3","150701_REGIONAL_TRAIN3","150701_REGIONAL_TRAIN4" ,"150701_REGIONAL_TRAIN5", "150701_VILL_SCENARIO-A", "150701_VILL_SCENARIO-B", "VILL_99_APR15","150701_VILL_SCENARIO-C", "150701_VILL_SCENARIO-D", "150701_VILL_SCENARIO-E","161121_REGIONAL_TRAIN6","161121_REGIONAL_TRAIN7","161121_REGIONAL_TRAIN8"),
+			MODEL=	c('R','R','R','R','R','R','R','R','V','V','V','V','V','V','R','R','R'),
+			SEQCOV= c(0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.31, 0.15),
+			ACUTE=	c('low', 'low', 'low', 'low', 'low',  'high', 'low', 'high', 'high', 'high', 'high', 'high', 'high', 'high','low','low','low'),
+			GAPS=	c('none', 'low', 'none', 'low', 'high', 'low', 'high', 'high', 'low', 'high', 'none', 'none', 'low', 'high','none','none','none'), 
+			ART=	c('none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'fast', 'fast', 'fast', 'fast','none','none','none'),
+			EXT= 	c('5pc', '5pc', '5pc', '5pc', '5pc', '5pc', '5pc', '5pc', '~0pc', '~0pc', '~0pc', '~0pc', '~0pc', '~0pc','5pc','5pc','5pc')	)
+	submitted.info	<- merge(submitted.info, tmp, by='SC')
+	#
+	#	set which gene used to construct tree (either pol or concatenated gag+pol+env)
+	#
+	submitted.info[, GENE:=NA_character_]
+	set(submitted.info, submitted.info[, which(grepl('_FULL_', FILE))], 'GENE', 'GAG+POL+ENV')	
+	set(submitted.info, submitted.info[, which(grepl('_GAG_', FILE))], 'GENE', 'GAG')
+	set(submitted.info, submitted.info[, which(grepl('_P17_', FILE))], 'GENE', 'P17')	
+	set(submitted.info, submitted.info[, which(grepl('TRAIN[0-9]_PL', FILE))], 'GENE', 'GAG+POL+ENV')
+	set(submitted.info, submitted.info[, which(grepl('161121_Regional_TRAIN600', FILE))], 'GENE', 'GAG+POL+ENV')
+	stopifnot(nrow(subset(submitted.info, is.na(GENE)))==0)
+	#subset(submitted.info, TEAM=='GTRFIXED')
+	#
+	#	best tree for each scenario
+	#
+	submitted.info[, BEST:='N']
+	#
+	#	set OTHER (ie old or some preliminary/unknown tree)
+	#
+	submitted.info[, OTHER:='N']
+	#
+	#	add BRL_UNITS
+	#
+	submitted.info[, BRL:='subst']
+	#
+	#	number taxa in tree
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, TAXAN:= sapply(strs, Ntip)]	
+	#
+	#	add index of true tree
+	#
+	require(phangorn)
+	tmp				<- subset(tfiles, select=c('SC','IDX_T','BRL_T'))	
+	tmp				<- unique(tmp, by=c('SC','BRL_T'))
+	tmp				<- dcast.data.table(tmp, SC~BRL_T, value.var='IDX_T')
+	setnames(tmp, c('subst','time'), c("SUB_IDX_T","TIME_IDX_T"))
+	submitted.info	<- merge(submitted.info, tmp, by='SC')
+	submitted.info	<- merge(submitted.info, unique(subset(tfiles, select=c('SC','TAXAN_T'))), by='SC')	
+	#stopifnot(nrow(subset(submitted.info, TAXAN>TAXAN_T))==0)
+	#
+	#	fix taxa names that teams have changed
+	#
+	tmp		<- subset(submitted.info, TEAM=='IQTree' & MODEL=='R')[, IDX]
+	for(i in tmp)
+	{
+		strs[[i]]$tip.label		<- sapply(strsplit(strs[[i]]$tip.label,'_'), function(x)	paste(x[1],'_',x[2],'|',x[3],'|',x[4],'_',x[5],'|',x[6],sep='')	)		
+	}
+	for(i in seq_along(strs))
+	{
+		strs[[i]]$tip.label		<- toupper(strs[[i]]$tip.label)		
+	}
+	for(i in seq_along(ttrs))
+	{
+		ttrs[[i]]$tip.label	<- toupper(ttrs[[i]]$tip.label)
+	}		
+	tmp2	<- subset(tinfo, BRL_T=='time', select=c(IDPOP,SC,TAXA))
+	setkey(tmp2, IDPOP,SC,TAXA)
+	tmp2	<- unique(tmp2)
+	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='R')[, IDX]
+	for(i in tmp)
+	{		
+		cat(i,'\n')
+		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('IDPOP_[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
+		z	<- merge(tmp2, z, by=c('IDPOP','SC'))
+		setkey(z, IDX)
+		stopifnot(nrow(z)==Ntip(strs[[i]]))
+		strs[[i]]$tip.label	<- z[, TAXA]			
+	}
+	tmp		<- subset(submitted.info, TEAM=='PhyML' & MODEL=='V')[, IDX]
+	for(i in tmp)
+	{
+		cat(i,'\n')
+		z	<- data.table(IDX=seq_along(strs[[i]]$tip.label), IDPOP=regmatches(strs[[i]]$tip.label, regexpr('HOUSE[0-9]+-[0-9]+|House[0-9]+-[0-9]+',strs[[i]]$tip.label)), SC=subset(submitted.info, IDX==i)[,SC])
+		z	<- merge(tmp2, z, by=c('IDPOP','SC'))
+		stopifnot(nrow(z)==length(strs[[i]]$tip.label))
+		setkey(z, IDX)
+		strs[[i]]$tip.label	<- z[, TAXA]		
+	}
+	#
+	#	check labels and remove labels that do not appear in the observed tree
+	#	if additional labels are HXB2, root tree at HXB2
+	#
+	tmp	<- submitted.info[, {				
+				stree		<- unroot(strs[[IDX]])
+				otree		<- unroot(ttrs[[TIME_IDX_T]])				
+				z			<- setdiff(otree$tip.label, stree$tip.label)
+				list(CHECK= length(z)==abs(diff(c(TAXAN, TAXAN_T))) )
+			}, by='IDX']
+	tmp	<- merge(subset(tmp, !CHECK), submitted.info, by='IDX')
+	for(i in seq_len(nrow(tmp)))
+	{		
+		j			<- tmp[i, IDX]
+		cat('\n',j)		
+		otree		<- tmp[i, TIME_IDX_T]
+		stree		<- unroot(strs[[j]])
+		otree		<- unroot(ttrs[[otree]])					
+		z			<- merge( data.table(TAXA=stree$tip.label, TYPE='s'), data.table(TAXA=otree$tip.label, TYPE='o'), by='TAXA', all=1)
+		z			<- subset( z, is.na(TYPE.y))[, TAXA]
+		if(any(grepl('HXB2',z)))
+		{
+			
+			zz		<- z[grepl('HXB2',z)]			
+			stree	<- phytools:::reroot(stree, which(stree$tip.label==zz))
+			stree	<- drop.tip(stree, zz)
+			z		<- setdiff(zz,z)
+		}
+		if(length(z))
+		{
+			stree	<- drop.tip(stree, z)
+		}
+		strs[[j]]	<- stree		
+	}
+	submitted.info[, TAXAN:= sapply(strs, Ntip)]
+	#
+	#	are trees rooted?
+	#
+	setkey(submitted.info, IDX)
+	submitted.info[, ROOTED:=factor(sapply(strs, is.rooted),levels=c(TRUE,FALSE),labels=c('Y','N'))]
+	#
+	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	#save(strs, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170101.rda'))
 	#
 	#	read LSD trees
 	#
@@ -6940,6 +7650,7 @@ treecomparison.ana.161130.sclu<- function()
 	sc				<- rbind(sc, sclu.info, use.names=TRUE, fill=TRUE)
 	sa				<- rbind(sa, submitted.info, use.names=TRUE, fill=TRUE)
 	sclu.info		<- copy(sc)
+	trungps			<- copy(trungps.new)
 	#	get RUNGAPS column
 	sc[, RUNGAPS:=NA_real_]	
 	tmp				<- sc[, which(grepl('RUNGAPS',TEAM))]
@@ -6958,8 +7669,8 @@ treecomparison.ana.161130.sclu<- function()
 	#	merge trungps
 	set(trungps, NULL, 'SC', trungps[, gsub('Regional','REGIONAL',gsub('_P17|_GAG|_FULL','',SC))])
 	set(trungps, NULL, 'GENE', trungps[, gsub('FULL','GAG+POL+ENV',GENE)])
-	tmp		<- subset(trungps, !is.na(RUNGAPS) & !is.na(RUNGAPS_EXCL), c(SC, TEAM, GENE, RUNGAPS, RUNGAPS_EXCL, ACTG_P, UNASS_P))
-	tmp		<- unique(tmp, by=c('SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL'))
+	tmp		<- subset(trungps, !is.na(RUNGAPS) & !is.na(RUNGAPS_EXCL), c(SC, TEAM, GENE, RUNGAPS, RUNGAPS_EXCL, ACTG_P, UNASS_P, SITES_N))
+	tmp		<- unique(tmp, by=c('SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL','SITES_N'))
 	sc		<- merge(sc, tmp, by=c('SC','TEAM','GENE','RUNGAPS','RUNGAPS_EXCL'), all.x=1)	
 	#
 	sclu.info		<- copy(sc)
@@ -6994,7 +7705,7 @@ treecomparison.ana.161130.sclu<- function()
 					NQDmd=median(NQDC, na.rm=TRUE), 
 					NPDmd=median(NPD, na.rm=TRUE), 	
 					NPDSQmd=median(NPDSQ, na.rm=TRUE)
-			), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','UNASS_P','RUNGAPS','RUNGAPS_EXCL','PLEN','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER','SUB_IDX_T')]
+			), by=c('SC','GENE','GENE_L','TEAM','BEST','IDX','FILE','GAPS','UNASS_P','RUNGAPS','RUNGAPS_EXCL','PLEN','MODEL','TAXAN','TAXAN_T','ROOTED','SEQCOV','ART','ACUTE','EXT','OTHER','SUB_IDX_T','SITES_N')]
 	sc		<- subset(sc, MODEL=='Model: Regional')
 	#
 	#	patchy vs partial sequences on TRAIN1
@@ -7076,13 +7787,16 @@ treecomparison.ana.161130.sclu<- function()
 	#
 	#	consider excluding columns with most gaps, x-axis before taxa excluded
 	#
-	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_EXCLSITE',c(TEAM,RUNGAPS_EXCL,RUNGAPS,NQDme))
+	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_EXCLSITE',c(TEAM,RUNGAPS_EXCL,RUNGAPS,NQDme, SITES_N))
 	tmp2	<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_ExaML',c(TEAM,RUNGAPS_EXCL,RUNGAPS,NQDme))
 	setnames(tmp2, 'RUNGAPS_EXCL','DUMMY')
 	tmp2	<- merge(tmp2, as.data.table(expand.grid(RUNGAPS_EXCL=c(0.2,0.3,0.4,0.5), DUMMY=1)), by='DUMMY', allow.cartesian=TRUE)
 	tmp2[, DUMMY:=NULL]
+	tmp2[, SITES_N:= 6783L]
 	tmp		<- rbind(tmp, tmp2)
+	set(tmp, NULL, 'MISSING_P', tmp[, (RUNGAPS*SITES_N + (6783-SITES_N))/6783])
 	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(.2,.3,.4,.5), labels=c("alignment positions with\n>20% unassembled characters\nexcluded","alignment positions with\n>30% unassembled characters\nexcluded","alignment positions with\n>40% unassembled characters\nexcluded","alignment positions with\n>50% unassembled characters\nexcluded"))])
+	#	plot by x-axis RUNGAPS before sites excluded		
 	ggplot(tmp, aes(x=RUNGAPS)) +			
 			geom_point(aes(y=NQDme, colour=TEAM)) +
 			scale_colour_manual(values=c('RUNGAPS_ExaML'="grey50",'RUNGAPS_EXCLSITE'="#FF7F00")) +
@@ -7097,7 +7811,20 @@ treecomparison.ana.161130.sclu<- function()
 					pch='alignment columns excluded\nbefore tree reconstruction') 
 	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedsites.pdf',sep=''))
 	ggsave(file=file, w=12, h=5, useDingbats=FALSE)	
-	
+	ggplot(tmp, aes(x=MISSING_P)) +			
+			geom_point(aes(y=NQDme, colour=TEAM)) +
+			scale_colour_manual(values=c('RUNGAPS_ExaML'="grey50",'RUNGAPS_EXCLSITE'="#FF7F00")) +
+			#scale_colour_brewer(palette='Paired') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,1)) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0), limits=c(0, 0.35), breaks=seq(0,1,0.05), minor_breaks=seq(0,1,0.01)) +						
+			facet_grid(~RUNGAPS_EXCL) +
+			theme_bw() + theme(legend.position='bottom') +
+			labs(	x='\nMissing characters in simulated sequences relative to gag+pol+env', 
+					y='incorrectly estimated subtrees with 4 taxa\n(proportion)\n',
+					colour='alignment columns excluded\nbefore tree reconstruction',
+					pch='alignment columns excluded\nbefore tree reconstruction') 
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedsites_missingp.pdf',sep=''))
+	ggsave(file=file, w=12, h=5, useDingbats=FALSE)	
 	
 	#tmp2	<- tmp[, 	list(	RUNGAPS= RUNGAPS, 
 	#				YM= predict(loess(NQDme~RUNGAPS, span=5, degree=2))), 
@@ -7118,11 +7845,11 @@ treecomparison.ana.161130.sclu<- function()
 	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedsites.pdf',sep=''))
 	ggsave(file=file, w=4.5, h=6, useDingbats=FALSE)
 	#
-	#	consider excluding taxa with most gaps, x-axis before taxa excluded
+	#	consider excluding taxa with most gaps
 	#	and re-calculate Quartet distance only on common phylogeny
 	#
-	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_EXCLTAXA', c(TEAM, RUNGAPS, RUNGAPS_EXCL,IDX, SUB_IDX_T))
-	tmp		<- dcast.data.table(tmp, RUNGAPS+RUNGAPS_EXCL+SUB_IDX_T~TEAM, value.var='IDX')
+	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_EXCLTAXA', c(TEAM, RUNGAPS, RUNGAPS_EXCL,IDX, SUB_IDX_T, UNASS_P))
+	tmp		<- dcast.data.table(tmp, RUNGAPS+RUNGAPS_EXCL+SUB_IDX_T+UNASS_P~TEAM, value.var='IDX')
 	tmp2	<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM=='RUNGAPS_ExaML', c(RUNGAPS, IDX))	
 	tmp		<- merge(tmp, tmp2, by='RUNGAPS')	
 	tmp[, IDX_NEW:= seq_len(nrow(tmp))]
@@ -7139,15 +7866,32 @@ treecomparison.ana.161130.sclu<- function()
 	}
 	#	run quartet distances on cluster
 	setnames(tmp, c('IDX','IDX_NEW'), c("IDX_OLD",'IDX'))
+	tmp3	<- copy(tmp)
 	save(ph_tmp, tmp, ttrs, tinfo, file=file.path(edir, paste0(timetag,'_extraQD.rda')))
 	load(file.path(edir,'161123_extraQD_01extra.rda'))
-	tmp		<- merge(tmp, tmp2, by='IDX')
-	tmp3	<- tmp[, list(NQDme=mean(NQDC, na.rm=TRUE)), by=c('IDX','IDX_OLD','RUNGAPS','RUNGAPS_EXCL','RUNGAPS_EXCLTAXA')]	
-	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS_EXCLTAXA'), c(TEAM,RUNGAPS_EXCL,RUNGAPS,NQDme))
+	tmp		<- merge(tmp3, tmp2, by='IDX')
+	tmp3	<- tmp[, list(NQDme=mean(NQDC, na.rm=TRUE)), by=c('IDX','IDX_OLD','RUNGAPS','RUNGAPS_EXCL','RUNGAPS_EXCLTAXA','UNASS_P')]
 	tmp3[, TEAM:='RUNGAPS_ExaML']
-	tmp		<- rbind(tmp,subset(tmp3, select=c(TEAM, RUNGAPS_EXCL, RUNGAPS, NQDme)))
+	tmp		<- subset(sc, SC=='sc 2' & ACUTE=='low' & GENE=='gag+pol+env' & TEAM%in%c('RUNGAPS_EXCLTAXA'), c(TEAM,RUNGAPS_EXCL,RUNGAPS,NQDme, UNASS_P))	
+	tmp		<- rbind(tmp,subset(tmp3, select=c(TEAM, RUNGAPS_EXCL, RUNGAPS, NQDme, UNASS_P)), fill=TRUE, use.names=TRUE)
 	set(tmp, NULL, 'RUNGAPS_EXCL', tmp[, factor(RUNGAPS_EXCL, levels=c(0.5,.6,.7,.8,.9), labels=c(">50% unassembled sites",">60% unassembled sites",">70% unassembled sites",">80% unassembled sites",">90% unassembled sites"))])
 	set(tmp, NULL, 'LEGEND', tmp[, paste('sequences with\n',as.character(RUNGAPS_EXCL),'\nexcluded')])
+	#	plot x-axis AFTER taxa excluded
+	ggplot(subset(tmp,RUNGAPS_EXCL!=">50% unassembled sites"), aes(x=UNASS_P)) +			
+			geom_point(aes(y=NQDme, colour=TEAM)) +
+			scale_colour_manual(values=c('RUNGAPS_ExaML'="grey50",'RUNGAPS_EXCLTAXA'="#FF7F00")) +
+			#scale_colour_brewer(palette='Paired') +
+			scale_x_continuous(labels=scales::percent, expand=c(0,0), breaks=seq(0,1,0.1), limits=c(0,0.63)) +
+			scale_y_continuous(labels=scales::percent, expand=c(0,0), limits=c(0, 0.25), breaks=seq(0,1,0.05), minor_breaks=seq(0,1,0.01)) +						
+			facet_grid(~LEGEND) +
+			theme_bw() + theme(legend.position='bottom') +
+			labs(	x='\nUnassembled sites in simulated sequences after sequences excluded', 
+					y='incorrectly estimated common subtrees with 4 taxa\n(proportion)\n',
+					colour='sequences excluded\nbefore tree reconstruction',
+					pch='sequences excluded\nbefore tree reconstruction') 
+	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedtaxa_samenumbertaxa_pcafterexcluded.pdf',sep=''))
+	ggsave(file=file, w=12, h=5, useDingbats=FALSE)
+	#	plot x-axis BEFORE taxa excluded
 	ggplot(subset(tmp,RUNGAPS_EXCL!=">50% unassembled sites"), aes(x=RUNGAPS)) +			
 			geom_point(aes(y=NQDme, colour=TEAM)) +
 			scale_colour_manual(values=c('RUNGAPS_ExaML'="grey50",'RUNGAPS_EXCLTAXA'="#FF7F00")) +
@@ -7161,7 +7905,7 @@ treecomparison.ana.161130.sclu<- function()
 					colour='sequences excluded\nbefore tree reconstruction',
 					pch='sequences excluded\nbefore tree reconstruction') 
 	file	<- file.path(edir, paste(timetag,'_','QD_clumean_by_excludedtaxa_samenumbertaxa.pdf',sep=''))
-	ggsave(file=file, w=12, h=5, useDingbats=FALSE)	
+	ggsave(file=file, w=12, h=5, useDingbats=FALSE)		
 	#
 	#	consider excluding taxa with most gaps, x-axis before taxa excluded
 	#

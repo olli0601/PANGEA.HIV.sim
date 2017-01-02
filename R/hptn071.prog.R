@@ -244,7 +244,7 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(0)	#run LSD
+	if(1)	#run LSD
 	{
 		require(ape)
 		require(data.table)
@@ -252,13 +252,13 @@ pipeline.various<- function()
 		#wdir	<- '~/duke/tmp'		 
 		#file	<- file.path('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation','/','submitted_160713_05QD.rda')		
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/lsd'
-		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
+		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_170101.rda'
 		load(file)				
 		
 		setkey(submitted.info, TEAM, SC, GENE, RUNGAPS)
 
 		ds		<- subset(submitted.info, MODEL=='R')
-		ds		<- subset(ds, SC=='161121_REGIONAL_TRAIN6')
+		#ds		<- subset(ds, SC=='161121_REGIONAL_TRAIN6')
 		#ds		<- subset(submitted.info, MODEL=='R' & IDX%in%c(76,79,106,143,145,146,176,232,331,356,358,359,361))
 		#ds		<- subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN1' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1]), by='GENE']
 		#ds		<- rbind(ds, subset(submitted.info, TEAM=='IQTree' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('GAG','GAG+POL+ENV'))[, list(IDX=IDX[1:5]), by='GENE'])
@@ -459,7 +459,7 @@ pipeline.various<- function()
 					Sys.sleep(1)
 				}, by='SC'])		
 	}
-	if(1)	#submit ExaML of partial sequences 
+	if(0)	#submit ExaML of partial sequences 
 	{
 		require(ape)
 		require(big.phylo)	

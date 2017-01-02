@@ -2020,24 +2020,19 @@ project.PANGEA.treecomparison.gaps<- function()
 	#	prepare gappy PANGEA files at different coverage
 	#
 	if(0)
-	{
-		callconsensus.cmd	<- 'python /Users/Oliver/Dropbox\\ \\(Infectious\\ Disease\\)/PANGEA-BEEHIVE-SHARED/ChrisCode/CallConsensus.py'
-		callconsensus.minc	<- 10
-		callconsensus.maxc	<- 10
-		mergealignments.cmd	<- 'python /Users/Oliver/Dropbox\\ \\(Infectious\\ Disease\\)/PANGEA-BEEHIVE-SHARED/ChrisCode/MergeAlignments2.0.py'
-		mergealignments.opt	<- '-d'
-		
-		indir.refalgn		<- '/Users/Oliver/Dropbox\\ \\(Infectious\\ Disease\\)/PANGEA_data'
+	{				
+		indir.refalgn		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PipelineInput'		
 		infile.refalgn		<- 'HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta'
-		indir.basefreq		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/mapping/2681/BaseFreqs'
+		indir.basefreq		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_BaseFrequencies'
 		outdir				<- '/Users/Oliver/git/HPTN071sim/treecomparison/PANGEAcov'
 		
 		tmp					<- c(10,20,30,40,50)
 		tmp					<- c(70,90,100)
 		tmp					<- c(200)
+		tmp					<- 1
 		invisible(sapply(tmp, function(callconsensus.minc)
 						{
-							outfile				<- '150623_PANGEAGlobal2681'
+							outfile				<- '161228_PANGEAGlobal4282'
 							outfile				<- paste(outfile, '_C', callconsensus.minc, '.fa', sep='')
 							seq					<- PANGEA.align.from.basefreq(indir.refalgn, infile.refalgn, indir.basefreq, callconsensus.minc, outdir, verbose=1)
 							write.dna(seq, file=paste(outdir, '/', outfile, sep=''), format='fasta', colsep='', nbcol=-1)

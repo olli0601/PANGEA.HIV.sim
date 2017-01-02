@@ -1463,26 +1463,28 @@ PANGEA.TransmissionEdgeEvolutionaryRate.create.sampler<- function(er.meanlog, er
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.align.from.basefreq<- function(indir.refalgn, infile.refalgn, indir.basefreq, callconsensus.minc, outdir, verbose=1)
 {		
-	callconsensus.cmd	<- 'python /Users/Oliver/Dropbox\\ \\(Infectious\\ Disease\\)/PANGEA-BEEHIVE-SHARED/ChrisCode/CallConsensus.py'
+	callconsensus.cmd	<- 'python /Users/Oliver/git/SeqAnalTools/CallConsensus_splitbywhitespace.py'
+	#callconsensus.cmd	<- 'python ~/Downloads/CallConsensus.py'	
 	callconsensus.maxc	<- callconsensus.minc
-	mergealignments.cmd	<- 'python /Users/Oliver/Dropbox\\ \\(Infectious\\ Disease\\)/PANGEA-BEEHIVE-SHARED/ChrisCode/MergeAlignments2.0.py'
+	mergealignments.cmd	<- 'python /Users/Oliver/git/SeqAnalTools/MergeAlignments2.0.py'
 	mergealignments.opt	<- '-d'
 				
 	#	create consensus at coverage cut off		
-	files				<- data.table(FILE=list.files(indir.basefreq, pattern='dat$'))	
+	files				<- data.table(FILE=list.files(indir.basefreq, pattern='txt$'))	
 	invisible(files[,{								
 						tmp					<- gsub(' ','\\ ',gsub(')','\\)',gsub('(','\\(',paste(indir.basefreq, '/', FILE, sep=''),fixed=1),fixed=1),fixed=1)				
 						cmd					<- paste(callconsensus.cmd,' ',tmp,' ', callconsensus.minc, ' ', callconsensus.maxc, sep='')
 						#cat(cmd)				
-						ans					<- system(cmd, intern=TRUE)	
-						file				<- paste('TMP_',gsub('BaseFreqs.dat',paste('consensus_C',callconsensus.minc,'.fa',sep=''), FILE),sep='')
+						ans					<- system(cmd, intern=TRUE)
+						ans					<- gsub('.BaseFreqs.ic','',gsub('ContigsFlattenedWith_','',ans, fixed=TRUE), fixed=TRUE)
+						file				<- paste('TMP_',gsub('.BaseFreqs.ic.txt',paste('_consensus_C',callconsensus.minc,'.fa',sep=''), FILE),sep='')
 						cat(paste(ans, collapse='\n'), file=paste(outdir, '/', file, sep=''))
 						NULL
 					}, by='FILE'])
 	#	add to reference alignment
-	files				<- data.table(FILE=list.files(outdir, pattern=paste('consensus_C',callconsensus.minc,'.fa',sep='')))
+	files				<- data.table(FILE=list.files(outdir, pattern=paste('consensus_C',callconsensus.minc,'.fa',sep='')))	
 	ps					<- files[,{
-				cmd	<- paste(mergealignments.cmd,' ',mergealignments.opt,' ',indir.refalgn,'/',infile.refalgn,' ',outdir,'/',FILE,sep='')
+				cmd	<- paste(mergealignments.cmd,' ',mergealignments.opt,' "',indir.refalgn,'/',infile.refalgn,'" ',outdir,'/',FILE,sep='')
 				#cat(cmd)				
 				ans	<- system(cmd, intern=TRUE)	
 				list(SEQ=paste(ans[-1], collapse=''))				
