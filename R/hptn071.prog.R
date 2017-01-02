@@ -190,13 +190,13 @@ pipeline.various<- function()
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
-	if(0)	#submit evaluation of tree comparison
+	if(1)	#submit evaluation of tree comparison
 	{
-		for(i in 1:84)
+		for(i in 1:30)
 		{
 			cmd			<- cmd.treecomparison(hpc.select=i)
-			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="5800mb")
-			#cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="99000mb")
+			#cmd		<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="5800mb")
+			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="99000mb")
 			cat(cmd)		
 			outdir		<- paste(HOME,"tmp",sep='/')
 			outfile		<- paste("tc",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
@@ -244,7 +244,7 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(1)	#run LSD
+	if(0)	#run LSD
 	{
 		require(ape)
 		require(data.table)
@@ -252,6 +252,7 @@ pipeline.various<- function()
 		#wdir	<- '~/duke/tmp'		 
 		#file	<- file.path('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation','/','submitted_160713_05QD.rda')		
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/lsd'
+		wdir	<- '/Users/Oliver/git/HPTN071sim/treecomparison/lsd'
 		file	<- '/work/or105/Gates_2014/tree_comparison/submitted_170101.rda'
 		load(file)				
 		
@@ -293,7 +294,7 @@ pipeline.various<- function()
 					if(GENE=='POL')
 						ali.nrow	<- 2850						
 					#cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10 -r as')
-					cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10')
+					cmd				<- cmd.lsd(infile.tree, infile.dates, ali.nrow, outfile=outfile, pr.args='-v 2 -c -b 10')					
 					#cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=40, hpc.mem="11800mb")
 					#cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeph', hpc.walltime=40, hpc.mem="3600mb")
 					cmd				<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=3, hpc.mem="1800mb")
@@ -535,17 +536,18 @@ pipeline.various<- function()
 ##--------------------------------------------------------------------------------------------------------
 prog.treecomparison<- function()
 {
-	if(1)
+	if(0)
 	{	
 		file		<- '/work/or105/Gates_2014/tree_comparison/161123_extraQD.rda'
 		treecomparison.submissions.161223.stuffoncluster(file)
 	}
-	if(0)
+	if(1)
 	{
 		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_151101.rda'
 		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
 		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'
-		file		<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'		
+		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
+		file		<- '/work/or105/Gates_2014/tree_comparison/submitted_170101.rda'
 		#treedist.quartets.add(file=file, with.save=1)
 		hpc.select	<- NA
 		if(exists("argv"))

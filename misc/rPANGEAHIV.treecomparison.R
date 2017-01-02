@@ -5623,10 +5623,10 @@ treecomparison.submissions.170101<- function()
 	#
 	#	read LSD trees
 	#
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_2'
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_3'
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick$', full.names=TRUE))
 	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
-	setkey(infiles, IDX)	
+	setkey(infiles, IDX)		
 	strs_lsd		<- vector('list', submitted.info[, max(IDX)])
 	for(i in seq_len(nrow(infiles)))		
 	{
@@ -5634,7 +5634,12 @@ treecomparison.submissions.170101<- function()
 		IDX						<- infiles[i,IDX]
 		FILE					<- infiles[i,FILE]
 		cat('\n',IDX)
-		ph						<- read.tree(FILE)
+		ph						<- readLines(FILE)		
+		if(grepl('^\\(\\(\\):0,', ph) & grepl(':-?[0-9].?[0-9]*[eE]*-?[0-9]*\\);$', ph))
+		{
+			ph					<- gsub(':-?[0-9].?[0-9]*[eE]*-?[0-9]*\\);$',';',gsub('^\\(\\(\\):0,','',ph))
+		}		
+		ph						<- read.tree(text=ph)
 		stopifnot( !is.null(ph) )
 		stopifnot( identical(sort(strs[[IDX]]$tip.label), sort(ph$tip.label)) )
 		strs_lsd[[IDX]]			<- ph
@@ -5642,46 +5647,13 @@ treecomparison.submissions.170101<- function()
 	}
 	setkey(submitted.info, IDX)
 	submitted.info[, WITH_LSD:= factor(sapply(strs_lsd, is.null), levels=c(TRUE,FALSE), labels=c('N','Y'))]
-	submitted.info	<- subset(submitted.info, WITH_LSD=='Y')
-	#
-	#	re-root simulated trees at root of LSD tree
-	#
-	strs_rtt	<- vector('list', length(strs))		
-	for(i in submitted.info[, IDX])
-	{
-		cat('\n',i)			
-		ph	<- strs[[i]]
-		phl	<- strs_lsd[[i]]
-		#	figure out taxon with shortest heigh in rooted lsd tree
-		tmp				<- Ancestors(phl, seq_len(Ntip(phl)), type="all")
-		tmp2			<- sapply(tmp, length)
-		root.pivot		<- which.min(tmp2)
-		root.pivot.name	<- phl$tip.label[root.pivot]
-		#	determine how many edges down from root.pivot the root is located
-		root.descend	<- length(tmp[[root.pivot]])-1
-		#	calculate 1 minus the proportion of the corresponding edge in ph to the root location		 
-		root.pos		<- phl$edge.length[ which( phl$edge[,1]==rev(tmp[[root.pivot]])[1] ) ]
-		root.children	<- phl$edge[which( phl$edge[,1]==rev(tmp[[root.pivot]])[1] ),2]
-		tmp				<- sapply(root.children, function(x) x %in% c(tmp[[root.pivot]], root.pivot))		
-		root.pos		<- 1 - root.pos[tmp] / sum(root.pos)
-		#	find the root child in ph	
-		tmp				<- which(ph$tip.label==root.pivot.name)
-		tmp2			<- Ancestors(ph, tmp, type="all")		
-		root.node.child	<- ifelse(root.descend==0, tmp, tmp2[root.descend])
-		#	find the length of the branch to the root.child
-		#	and get the bit at which the root is to be placed
-		root.pos		<- root.pos * ph$edge.length[ which(ph$edge[,2]==root.node.child) ]
-		#	reroot ph
-		ph				<- reroot(ph, root.node.child, position=root.pos)
-		strs_rtt[[i]]	<- ph 
-	}
-	names(strs_rtt)	<- names(strs)		
+	submitted.info	<- subset(submitted.info, WITH_LSD=='Y')		
 	#
 	#	ladderize all trees
 	#		
 	ttrs	<- lapply(ttrs, ladderize)
 	strs	<- lapply(strs, ladderize)
-	strs_rtt<- lapply(strs_rtt, function(ph){
+	strs_lsd<- lapply(strs_lsd, function(ph){
 				if(!is.null(ph))
 					ph	<- ladderize(ph)
 				ph
@@ -5690,7 +5662,7 @@ treecomparison.submissions.170101<- function()
 	#	SAVE so far
 	#
 	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	save(strs, strs_lsd, strs_rtt, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_161123.rda'))	
+	save(strs, strs_lsd, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170101.rda'))	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.16
