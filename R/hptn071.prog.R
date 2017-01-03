@@ -190,7 +190,7 @@ pipeline.various<- function()
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
-	if(1)	#submit evaluation of tree comparison
+	if(0)	#submit evaluation of tree comparison
 	{
 		for(i in 1:30)
 		{
@@ -204,7 +204,7 @@ pipeline.various<- function()
 			stop()
 		}				
 	}	
-	if(0)	# combine evaluations
+	if(1)	# combine evaluations
 	{
 		treecomparison.combine.stuffoncluster.161123()
 		quit('no')

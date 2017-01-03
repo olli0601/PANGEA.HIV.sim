@@ -4445,7 +4445,7 @@ treecomparison.combine.stuffoncluster.161123<- function()
 	
 	indir	<- '~/duke/tmp/tc'
 	indir	<- '/work/or105/Gates_2014/tree_comparison'
-	infiles	<- list.files(indir, pattern='hpc[0-9]+_07MSELSD_noTBRL.rda$',full.names=TRUE)
+	infiles	<- list.files(indir, pattern='hpc[0-9]+_09SBRL.rda$',full.names=TRUE)
 	cat('\n use as first batch', infiles[1])
 	load( infiles[1] )	
 	#	load first batch
