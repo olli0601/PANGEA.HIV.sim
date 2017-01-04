@@ -25,7 +25,7 @@ regional population that is broadly similar to a site (cluster) of the HPTN071 (
 Africa (Hayes R, Ayles H, Beyers N, et al., Trials 2014).
 
 This repository implements the regional model to generate sequence data and phylogenetic trees 
-for a variety of generalised HIV epidemics and intervention scenarios.
+for a variety of generalised HIV epidemics and intervention scenarios. It is based on the HPTN071/PopART individual based model, see also here: https://github.com/mrehp2/POPART-IBM/tree/PangeaSim.
 
 #### Authors of PANGEA.HIV.sim
 
