@@ -9,7 +9,7 @@ phylogenetic relationship as a marker of recent HIV transmission events
 
 Research groups were invited to participate in a blinded methods comparison exercise on simulated 
 HIV sequence data sets to test the performance of current phylogenetic methods before their application 
-on real data. The methods comparison exercise was announced in October 2014, and closed in August 2015. 
+on real data (Ratmann O, Hodcroft E, Pickles M, et al. Molecular Biology Evolution 2016). The methods comparison exercise was announced in October 2014, and closed in August 2015. 
 Research groups were asked to estimate 
 * reductions in HIV incidence during a typical community-based intervention in sub-Saharan Africa,
 * the proportion of HIV transmissions arising from individuals during their first three months of infection (early transmission) at the start of the intervention from sequence data.
