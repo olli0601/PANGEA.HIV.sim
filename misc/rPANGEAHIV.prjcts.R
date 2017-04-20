@@ -2738,6 +2738,42 @@ project.PANGEA.treecomparison.gaps.simulate.gtrfixed<- function()
 }	
 
 ##--------------------------------------------------------------------------------------------------------
+##	olli 19.04.17
+##--------------------------------------------------------------------------------------------------------
+project.PANGEA.treecomparison.run.FASTtree<- function()
+{
+	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
+	infiles	<- data.table(F=list.files(indir, pattern='^150701_Regional_TRAIN.*fa', full.names=TRUE))
+	infiles	<- subset(infiles, !grepl('TRAIN3|TRAIN5',F))
+	
+	infiles	<- infiles[,{
+				#F	<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa'
+				#M	<- 'raw'
+				cat('process sequences', F, '\n')
+				#	load simulated alignment
+				seq	<- read.dna(F, format='fasta')	
+				#	delete empty / very small sequences
+				tmp	<- seq.length(seq, exclude=c('-','?','n'))
+				seq	<- seq[ names(tmp)[tmp>=100], ]
+				tmp	<- file.path(outdir,gsub('SIMULATED.fa','SIMULATED_min100.fasta',basename(F)))
+				write.dna(seq, file=tmp, format='fasta', colsep='', nbcol=-1)
+				list(F_SUB= tmp)
+			}, by=c('F')]
+	infiles	<- data.table(expand.grid(F=list.files(outdir, pattern='fasta$', full.names=TRUE), REP=1:10, stringsAsFactors=FALSE))
+	infiles	<- infiles[, {				
+				cmd	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreedefault.newick'),F), pr.args=paste0('-nt -gtr -gamma -seed ',REP*42L))
+				tmp	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreeslow.newick'),F), pr.args=paste0('-nt -gtr -slow -gamma -seed ',REP*42L))
+				cmd	<- paste(cmd, tmp, sep='\n')
+				tmp	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreeslowpseudo.newick'),F), pr.args=paste0('-nt -gtr -slow -pseudo -gamma -seed ',REP*42L))
+				cmd	<- paste(cmd, tmp, sep='\n')
+				list(CMD=cmd)
+			}, by=c('F','REP')]
+	infiles[, {
+				cat(paste("#!/bin/sh", paste(CMD, collapse='\n'), sep='\n'), file= gsub('fasta','sh',F))
+			},by=c('F')]			
+}
+##--------------------------------------------------------------------------------------------------------
 ##	olli 01.07.15
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.treecomparison.gaps.simulate<- function()

@@ -190,6 +190,32 @@ pipeline.various<- function()
 		cmd.hpccaller(outdir, outfile, cmd)
 		quit("no")		
 	}	
+	if(1)	#run fasttree
+	{
+		#tmp	<- 'betareg   fastmatch     gamlss gridExtra       magrittr    acepack    coda   mvtnorm  OutbreakTools  rjson  adegenet   colorspace  distory   tidyradephyl   distr      fitdistrplus  geiger  RColorBrewer  akima      dplyr   Hmisc  Rcpp    animation  chron              curl        dtplyr     phangorn        viridisape       data.table ggplot2   mnormt      nortest         phylobase     scales        argparse   gam           ggtree     reshape2     deSolve     gridBase     igraph     phytools        pscl'
+		#cat(paste(strsplit(tmp, ' +')[[1]], collapse='","'))
+		
+		require(big.phylo)
+		outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
+		outdir	<- '/work/or105/Gates_2014/tree_comparison/FastTree'
+		infiles	<- infiles[, {				
+					cmd	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreedefault.newick'),F), pr.args=paste0('-nt -gtr -gamma -seed ',REP*42L))
+					tmp	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreeslow.newick'),F), pr.args=paste0('-nt -gtr -slow -gamma -seed ',REP*42L))
+					cmd	<- paste(cmd, tmp, sep='\n')
+					tmp	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreepseudo.newick'),F), pr.args=paste0('-nt -gtr -pseudo -gamma -seed ',REP*42L))
+					cmd	<- paste(cmd, tmp, sep='\n')
+					tmp	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreeslowpseudo.newick'),F), pr.args=paste0('-nt -gtr -slow -pseudo -gamma -seed ',REP*42L))
+					cmd	<- paste(cmd, tmp, sep='\n')
+					list(CMD=cmd)
+				}, by=c('F','REP')]
+		invisible(infiles[, {
+					cmd			<- cmd.hpcwrapper.cx1.ic.ac.uk(hpc.walltime=221, hpc.q="pqeelab", hpc.mem="5900mb",  hpc.nproc=1, hpc.load="module load intel-suite/2015.1 R/3.2.0")							
+					cmd			<- paste(cmd,CMD,sep='\n')
+					cat(cmd)					
+					outfile		<- paste("ft",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
+					cmd.hpccaller(outdir, outfile, cmd)					
+				},by=c('F','REP')])				
+	}
 	if(0)	#submit evaluation of tree comparison
 	{
 		for(i in 1:30)
@@ -204,7 +230,7 @@ pipeline.various<- function()
 			stop()
 		}				
 	}	
-	if(1)	# combine evaluations
+	if(0)	# combine evaluations
 	{
 		treecomparison.combine.stuffoncluster.161123()
 		quit('no')
