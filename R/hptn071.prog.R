@@ -198,6 +198,7 @@ pipeline.various<- function()
 		require(big.phylo)
 		outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
 		outdir	<- '/work/or105/Gates_2014/tree_comparison/FastTree'
+		infiles	<- data.table(expand.grid(F=list.files(outdir, pattern='fasta$', full.names=TRUE), REP=1:10, stringsAsFactors=FALSE))
 		infiles	<- infiles[, {				
 					cmd	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreedefault.newick'),F), pr.args=paste0('-nt -gtr -gamma -seed ',REP*42L))
 					tmp	<- cmd.fasttree(F, outfile=gsub('\\.fasta',paste0('_REP',REP,'_fasttreeslow.newick'),F), pr.args=paste0('-nt -gtr -slow -gamma -seed ',REP*42L))
