@@ -7058,7 +7058,17 @@ treecomparison.submissions.170424<- function()
 	}		
 	names(strs_rtt)	<- names(strs)
 	options(warn=0)
-	
+	#	set node labels
+	for(i in seq_along(strs))
+	{
+		strs[[i]][['node.label']]<- as.numeric(strs[[i]][['node.label']])
+		strs[[i]][['node.label']][ is.na(strs[[i]][['node.label']]) ]	<- 0
+	}
+	for(i in seq_along(strs_rtt))
+	{
+		strs_rtt[[i]][['node.label']]<- as.numeric(strs_rtt[[i]][['node.label']])
+		strs_rtt[[i]][['node.label']][ is.na(strs_rtt[[i]][['node.label']]) ]	<- 0
+	}	
 	
 	#
 	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	

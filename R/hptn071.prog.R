@@ -296,6 +296,7 @@ pipeline.various<- function()
 		#ds		<- merge(ds, submitted.info, by=c('IDX','GENE'))	
 		ds[, {	
 					ph				<- strs_rtt[[IDX]]
+					ph$node.label	<- NULL
 					#ph				<- strs[[IDX]]
 					tmp				<- data.table(TAXA=ph$tip.label, SEQ_T= sapply(strsplit(ph$tip.label, '|', fixed=1),'[[', 4))
 					tmp				<- tmp[,  list(STR=paste(TAXA,' ',SEQ_T,sep='')), by='TAXA'][, paste(STR, collapse='\n')]
