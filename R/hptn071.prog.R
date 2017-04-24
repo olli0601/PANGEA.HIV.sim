@@ -295,8 +295,8 @@ pipeline.various<- function()
 		#ds		<- rbind(ds, subset(submitted.info, TEAM=='RUNGAPS_ExaML' & SC=='150701_REGIONAL_TRAIN2' & OTHER=='N' & GENE%in%c('P17','GAG','GAG+POL+ENV'))[, list(IDX=IDX[seq.int(1,length(IDX),3)]), by='GENE'])		
 		#ds		<- merge(ds, submitted.info, by=c('IDX','GENE'))	
 		ds[, {	
-					#ph				<- strs_rtt[[IDX]]
-					ph				<- strs[[IDX]]
+					ph				<- strs_rtt[[IDX]]
+					#ph				<- strs[[IDX]]
 					tmp				<- data.table(TAXA=ph$tip.label, SEQ_T= sapply(strsplit(ph$tip.label, '|', fixed=1),'[[', 4))
 					tmp				<- tmp[,  list(STR=paste(TAXA,' ',SEQ_T,sep='')), by='TAXA'][, paste(STR, collapse='\n')]
 					tmp				<- paste(Ntip(ph),'\n',tmp,sep='')

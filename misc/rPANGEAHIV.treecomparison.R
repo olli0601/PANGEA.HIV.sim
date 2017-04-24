@@ -7041,8 +7041,28 @@ treecomparison.submissions.170424<- function()
 	setkey(submitted.info, IDX)
 	submitted.info[, ROOTED:=factor(sapply(strs, is.rooted),levels=c(TRUE,FALSE),labels=c('Y','N'))]
 	#
+	#	root with RTT
+	#
+	options(warn=2)
+	strs_rtt	<- vector('list', length(strs))		
+	for(i in submitted.info[, IDX])
+	{
+		cat('\n',i)
+		#i	<- 628 ; i<- 241; i<- 571
+		ph				<- strs[[i]]
+		tmp				<- data.table(TAXA=ph$tip.label)
+		set(tmp, NULL, 'T_SEQ', tmp[, as.numeric(regmatches(TAXA, regexpr('[0-9]*\\.[0-9]+$|[0-9]+$', TAXA))) ])					
+		#phr	<- rtt(ph, tmp[, as.numeric(T_SEQ)])
+		phr				<- rtt(ph, tmp[, T_SEQ], ncpu=4)	#this may drop a tip!
+		strs_rtt[[i]]	<- ladderize(phr)
+	}		
+	names(strs_rtt)	<- names(strs)
+	options(warn=0)
+	
+	
+	#
 	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	#save(strs, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170424.rda'))
+	#save(strs, strs_rtt, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170424.rda'))
 	#
 	#	read LSD trees
 	#
