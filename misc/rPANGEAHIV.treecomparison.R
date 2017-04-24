@@ -7076,7 +7076,7 @@ treecomparison.submissions.170424<- function()
 	#
 	#	read LSD trees
 	#
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_3'
+	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_FastTree'
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick$', full.names=TRUE))
 	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
 	setkey(infiles, IDX)		
@@ -7115,7 +7115,7 @@ treecomparison.submissions.170424<- function()
 	#	SAVE so far
 	#
 	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
-	save(strs, strs_lsd, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170101.rda'))	
+	save(strs, strs_lsd, strs_rtt, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170424.rda'))	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	olli 27.06.16
@@ -7774,7 +7774,7 @@ treecomparison.submissions.160627.stuffoncluster<- function(file, hpc.select=NA)
 	options(show.error.messages = FALSE)		
 	readAttempt		<- try(suppressWarnings(load(gsub('.rda','_01rerooted.rda',file))))
 	options(show.error.messages = TRUE)			
-	if( inherits(readAttempt, "try-error") )
+	if( 0 & inherits(readAttempt, "try-error") )
 	{
 		options(warn=2)
 		strs_rtt	<- vector('list', length(strs))		

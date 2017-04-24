@@ -217,13 +217,13 @@ pipeline.various<- function()
 					cmd.hpccaller(outdir, outfile, cmd)					
 				},by=c('F','REP')])				
 	}
-	if(0)	#submit evaluation of tree comparison
+	if(1)	#submit evaluation of tree comparison
 	{
-		for(i in 1:30)
+		for(i in 1:12)
 		{
 			cmd			<- cmd.treecomparison(hpc.select=i)
-			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="5800mb")
-			#cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="99000mb")
+			#cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="5800mb")
+			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q=NA, hpc.walltime=71, hpc.mem="99000mb")
 			cat(cmd)		
 			outdir		<- paste(HOME,"tmp",sep='/')
 			outfile		<- paste("tc",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
@@ -271,7 +271,7 @@ pipeline.various<- function()
 				}
 		quit('no')
 	}
-	if(1)	#run LSD
+	if(0)	#run LSD
 	{
 		require(ape)
 		require(data.table)
@@ -576,7 +576,8 @@ prog.treecomparison<- function()
 		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_160627.rda'
 		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_160713.rda'
 		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_161123.rda'
-		file		<- '/work/or105/Gates_2014/tree_comparison/submitted_170101.rda'
+		#file		<- '/work/or105/Gates_2014/tree_comparison/submitted_170101.rda'
+		file		<- '/work/or105/Gates_2014/tree_comparison/submitted_170424.rda'
 		#treedist.quartets.add(file=file, with.save=1)
 		hpc.select	<- NA
 		if(exists("argv"))
