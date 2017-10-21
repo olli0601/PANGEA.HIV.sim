@@ -63,7 +63,7 @@ Fire up `R`, and type
 
 ```r
 library(PANGEA.HIV.sim)
-?sim.regional
+?sim.regional # FIX THIS PLEASE!!!
 ```
 
 This will show a first example on how to use the simulation code, followed by code to simulate the PANGEA-HIV 
@@ -128,7 +128,7 @@ RECENT_TR           | Y if transmission occurred at most 6 months after diagnosi
 
 #### Simulations used in the PANGEA methods comparison exercise
 
-The 33 simulated data sets from the village and regional models are [available here in folder 201502](http://bit.ly/PANGEAHIVsim).
+The 33 simulated data sets from the village and regional models are [available here in folder 201502](http://bit.ly/PANGEAHIVsim) **FIX THIS PLEASE**.
 
 ****
 
