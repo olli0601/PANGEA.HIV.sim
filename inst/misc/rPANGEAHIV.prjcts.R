@@ -2173,7 +2173,7 @@ project.PANGEA.SeqGen.readOutput<- function(indir.sg, infile.prefix)
 	write.dna(tmp, file, format = "fasta")	
 	#	zip simulated files
 	tmp				<- c( paste(outdir, '/', outfile.prefix, 'SIMULATED_metadata.csv', sep=''), paste(outdir, '/', outfile.prefix, 'SIMULATED_env.fa', sep=''), paste(outdir, '/', outfile.prefix, 'SIMULATED_pol.fa', sep=''), paste(outdir, '/', outfile.prefix, 'SIMULATED_gag.fa', sep='') )
-	zip( paste(outdir, '/', outfile.prefix, 'SIMULATED.zip', sep=''), tmp, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', outfile.prefix, 'SIMULATED.zip', sep=''), tmp, flags = "-Fr9XTj")
 	file.remove(tmp)
 }
 ##--------------------------------------------------------------------------------------------------------

@@ -2596,7 +2596,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	#	zip simulated sequence files
 	#
 	tmp				<- c( paste(outdir, '/', infile.prefix, 'SIMULATED_metadata.csv', sep=''), paste(indir.epi, '/', gsub('SAVE.R','CROSS_SECTIONAL_SURVEY.csv',infile.epi), sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_env.fa', sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_pol.fa', sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_gag.fa', sep='') )
-	zip( paste(outdir, '/', infile.prefix, 'SIMULATED_SEQ.zip', sep=''), tmp, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', infile.prefix, 'SIMULATED_SEQ.zip', sep=''), tmp, flags = "-Fr9XTj")
 	#
 	#	zip simulated tree files
 	#
@@ -2604,7 +2604,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 			paste(indir.epi, '/', infile.prefix, 'DATEDTREE.newick', sep=''),
 			paste(indir.epi, '/', infile.prefix, 'DATEDCLUTREES.newick', sep=''),
 			paste(indir.epi, '/', infile.prefix, 'SUBSTTREE.newick', sep=''))
-	zip( paste(outdir, '/', infile.prefix, 'SIMULATED_TREE.zip', sep=''), tmp2, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', infile.prefix, 'SIMULATED_TREE.zip', sep=''), tmp2, flags = "-Fr9XTj")
 	#
 	tmp				<- unique(c(tmp, tmp2))
 	dummy			<- file.remove(tmp)	
@@ -2614,7 +2614,7 @@ PANGEA.SeqGen.run.v4<- function(indir.epi, infile.epi, indir.sg, infile.prefix, 
 	tmp				<- list.files(outdir, pattern='*pdf$', recursive=TRUE, full.names=TRUE) 
 	file.copy(tmp, outdir, overwrite=TRUE)	 
 	tmp				<- c( paste(outdir, '/', infile.prefix, 'SIMULATED_INTERNAL.R', sep=''), list.files(outdir, pattern='*pdf$', recursive=FALSE, full.names=TRUE) ) 	
-	zip( paste(outdir, '/', infile.prefix, 'INTERNAL.zip', sep=''), tmp, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', infile.prefix, 'INTERNAL.zip', sep=''), tmp, flags = "-Fr9XTj")
 	dummy			<- file.remove(tmp)
 	
 	return(1)
