@@ -4370,7 +4370,7 @@ project.PANGEA.TEST.pipeline.Feb2015.randomize<- function()
 				file.rename( paste(tmpdir, files.name.o, sep='/'), paste(tmpdir, files.name.n, sep='/'))
 				newzip			<- gsub(GSUB_FROM,GSUB_TO,FILE)
 				newzip			<- gsub('HPTN071','PANGEAsim_Regional',newzip)
-				zip(  paste(outdir,'/',newzip,sep=''), paste(tmpdir, files.name.n, sep='/'), flags = "-FSr9XTj")
+				zip(  paste(outdir,'/',newzip,sep=''), paste(tmpdir, files.name.n, sep='/'), flags = "-Fr9XTj")
 				file.remove( paste(tmpdir, files.name.n, sep='/'), showWarnings=FALSE)
 				file.remove( tmpdir, showWarnings=FALSE )				
 			}, by='DUMMY']
@@ -8250,7 +8250,7 @@ project.PANGEA.SeqGen.readOutput<- function(indir.sg, infile.prefix)
 	write.dna(tmp, file, format = "fasta")	
 	#	zip simulated files
 	tmp				<- c( paste(outdir, '/', outfile.prefix, 'SIMULATED_metadata.csv', sep=''), paste(outdir, '/', outfile.prefix, 'SIMULATED_env.fa', sep=''), paste(outdir, '/', outfile.prefix, 'SIMULATED_pol.fa', sep=''), paste(outdir, '/', outfile.prefix, 'SIMULATED_gag.fa', sep='') )
-	zip( paste(outdir, '/', outfile.prefix, 'SIMULATED.zip', sep=''), tmp, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', outfile.prefix, 'SIMULATED.zip', sep=''), tmp, flags = "-Fr9XTj")
 	file.remove(tmp)
 }
 ##--------------------------------------------------------------------------------------------------------

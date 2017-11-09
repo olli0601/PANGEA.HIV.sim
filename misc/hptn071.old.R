@@ -2367,7 +2367,7 @@ prog.PANGEA.SeqGen.run.WINDOWScompatible<- function()
 	#	zip simulated files
 	#
 	tmp				<- c( paste(outdir, '/', infile.prefix, 'SIMULATED_metadata.csv', sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_env.fa', sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_pol.fa', sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_gag.fa', sep='') )
-	zip( paste(outdir, '/', infile.prefix, 'SIMULATED.zip', sep=''), tmp, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', infile.prefix, 'SIMULATED.zip', sep=''), tmp, flags = "-Fr9XTj")
 	dummy			<- file.remove(tmp)
 	#
 	#	zip internal files
@@ -2375,7 +2375,7 @@ prog.PANGEA.SeqGen.run.WINDOWScompatible<- function()
 	tmp				<- list.files(outdir, pattern='*pdf$', recursive=TRUE, full.names=TRUE) 
 	file.copy(tmp, outdir, overwrite=TRUE)	 
 	tmp				<- c( paste(outdir, '/', infile.prefix, 'SIMULATED_INTERNAL.R', sep=''), list.files(outdir, pattern='*pdf$', recursive=FALSE, full.names=TRUE) ) 	
-	zip( paste(outdir, '/', infile.prefix, 'INTERNAL.zip', sep=''), tmp, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', infile.prefix, 'INTERNAL.zip', sep=''), tmp, flags = "-Fr9XTj")
 	dummy			<- file.remove(tmp)
 	
 	return(1)
@@ -2622,7 +2622,7 @@ prog.PANGEA.SeqGen.run<- function()
 	#	zip simulated files
 	#
 	tmp				<- c( paste(outdir, '/', infile.prefix, 'SIMULATED_metadata.csv', sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_env.fa', sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_pol.fa', sep=''), paste(outdir, '/', infile.prefix, 'SIMULATED_gag.fa', sep='') )
-	zip( paste(outdir, '/', infile.prefix, 'SIMULATED.zip', sep=''), tmp, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', infile.prefix, 'SIMULATED.zip', sep=''), tmp, flags = "-Fr9XTj")
 	dummy			<- file.remove(tmp)
 	#
 	#	zip internal files
@@ -2630,7 +2630,7 @@ prog.PANGEA.SeqGen.run<- function()
 	tmp				<- list.files(outdir, pattern='*pdf$', recursive=TRUE, full.names=TRUE) 
 	file.copy(tmp, outdir, overwrite=TRUE)	 
 	tmp				<- c( paste(outdir, '/', infile.prefix, 'SIMULATED_INTERNAL.R', sep=''), list.files(outdir, pattern='*pdf$', recursive=FALSE, full.names=TRUE) ) 	
-	zip( paste(outdir, '/', infile.prefix, 'INTERNAL.zip', sep=''), tmp, flags = "-FSr9XTj")
+	zip( paste(outdir, '/', infile.prefix, 'INTERNAL.zip', sep=''), tmp, flags = "-Fr9XTj")
 	dummy			<- file.remove(tmp)
 	
 	return(1)
