@@ -63,7 +63,7 @@ Fire up `R`, and type
 
 ```r
 library(PANGEA.HIV.sim)
-?sim.regional # FIX THIS PLEASE!!!
+?sim.regional
 ```
 
 This will show a first example on how to use the simulation code, followed by code to simulate the PANGEA-HIV 
