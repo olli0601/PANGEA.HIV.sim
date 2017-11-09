@@ -236,7 +236,7 @@ treedist.quartetdifference.clusters.wrapper<- function(submitted.info, ttrs, str
 #--------------------------------------------------------------------------------------------------------
 project.PANGEA.visualize.call.patterns.align150623<- function()
 {
-	outdir			<- '/Users/Oliver/Dropbox (Infectious Disease)/2016_PANGEA_treecomp/figures'
+	outdir			<- '/Users/Oliver/Dropbox (SPH Imperial College)/2016_PANGEA_treecomp/figures'
 	min.coverage	<- 600
 	min.depth		<- 10
 	#with.gaps		<- 1
@@ -245,12 +245,12 @@ project.PANGEA.visualize.call.patterns.align150623<- function()
 	outfile			<- '150623_PANGEAGlobal2681_C10.pdf'
 	
 	
-	infile			<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PANGEA_150623/150623_PANGEAGlobal2681_C10.fa'
+	infile			<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/PANGEA_150623/150623_PANGEAGlobal2681_C10.fa'
 	so				<- read.dna(infile, format='fasta')
 	rownames(so)	<- gsub('-','_',rownames(so)) 
 	#	drop LTR from sequences
 	#	need to load latest alignment, get LTR start, and translate into one common sequence
-	infile			<- '~/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/alignments_160110/PANGEA_HIV_n5003_Imperial_v160110_GlobalAlignment.rda'
+	infile			<- '~/Dropbox (SPH Imperial College)/2015_PANGEA_DualPairsFromFastQIVA/alignments_160110/PANGEA_HIV_n5003_Imperial_v160110_GlobalAlignment.rda'
 	load(infile)	#loads sqi, sq
 	tmp				<- sq[which(grepl('HXB2',rownames(sq))),]
 	pattern			<- 'a-*t-*g-*g-*g-*t-*g-*c-*g-*a-*g-*a-*g-*c-*g-*t-*c-*a'
@@ -344,13 +344,13 @@ project.PANGEA.visualize.call.patterns.align160110<- function()
 	min.coverage	<- 600
 	min.depth		<- 10
 	
-	infile			<- '/Users/Oliver/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/readlengths/bam_stats_150218.rda'
+	infile			<- '/Users/Oliver/Dropbox (SPH Imperial College)/2015_PANGEA_DualPairsFromFastQIVA/readlengths/bam_stats_150218.rda'
 	load(infile)
 	setnames(bam.cov, c('FILE_ID','COV'), c('SANGER_ID','DEPTH'))	
-	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	load(file.path(wdir,wfile))	#loads sqi, sq, dm 
-	outdir			<- '~/Dropbox (Infectious Disease)/2016_PANGEA_treecomp/figures'
+	outdir			<- '~/Dropbox (SPH Imperial College)/2016_PANGEA_treecomp/figures'
 	#
 	#	merge MRC Uganda
 	#
@@ -884,7 +884,7 @@ treecomparison.submissions.151119<- function()
 	#
 	#	get true trees
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15'
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('Vill.*DATEDTREE', tfiles) ] )
 	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
@@ -944,13 +944,13 @@ treecomparison.submissions.151119<- function()
 	#
 	#	get submitted trees
 	#	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
 	infiles	<- list.files(indir, pattern='treefile$', recursive=1, full.names=1)
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201510'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201510'
 	infiles	<- c(infiles, list.files(indir, pattern='treefile$', recursive=1, full.names=1))	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
 	infiles	<- c(infiles, list.files(indir, pattern='*tree*', recursive=1, full.names=1))
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
 	infiles	<- c(infiles, list.files(indir, pattern='*RAxML_bestTree*', recursive=1, full.names=1))
 	infiles	<- c(infiles, list.files(indir, pattern="best_tree.newick", recursive=1, full.names=1))
 	infiles	<- data.table(FILE=infiles)
@@ -961,7 +961,7 @@ treecomparison.submissions.151119<- function()
 			})
 	names(strs)	<- infiles[, FILE]
 	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
 	tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
 	tmp		<- data.table(FILE=tmp)	
 	tmp.trees			<- lapply(tmp[, FILE], function(x)
@@ -1152,7 +1152,7 @@ treecomparison.submissions.151119<- function()
 	tinfo.new			<- copy(tinfo)
 	submitted.info.new	<- copy(submitted.info)
 	sclu.info.new		<- copy(sclu.info)
-	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	z			<- load(paste(outdir, 'submitted_151119_S.rda', sep='/'))	
 	stopifnot( nrow(subset(merge(subset(submitted.info, select=c('FILE','IDX')), subset(submitted.info.new, select=c('FILE','IDX')), by='FILE'), IDX.x!=IDX.y))==0 )	
 	submitted.info		<- merge(submitted.info.new, subset(submitted.info, select=c('IDX','NQD','lm_intercept','lm_slope','lm_rsq')), by='IDX')
@@ -1160,7 +1160,7 @@ treecomparison.submissions.151119<- function()
 	ttrs				<- ttrs.new
 	sclu.info			<- merge(sclu.info.new, subset(sclu.info, select=c('IDX','IDCLU','NQDC')), by=c('IDX','IDCLU'))
 	#
-	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151119_SRFQD.rda'
+	outfile	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151119_SRFQD.rda'
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -1173,7 +1173,7 @@ treecomparison.explaingaps.bams.160817<- function()
 	#
 	#	collect information on batches
 	#
-	wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	load(file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'))
 	load(file.path(wdir, 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_logistic.rda'))
 	bami	<- subset(dpand, PR=='1R' & POS=='PR_1' & !is.na(PANGEA_ID) & !is.na(SANGER_ID), select=c(PANGEA_ID, STUDY_ID, SANGER_ID))
@@ -1209,7 +1209,7 @@ treecomparison.explaingaps.bams.160817<- function()
 	#
 	#	get length of short reads
 	#	
-	infile	<- '~/Dropbox (Infectious Disease)/2015_PANGEA_DualPairsFromFastQIVA/readlengths/bam_stats_150218.rda'
+	infile	<- '~/Dropbox (SPH Imperial College)/2015_PANGEA_DualPairsFromFastQIVA/readlengths/bam_stats_150218.rda'
 	load(infile)	
 	bam.len[, BATCH:= sapply(strsplit(FILE,'_'),'[[',1)]
 	tmp		<- subset(bam.len,QU>=40 & QU<320)[, list(CDF.bamlen= mean(CDF)), by=c('BATCH','QU')]
@@ -1338,7 +1338,7 @@ treecomparison.samplecharacteristics.160817<- function()
 	require(data.table)
 	require(Hmisc)
 	
-	wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile	<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	load(file.path(wdir,wfile))
 	#
@@ -1480,7 +1480,7 @@ treecomparison.explaingaps.mutationspectrum.160725<- function()
 	require(data.table)
 	require(Hmisc)
 	
-	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	load(file.path(wdir, wfile))	
 	#
@@ -1705,7 +1705,7 @@ treecomparison.explaingaps.regressions.170123<- function()
 	require(ape)	
 	require(data.table)	
 	
-	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	load(file.path(wdir, wfile))
 	#
@@ -1989,7 +1989,7 @@ treecomparison.explaingaps.regressions.170110<- function()
 	require(ape)	
 	require(data.table)	
 	
-	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	load(file.path(wdir, wfile))
 	#
@@ -2655,7 +2655,7 @@ treecomparison.explaingaps.regressions.160804<- function()
 	require(ape)	
 	require(data.table)	
 	
-	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	load(file.path(wdir, wfile))
 	#
@@ -3554,7 +3554,7 @@ treecomparison.explaingaps.plots.160725<- function()
 	require(data.table)
 	require(Hmisc)
 	
-	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	#
 	#	deal with repeats in global alignment
@@ -3809,7 +3809,7 @@ treecomparison.explaingaps.countgaps<- function()
 	require(ape)
 	require(data.table)
 	require(big.phylo)
-	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	#
 	load(file.path(wdir,wfile))
@@ -3844,7 +3844,7 @@ treecomparison.explaingaps.countgaps<- function()
 			scale_x_continuous(expand=c(0,0), breaks=seq(0,1e4,1e3)) +
 			scale_y_continuous(expand=c(0,0), breaks=seq(0,1e4,1e3)) +
 			theme_bw() + labs(x='\nnumber of missing characters\nrelative to reference sequence used to assemble reads', y='number of missing characters\nin sequence alignment\n')
-	ggsave(file.path('~/Dropbox (Infectious Disease)/2016_PANGEA_treecomp/figures','PANGEA_extra_gaps_in_alignment.pdf'), w=6, h=6)
+	ggsave(file.path('~/Dropbox (SPH Imperial College)/2016_PANGEA_treecomp/figures','PANGEA_extra_gaps_in_alignment.pdf'), w=6, h=6)
 	
 	lm(data=subset(tmp, GENE=='GAG+POL+ENV'), UNASS_N~UNASS_RAW_N-1)
 	#Coefficients:
@@ -3895,7 +3895,7 @@ treecomparison.explaingaps.countgaps<- function()
 			labs(	x='\nx% = proportion of unassembled sites per sequence is at most x%',
 					y='PANGEA-HIV sequences (cumulated)\n',
 					fill='cohort site')
-	ggsave(file.path('~/Dropbox (Infectious Disease)/2016_PANGEA_treecomp/figures','PANGEA_cumulated_by_gaps.pdf'), w=7, h=7)
+	ggsave(file.path('~/Dropbox (SPH Imperial College)/2016_PANGEA_treecomp/figures','PANGEA_cumulated_by_gaps.pdf'), w=7, h=7)
 	#
 	#	summary of gaps in alignment
 	#
@@ -3925,7 +3925,7 @@ treecomparison.explaingaps.collect.data<- function()
 	require(ape)
 	require(data.table)
 	require(big.phylo)
-	wdir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
+	wdir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps'
 	wfile			<- 'PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.rda'
 	
 	#
@@ -3933,7 +3933,7 @@ treecomparison.explaingaps.collect.data<- function()
 	#
 	if(0)
 	{
-		sq				<- read.dna("~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.fasta", format='fasta')		
+		sq				<- read.dna("~/Dropbox (SPH Imperial College)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment.fasta", format='fasta')		
 		sqi				<- data.table(TAXA=rownames(sq), DUMMY=seq_len(nrow(sq)))
 		tmp				<- sqi[, which(duplicated(TAXA))]
 		set(sqi, tmp, 'TAXA', sqi[tmp, paste(TAXA,'-R2',sep='')])
@@ -4106,7 +4106,7 @@ treecomparison.explaingaps.collect.data<- function()
 	#
 	if(0)
 	{				
-		infile.new	<- '~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_NewIDs_161212.fasta'		
+		infile.new	<- '~/Dropbox (SPH Imperial College)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_NewIDs_161212.fasta'		
 		sn			<- read.dna(infile.new, format='fa')
 		#	check seqences are in order
 		tmp			<- sapply(seq_len(nrow(sq)), function(i)	dist.dna(rbind(sq[i,],sn[i,]), model='raw')	)
@@ -4121,17 +4121,17 @@ treecomparison.explaingaps.collect.data<- function()
 	#
 	if(0)
 	{
-		indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/missingchar_alignments'
+		indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/missingchar_alignments'
 		#infiles	<- data.table(F=list.files(indir, pattern='fasta$',full.names=TRUE))
 		#tmp		<- infiles[,{
-		#			#F		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/missingchar_alignments/15097_1_64_MinCov_10_50_wHXB2.fasta'
+		#			#F		<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/missingchar_alignments/15097_1_64_MinCov_10_50_wHXB2.fasta'
 		#			cat('\n',F)
 		#			ss		<- read.dna(F, format='fasta')
 		#			list(NCOL=ncol(ss))
 		#		},by='F']
-		#write.csv(tmp, file='~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/missingchar_alignments/checklen.csv')
+		#write.csv(tmp, file='~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/missingchar_alignments/checklen.csv')
 		dgd.seqs<- infiles[,{
-					#F		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/missingchar_alignments/15097_1_64_MinCov_10_50_wHXB2.fasta'
+					#F		<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/missingchar_alignments/15097_1_64_MinCov_10_50_wHXB2.fasta'
 					cat('\n',F)
 					ss		<- read.dna(F, format='fasta')
 					#	find positions in alignment of current SANGER ID
@@ -4259,41 +4259,41 @@ treecomparison.explaingaps.collect.data<- function()
 	#
 	if(0)
 	{
-		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_1F1R_COMETv0.5.txt"
+		infile		<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_1F1R_COMETv0.5.txt"
 		dc			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
 		dc[, COMET_R:='COMET_1F1R']
 		dc[, COMET_V:='0.5']
-		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_3F4F_COMETv0.5.txt"
+		infile		<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_3F4F_COMETv0.5.txt"
 		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
 		tmp[, COMET_R:='COMET_3F4F']
 		tmp[, COMET_V:='0.5']
 		dc			<- rbind(dc,tmp)		
-		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_4F3R_COMETv0.5.txt"
+		infile		<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_4F3R_COMETv0.5.txt"
 		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
 		tmp[, COMET_R:='COMET_4F3R']
 		tmp[, COMET_V:='0.5']
 		dc			<- rbind(dc,tmp)
-		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_1F1R_COMETv2.1.txt"
+		infile		<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_1F1R_COMETv2.1.txt"
 		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
 		tmp[, COMET_R:='COMET_1F1R']
 		tmp[, COMET_V:='2.1']
 		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)
-		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_3F4F_COMETv2.1.txt"
+		infile		<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_3F4F_COMETv2.1.txt"
 		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
 		tmp[, COMET_R:='COMET_3F4F']
 		tmp[, COMET_V:='2.1']
 		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)		
-		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_4F3R_COMETv2.1.txt"
+		infile		<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_region_4F3R_COMETv2.1.txt"
 		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
 		tmp[, COMET_R:='COMET_4F3R']
 		tmp[, COMET_V:='2.1']
 		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)
-		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_UGfull_COMETv2.1.txt"
+		infile		<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_UGfull_COMETv2.1.txt"
 		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
 		tmp[, COMET_R:='COMET_full']
 		tmp[, COMET_V:='2.1']
 		dc			<- rbind(dc,tmp,use.name=TRUE,fill=TRUE)
-		infile		<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_ZABWfull_COMETv2.1.txt"
+		infile		<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/explaingaps/PANGEA_HIV_n4562_Imperial_v151113_GlobalAlignment_ZABWfull_COMETv2.1.txt"
 		tmp			<- as.data.table(read.table(infile, header=TRUE, sep='\t', stringsAsFactors=FALSE, strip.white=FALSE))
 		tmp[, COMET_R:='COMET_full']
 		tmp[, COMET_V:='2.1']
@@ -4390,7 +4390,7 @@ treecomparison.explaingaps.collect.data<- function()
 		dm	<- unique(subset(dgd, select=TAXA), by='TAXA')
 		dm[, PANGEA_ID:=gsub('-S.*','',TAXA)]		
 		#	add RCCS data
-		load("~/Dropbox (Infectious Disease)/Rakai Pangea Meta Data/Data for Fish Analysis Working Group/RakaiPangeaMetaData.rda")
+		load("~/Dropbox (SPH Imperial College)/Rakai Pangea Meta Data/Data for Fish Analysis Working Group/RakaiPangeaMetaData.rda")
 		rccsData	<- as.data.table(rccsData)		
 		rccsData	<- subset(rccsData, select=c('Pangea.id', 'RCCS_studyid', 'date', 'batch', 'birthyr', 'REGION', 'COMM_NUM', 'HH_NUM', 'SEX', 'AGEYRS','firstPosDate', 'arvStartDate', 'selfReportArt', 'everSelfReportArt', 'FirstSelfReportArt', 'recentVL', 'recentVLdate'))
 		setnames(rccsData, c('Pangea.id','RCCS_studyid','REGION','date','birthyr','firstPosDate','arvStartDate','recentVL','recentVLdate',"AGEYRS"), c('PANGEA_ID','STUDY_ID','LOC','SAMPLEDATE','DOB','FIRSTPOSDATE','ARTSTART','RECENTVL','RECENTVLDATE',"AGE"))
@@ -4414,9 +4414,9 @@ treecomparison.explaingaps.collect.data<- function()
 		set(acp, NULL, c('REASONSAMPLING','LATESTARTREGIMEN','CIRCUMCISED','LASTNEGDATE','LASTNUMSEXUALPARTNERS','LATESTARTREGIMENSTARTED'), NULL)		
 		meta		<- rbind(meta, acp, use.names=TRUE, fill=TRUE)
 		#	add metadata from UCL
-		load('~/Dropbox (Infectious Disease)/PANGEA_metadata/processed_metadata/PANGEA_meta_161128.rda')
+		load('~/Dropbox (SPH Imperial College)/PANGEA_metadata/processed_metadata/PANGEA_meta_161128.rda')
 		#	add info for missing meta-data
-		tmp	<- as.data.table(read.csv('~/Dropbox (Infectious Disease)/PANGEA_metadata/original_161128/MetaData_161219_Noexistingshareddata_resolved_sites.csv', stringsAsFactors=FALSE))
+		tmp	<- as.data.table(read.csv('~/Dropbox (SPH Imperial College)/PANGEA_metadata/original_161128/MetaData_161219_Noexistingshareddata_resolved_sites.csv', stringsAsFactors=FALSE))
 		setnames(tmp, c('PANGEA_ID2','Site'), c('NEW_PANGEA_ID','COHORT_ID'))
 		tmp	<- subset(tmp, select=c('NEW_PANGEA_ID','COHORT_ID'))
 		dfp	<- rbind(dfp, tmp, fill=TRUE)
@@ -4429,7 +4429,7 @@ treecomparison.explaingaps.collect.data<- function()
 		set(dfp, NULL, 'NEW_PANGEA_ID', dfp[, gsub('-[0-9]+$','',NEW_PANGEA_ID)])
 		tmp			<- data.table(PANGEA_ID2=setdiff( subset(sqi, PNG=='Y')[, PANGEA_ID2], dfp[, NEW_PANGEA_ID] ))
 		tmp			<- merge(sqi, tmp, by='PANGEA_ID2')
-		#write.csv(tmp, file='~/Dropbox (Infectious Disease)/PANGEA_metadata/processed_metadata/check_keys_OR_161219.csv')
+		#write.csv(tmp, file='~/Dropbox (SPH Imperial College)/PANGEA_metadata/processed_metadata/check_keys_OR_161219.csv')
 		stopifnot(!nrow(tmp))
 		#
 		set(dfp, NULL, c('SEQUENCE','SAMPLE_REASON','ART_REGIMEN','NGS_METHOD','PIPELINE','N_CUT_OFF','LC_CUT_OFF'), NULL)
@@ -4485,9 +4485,9 @@ treecomparison.explaingaps.collect.data<- function()
 		set(dm, dm[, which(is.na(COMET_4F3R))],'COMET_4F3R_N',0L)
 		set(dm, dm[, which(is.na(COMET_4F3R))],'COMET_4F3R','short')
 		#	add Sanger processing data etc
-		ds			<- data.table(read.csv("~/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_Summary.csv"))		
+		ds			<- data.table(read.csv("~/Dropbox (SPH Imperial College)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_Summary.csv"))		
 		setnames(ds, c('Sanger.ID','PANGEA.ID','reference.for.mapping','clinical.genome.coverage'), c('SANGER_ID','PANGEA_ID','REF_4_MAPPING','COV'))		
-		tmp			<- data.table(read.csv('~/Dropbox (Infectious Disease)/PANGEA_data/PAN_iva_dependencies_9861.txt', sep='\t'))
+		tmp			<- data.table(read.csv('~/Dropbox (SPH Imperial College)/PANGEA_data/PAN_iva_dependencies_9861.txt', sep='\t'))
 		setnames(tmp, 'LaneID', 'SANGER_ID')
 		set(tmp, NULL, 'SANGER_ID', tmp[, gsub('#','_',SANGER_ID)])
 		ds			<- merge(ds, tmp, by='SANGER_ID', all.x=1)
@@ -4564,8 +4564,8 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 	#	get master RDA file with all distances
 	if(0)	
 	{
-		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'	
-		indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
+		wdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'	
+		indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
 		infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'
 		#infile	<- '150701_Regional_TRAIN2_SIMULATED.fa'
 		#	create tp with IDs -- need this to complete to matrix	
@@ -4600,7 +4600,7 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 	}	
 	if(0)
 	{
-		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+		wdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		df		<- data.table(FILE=list.files(wdir, pattern='newick$',full.names=1))
 		tmp		<- df[, {
 					ph2	<- read.tree(FILE)
@@ -4618,7 +4618,7 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 		verbose						<- 1
 		
 		#wdir	<- '/work/or105/Gates_2014/tree_comparison/mvr'
-		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+		wdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		infile	<- '150701_Regional_TRAIN4_SIMULATED_tps.rda'
 		#infile	<- '150701_Regional_TRAIN2_SIMULATED_tps.rda'
 		load(file.path(wdir, infile))
@@ -4728,7 +4728,7 @@ treecomparison.bootstrap.mvr.dev<- function(indir=NULL, wdir=NULL)
 	}
 	if(0)
 	{
-		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+		wdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		load(file.path(wdir, '150701_Regional_TRAIN4_SIMULATED_tps.rda'))
 		tps		<- subset(tp, REP==1 & GENE=='gag+pol+env', select=c(ID1, ID2, GD))
 		#	add upper triangular
@@ -5022,8 +5022,8 @@ treecomparison.bootstrap.sd.vs.coverage<- function(indir=NULL, wdir=NULL)
 	batch.n	<- 3200
 	if(is.null(indir) | is.null(wdir))
 	{
-		indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
-		wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'		
+		indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+		wdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'		
 	}
 	
 	infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'		
@@ -5073,7 +5073,7 @@ treecomparison.gd.dev<- function()
 	#
 	#	get true trees
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15'
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('Vill.*DATEDTREE', tfiles) ] )
 	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
@@ -5086,11 +5086,11 @@ treecomparison.gd.dev<- function()
 	tfiles	<- rbind(tfiles, tmp)
 	tfiles[, BRL_T:= 'time']	
 	set(tfiles, tfiles[, which(grepl('REG',SC) & grepl('SUBST',FILE_T))], 'BRL_T', 'subst')
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	tmp		<- data.table(FASTA_FILE=list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$'))	
 	tmp[, SC:= toupper(gsub('_SIMULATED.fa','',basename(FASTA_FILE)))]
 	tfiles	<- merge(tfiles, tmp, by='SC')
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 	tmp		<- data.table(MVR_FILE=list.files(indir, full.names=1, pattern='_SIMULATED_tps.rda$'))	
 	tmp[, SC:= toupper(gsub('_SIMULATED_tps.rda','',basename(MVR_FILE)))]
 	tfiles	<- merge(tfiles, tmp, by='SC', all.x=1)
@@ -5119,7 +5119,7 @@ treecomparison.gd.dev<- function()
 	#	read true raw genetic distances from sequences
 	#	
 	tmp		<- subset(tfiles, BRL_T=='subst')[, {
-				#FASTA_FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa"
+				#FASTA_FILE<- "/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa"
 				sq		<- read.dna(FASTA_FILE, format='fa')
 				tmp		<- dist.dna(sq, model='raw', as.matrix=TRUE, pairwise.deletion=TRUE)
 				tmp		<- as.matrix(tmp)
@@ -5137,7 +5137,7 @@ treecomparison.gd.dev<- function()
 	#
 	tmp		<- unique(subset(tfiles, BRL_T=='subst' & !is.na(MVR_FILE), c(IDX_T, MVR_FILE)))
 	tmp		<- lapply(seq_len(nrow(tmp)), function(i){
-				#MVR_FILE<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr/150701_Regional_TRAIN2_SIMULATED_tps.rda'
+				#MVR_FILE<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr/150701_Regional_TRAIN2_SIMULATED_tps.rda'
 				MVR_FILE	<- tmp[i, MVR_FILE]
 				load(MVR_FILE)
 				z		<- subset(tp, REP==1, select=c(TAXA1, TAXA2, GENE, GD, DO, GD_MEAN, GD_SD))				
@@ -5184,7 +5184,7 @@ treecomparison.bootstrap.gd.dev<- function()
 	repn	<- 10
 	batch.n	<- 3200
 	batch.i	<- 1
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
 	infile	<- '150701_Regional_TRAIN4_SIMULATED.fa'	
 	outdir	<- indir
 	outfile	<- paste(gsub('.fa','',infile),'_GDS_BATCH',batch.i,'.rda',sep='')
@@ -5286,9 +5286,9 @@ treecomparison.bootstrap.gd.dev<- function()
 ##	olli 27.06.11
 treecomparison.saturation<- function()
 {	
-	if.seqs	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa'
-	if.tree	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SUBSTTREE.newick'
-	if.int	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R'
+	if.seqs	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa'
+	if.tree	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SUBSTTREE.newick'
+	if.int	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R'
 	#	last gag: 1440; pol length: 2844; env length: 2523
 	#	all gene codons are complete, so we can count through
 	
@@ -5345,8 +5345,8 @@ treecomparison.saturation<- function()
 ##	olli 27.06.11
 treecomparison.create.metadata<- function()
 {	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15'
+	outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	infile.prefix	<- '150701_Regional_TRAIN1_'
 	
 	load( file.path(indir, paste(infile.prefix,'SIMULATED_INTERNAL.R',sep='')) )
@@ -5382,7 +5382,7 @@ treecomparison.ana.160627.standardize.MSE<- function()
 	require(ggtree)
 	require(phangorn)
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag			<- '160627'
 	load(file.path(edir,'submitted_160713_07MSELSD.rda'))
 	
@@ -5448,7 +5448,7 @@ treecomparison.ana.160627.standardize.KC<- function()
 	require(ggtree)
 	require(phangorn)
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag			<- '160713'
 	load(paste(edir,'/','submitted_160713_07MSELSD.rda',sep=''))
 	
@@ -5513,11 +5513,11 @@ treecomparison.submissions.160713<- function()
 	submitted.info	<- merge(submitted.info, tmp, by='IDX')
 	sclu.info		<- merge(sclu.info, tmp2, by=c('IDX','IDCLU'))
 	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	infiles	<- data.table(FILE=list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$'))
 	infiles[, SC:= toupper(gsub('_SIMULATED.fa','',basename(FILE)))]
 	tmp		<- infiles[, {
-				#FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN4_SIMULATED.fa"
+				#FILE<- "/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN4_SIMULATED.fa"
 				sq	<- read.dna(FILE, format='fa')
 				seqi<- as.data.table(read.csv(gsub('.fa','_gene.txt',FILE), header=FALSE))
 				seqi[, GENE:= regmatches(V2, regexpr('[a-z]+', V2))]
@@ -5599,7 +5599,7 @@ treecomparison.submissions.161123<- function()
 	#
 	#	get true trees
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees'
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	
 	
@@ -5651,7 +5651,7 @@ treecomparison.submissions.161123<- function()
 	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N= length(IDPOP)), by=c('SC','BRL_T','IDCLU')]
 	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','IDCLU'), all=1)
 	#	read sequences and determine %gappiness in full alignment
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	trungps	<- data.table( 	FILE_SEQ_T= tmp, 
 							TEAM= 'RUNGAPS_EXCLTAXA',
@@ -5660,7 +5660,7 @@ treecomparison.submissions.161123<- function()
 							RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
 							RUNGAPS_EXCL= as.numeric(gsub('TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100
 							)	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	tmp		<- tmp[!grepl('WORST',tmp)]
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
@@ -5671,7 +5671,7 @@ treecomparison.submissions.161123<- function()
 							RUNGAPS_EXCL= as.numeric(gsub('EXCLSITES','',regmatches(tmp,regexpr('EXCLSITES[0-9]+',tmp))))/100
 							)
 	trungps	<- rbind(trungps, tmp)							
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 							TEAM= 'RUNGAPS_ExaML',
@@ -5681,7 +5681,7 @@ treecomparison.submissions.161123<- function()
 							RUNGAPS_EXCL= 1
 							)
 	trungps	<- rbind(trungps, tmp)	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$|GTRFIXED.*_SIMULATED.fasta$')
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 							TEAM= NA_real_,
@@ -5691,7 +5691,7 @@ treecomparison.submissions.161123<- function()
 							RUNGAPS_EXCL= NA_real_
 							)
 	trungps	<- rbind(trungps, tmp)	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations4'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations4'
 	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_FULL_SIMULATED.fa$')
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 							TEAM= 'RUNGAPS_ExaML',
@@ -5703,7 +5703,7 @@ treecomparison.submissions.161123<- function()
 	trungps	<- rbind(trungps, tmp)	
 	#
 	trungps	<- trungps[, {
-							#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
+							#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
 							cat('\n',FILE_SEQ_T)
 							z		<- read.dna(FILE_SEQ_T, format='fasta')	
 							ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))							
@@ -5717,7 +5717,7 @@ treecomparison.submissions.161123<- function()
 	# to tinfo add actual transmitters
 	#
 	# check TRAIN1
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -5734,7 +5734,7 @@ treecomparison.submissions.161123<- function()
 	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
 	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
 	# check TRAIN2
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -5762,7 +5762,7 @@ treecomparison.submissions.161123<- function()
 	tmp[, SC:='150701_REGIONAL_TRAIN4']
 	tinfo.add		<- rbind(tinfo.add, tmp)
 	# check TRAIN3
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN3' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -5790,7 +5790,7 @@ treecomparison.submissions.161123<- function()
 	tmp[, SC:='150701_REGIONAL_TRAIN5']
 	tinfo.add		<- rbind(tinfo.add, tmp)	
 	# check TRAIN6
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN6_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN6_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_TRAIN6' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -5808,7 +5808,7 @@ treecomparison.submissions.161123<- function()
 	tmp[, SC:='161121_REGIONAL_TRAIN6']
 	tinfo.add		<- rbind(tinfo.add, tmp)
 	# check GTRFIXED2
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED2_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED2_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED2' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -5826,7 +5826,7 @@ treecomparison.submissions.161123<- function()
 	tmp[, SC:='161121_REGIONAL_GTRFIXED2']
 	tinfo.add		<- rbind(tinfo.add, tmp)	
 	# check GTRFIXED3
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED3_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED3_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED3' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -5844,7 +5844,7 @@ treecomparison.submissions.161123<- function()
 	tmp[, SC:='161121_REGIONAL_GTRFIXED3']
 	tinfo.add		<- rbind(tinfo.add, tmp)	
 	# check GTRFIXED1
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED1_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED1_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED1' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -5901,17 +5901,17 @@ treecomparison.submissions.161123<- function()
 	#
 	#	get submitted trees
 	#	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps'
 	infiles	<- list.files(indir, pattern='newick$', recursive=1, full.names=1)
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps2'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps2'
 	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simple_GTR'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simple_GTR'
 	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/partiallen'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/partiallen'
 	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps3'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps3'
 	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps4'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps4'
 	infiles	<- c(infiles, list.files(indir, pattern='newick$', recursive=1, full.names=1))	
 	
 	infiles	<- data.table(FILE=infiles)
@@ -6110,12 +6110,12 @@ treecomparison.submissions.161123<- function()
 	setkey(submitted.info, IDX)
 	submitted.info[, ROOTED:=factor(sapply(strs, is.rooted),levels=c(TRUE,FALSE),labels=c('Y','N'))]
 	#
-	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	#outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	#save(strs, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_161123.rda'))
 	#
 	#	read LSD trees
 	#
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_2'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/LSD_2'
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick$', full.names=TRUE))
 	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
 	setkey(infiles, IDX)	
@@ -6181,7 +6181,7 @@ treecomparison.submissions.161123<- function()
 	#
 	#	SAVE so far
 	#
-	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	save(strs, strs_lsd, strs_rtt, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_161123.rda'))	
 }
 treecomparison.submissions.170101<- function()	
@@ -6194,7 +6194,7 @@ treecomparison.submissions.170101<- function()
 	#
 	#	get true trees
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees'
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	
 	
@@ -6246,7 +6246,7 @@ treecomparison.submissions.170101<- function()
 	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N= length(IDPOP)), by=c('SC','BRL_T','IDCLU')]
 	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','IDCLU'), all=1)
 	#	read sequences and determine %gappiness in full alignment
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	trungps	<- data.table( 	FILE_SEQ_T= tmp, 
 			TEAM= 'RUNGAPS_EXCLTAXA',
@@ -6255,7 +6255,7 @@ treecomparison.submissions.170101<- function()
 			RUNGAPS= as.numeric(gsub('TRAIN[0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100,
 			RUNGAPS_EXCL= as.numeric(gsub('TRAIN[0-9][0-9][0-9]([0-9][0-9]).*','\\1',regmatches(tmp,regexpr('TRAIN[0-9]+',tmp))))/100
 	)	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	tmp		<- tmp[!grepl('WORST',tmp)]
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
@@ -6266,7 +6266,7 @@ treecomparison.submissions.170101<- function()
 			RUNGAPS_EXCL= as.numeric(gsub('EXCLSITES','',regmatches(tmp,regexpr('EXCLSITES[0-9]+',tmp))))/100
 	)
 	trungps	<- rbind(trungps, tmp)							
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 			TEAM= 'RUNGAPS_ExaML',
@@ -6276,7 +6276,7 @@ treecomparison.submissions.170101<- function()
 			RUNGAPS_EXCL= 1
 	)
 	trungps	<- rbind(trungps, tmp)	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$|GTRFIXED.*_SIMULATED.fasta$')
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 			TEAM= NA_real_,
@@ -6286,7 +6286,7 @@ treecomparison.submissions.170101<- function()
 			RUNGAPS_EXCL= NA_real_
 	)
 	trungps	<- rbind(trungps, tmp)	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations4'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations4'
 	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_FULL_SIMULATED.fa$')
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 			TEAM= 'RUNGAPS_ExaML',
@@ -6296,7 +6296,7 @@ treecomparison.submissions.170101<- function()
 			RUNGAPS_EXCL= 1
 	)
 	trungps	<- rbind(trungps, tmp)	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations5'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations5'
 	tmp		<- list.files(indir, pattern='fa$|fasta$', full.names=TRUE)
 	tmp		<- data.table( 	FILE_SEQ_T= tmp, 
 			TEAM= 'RUNGAPS_ExaML',
@@ -6308,7 +6308,7 @@ treecomparison.submissions.170101<- function()
 	trungps	<- rbind(trungps, tmp)	
 	#
 	trungps	<- trungps[, {
-				#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
+				#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
 				cat('\n',FILE_SEQ_T)
 				z		<- read.dna(FILE_SEQ_T, format='fasta')	
 				ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))							
@@ -6322,7 +6322,7 @@ treecomparison.submissions.170101<- function()
 	# to tinfo add actual transmitters
 	#
 	# check TRAIN1
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6339,7 +6339,7 @@ treecomparison.submissions.170101<- function()
 	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
 	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
 	# check TRAIN2
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6367,7 +6367,7 @@ treecomparison.submissions.170101<- function()
 	tmp[, SC:='150701_REGIONAL_TRAIN4']
 	tinfo.add		<- rbind(tinfo.add, tmp)
 	# check TRAIN3
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN3' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6395,7 +6395,7 @@ treecomparison.submissions.170101<- function()
 	tmp[, SC:='150701_REGIONAL_TRAIN5']
 	tinfo.add		<- rbind(tinfo.add, tmp)	
 	# check TRAIN6
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN6_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN6_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_TRAIN6' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6413,7 +6413,7 @@ treecomparison.submissions.170101<- function()
 	tmp[, SC:='161121_REGIONAL_TRAIN6']
 	tinfo.add		<- rbind(tinfo.add, tmp)
 	# check TRAIN7
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN7_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN7_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_TRAIN7' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6431,7 +6431,7 @@ treecomparison.submissions.170101<- function()
 	tmp[, SC:='161121_REGIONAL_TRAIN7']
 	tinfo.add		<- rbind(tinfo.add, tmp)
 	# check TRAIN8
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN8_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_Regional_TRAIN8_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_TRAIN8' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6449,7 +6449,7 @@ treecomparison.submissions.170101<- function()
 	tmp[, SC:='161121_REGIONAL_TRAIN8']
 	tinfo.add		<- rbind(tinfo.add, tmp)
 	# check GTRFIXED2
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED2_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED2_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED2' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6467,7 +6467,7 @@ treecomparison.submissions.170101<- function()
 	tmp[, SC:='161121_REGIONAL_GTRFIXED2']
 	tinfo.add		<- rbind(tinfo.add, tmp)	
 	# check GTRFIXED3
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED3_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED3_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED3' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6485,7 +6485,7 @@ treecomparison.submissions.170101<- function()
 	tmp[, SC:='161121_REGIONAL_GTRFIXED3']
 	tinfo.add		<- rbind(tinfo.add, tmp)	
 	# check GTRFIXED1
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED1_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/161121_GTRFIXED1_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='161121_REGIONAL_GTRFIXED1' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6541,7 +6541,7 @@ treecomparison.submissions.170101<- function()
 	#
 	#	get submitted trees
 	#	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps5'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps5'
 	infiles	<- list.files(indir, pattern='newick$', recursive=1, full.names=1)
 	
 	infiles	<- data.table(FILE=infiles)
@@ -6726,12 +6726,12 @@ treecomparison.submissions.170101<- function()
 	setkey(submitted.info, IDX)
 	submitted.info[, ROOTED:=factor(sapply(strs, is.rooted),levels=c(TRUE,FALSE),labels=c('Y','N'))]
 	#
-	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	#outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	#save(strs, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170101.rda'))
 	#
 	#	read LSD trees
 	#
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_3'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/LSD_3'
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick$', full.names=TRUE))
 	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
 	setkey(infiles, IDX)		
@@ -6769,7 +6769,7 @@ treecomparison.submissions.170101<- function()
 	#
 	#	SAVE so far
 	#
-	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	save(strs, strs_lsd, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170101.rda'))	
 }
 
@@ -6783,7 +6783,7 @@ treecomparison.submissions.170424<- function()
 	#
 	#	get true trees
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees'
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('.*DATEDTREE', tfiles) ] )
 	tfiles	<- subset( tfiles, grepl('TRAIN1|TRAIN2|TRAIN4',FILE_T) )
@@ -6833,7 +6833,7 @@ treecomparison.submissions.170424<- function()
 	tmp		<- subset(tinfo, !is.na(IDCLU))[, list(CLU_N= length(IDPOP)), by=c('SC','BRL_T','IDCLU')]
 	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','IDCLU'), all=1)
 	#	read sequences and determine %gappiness in full alignment
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	tmp		<- list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$|GTRFIXED.*_SIMULATED.fasta$')
 	tmp		<- tmp[grepl('TRAIN1|TRAIN2|TRAIN4',tmp)]		
 	trungps	<- data.table( 	FILE_SEQ_T= tmp, 
@@ -6845,7 +6845,7 @@ treecomparison.submissions.170424<- function()
 	)
 	#
 	trungps	<- trungps[, {
-				#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
+				#	FILE_SEQ_T<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2/150701_Regional_TRAIN20250_FULL_SIMULATED.fa'
 				cat('\n',FILE_SEQ_T)
 				z		<- read.dna(FILE_SEQ_T, format='fasta')	
 				ans		<- sapply(seq_len(nrow(z)), function(i) base.freq(z[i,], all=1))							
@@ -6859,7 +6859,7 @@ treecomparison.submissions.170424<- function()
 	# to tinfo add actual transmitters
 	#
 	# check TRAIN1
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6876,7 +6876,7 @@ treecomparison.submissions.170424<- function()
 	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
 	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
 	# check TRAIN2
-	load( '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	load( '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_trees/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -6942,7 +6942,7 @@ treecomparison.submissions.170424<- function()
 	#
 	#	get submitted trees
 	#	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
 	infiles	<- list.files(indir, pattern='newick$', recursive=1, full.names=1)	
 	infiles	<- data.table(FILE=infiles)
 	strs	<- lapply(infiles[, FILE], function(x)
@@ -7071,12 +7071,12 @@ treecomparison.submissions.170424<- function()
 	}	
 	
 	#
-	#outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	#outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	#save(strs, strs_rtt, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170424.rda'))
 	#
 	#	read LSD trees
 	#
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD_FastTree'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/LSD_FastTree'
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick$', full.names=TRUE))
 	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
 	setkey(infiles, IDX)		
@@ -7114,7 +7114,7 @@ treecomparison.submissions.170424<- function()
 	#
 	#	SAVE so far
 	#
-	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	save(strs, strs_lsd, strs_rtt, ttrs, trungps, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_170424.rda'))	
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -7130,7 +7130,7 @@ treecomparison.submissions.160627<- function()
 	#
 	#	get true trees
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15'
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	tfiles	<- data.table( FILE_T= tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('Vill.*DATEDTREE', tfiles) ] )
 	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
@@ -7206,11 +7206,11 @@ treecomparison.submissions.160627<- function()
 			}, by=c('SC','BRL_T')]
 	tinfo	<- merge(tinfo, tmp, by=c('SC','BRL_T','TAXA'), all.x=1)
 	#	add % gaps by gene for regional
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 	infiles	<- data.table(FILE=list.files(indir, full.names=1, pattern='_TRAIN[0-9]+_SIMULATED.fa$'))
 	infiles[, SC:= toupper(gsub('_SIMULATED.fa','',basename(FILE)))]
 	tmp		<- infiles[, {
-				#FILE<- "/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN4_SIMULATED.fa"
+				#FILE<- "/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN4_SIMULATED.fa"
 				sq	<- read.dna(FILE, format='fa')
 				seqi<- as.data.table(read.csv(gsub('.fa','_gene.txt',FILE), header=FALSE))
 				seqi[, GENE:= regmatches(V2, regexpr('[a-z]+', V2))]
@@ -7236,7 +7236,7 @@ treecomparison.submissions.160627<- function()
 	# to tinfo add actual transmitters
 	#
 	# check TRAIN1
-	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	load( '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -7254,7 +7254,7 @@ treecomparison.submissions.160627<- function()
 	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
 	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
 	# check TRAIN2
-	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	load( '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -7284,7 +7284,7 @@ treecomparison.submissions.160627<- function()
 	tmp[, SC:='150701_REGIONAL_TRAIN4']
 	tinfo.add		<- rbind(tinfo.add, tmp)
 	# check TRAIN3
-	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
+	load( '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN3' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -7353,18 +7353,18 @@ treecomparison.submissions.160627<- function()
 	#
 	#	get submitted trees
 	#	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
 	infiles	<- list.files(indir, pattern='treefile$', recursive=1, full.names=1)
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201510'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201510'
 	infiles	<- c(infiles, list.files(indir, pattern='treefile$', recursive=1, full.names=1))	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTREE_Update_gag'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTREE_Update_gag'
 	infiles	<- c(infiles, list.files(indir, pattern='treefile$', recursive=1, full.names=1))	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
 	infiles	<- c(infiles, list.files(indir, pattern='*tree*', recursive=1, full.names=1))
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
 	infiles	<- c(infiles, list.files(indir, pattern='*RAxML_bestTree*', recursive=1, full.names=1))
 	infiles	<- c(infiles, list.files(indir, pattern="best_tree", recursive=1, full.names=1))	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps'
 	infiles	<- c(infiles, list.files(indir, pattern="newick", recursive=1, full.names=1))	
 	infiles	<- data.table(FILE=infiles)
 	strs	<- lapply(infiles[, FILE], function(x)
@@ -7376,7 +7376,7 @@ treecomparison.submissions.160627<- function()
 	#
 	#	add MetaPIGA full genome trees, version 160713. stored as list of newicks
 	#
-	indir					<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_160713'
+	indir					<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_160713'
 	tmp						<- list.files(indir, pattern='*txt*', recursive=1, full.names=1)
 	tmp.trees				<- lapply(tmp, function(x)
 			{
@@ -7391,7 +7391,7 @@ treecomparison.submissions.160627<- function()
 	#	to keep old index, add MVR trees now
 	#
 	options(warn=2)
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 	tmp		<- data.table(FILE=list.files(indir, pattern="newick", recursive=1, full.names=1))	
 	mvrtrs	<- lapply(tmp[, FILE], function(x)
 			{
@@ -7403,7 +7403,7 @@ treecomparison.submissions.160627<- function()
 	#
 	#	add MetaPIGA trees, version 150831. stored as nexus
 	#
-	#indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_150831'
+	#indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA_150831'
 	#tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
 	#tmp		<- data.table(FILE=tmp)	
 	#tmp.trees			<- lapply(tmp[, FILE], function(x)
@@ -7544,7 +7544,7 @@ treecomparison.submissions.160627<- function()
 	#	for RUNGAPS_ExaML we only have one tree per gap coverage, so all are 'best'
 	set(submitted.info, submitted.info[, which(TEAM=='RUNGAPS_ExaML')], 'BEST', 'Y')
 	#	PhyML: read log likelihood	 
-	lkl		<- data.table(FILE= list.files('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML', pattern='*phyml_stats*', recursive=1, full.names=1))
+	lkl		<- data.table(FILE= list.files('~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/PhyML', pattern='*phyml_stats*', recursive=1, full.names=1))
 	lkl		<- lkl[, {
 				z		<- readLines(FILE)
 				z		<- as.numeric( gsub('\\s','',gsub('Log-likelihood:','',gsub('^\\.','',z[ which( grepl('Log-likelihood', z) ) ]))) )
@@ -7664,7 +7664,7 @@ treecomparison.submissions.160627<- function()
 	#
 	#	read LSD trees
 	#
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/LSD'
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick', full.names=TRUE))
 	infiles[, IDX:= as.integer(gsub('IDX_','',regmatches(basename(FILE),regexpr('IDX_[0-9]+',basename(FILE)))))]
 	setkey(infiles, IDX)
@@ -7686,7 +7686,7 @@ treecomparison.submissions.160627<- function()
 	#
 	#	SAVE so far
 	#
-	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	save(strs, strs_lsd, ttrs, tinfo, tfiles, tbrl, submitted.info, file=file.path(outdir,'submitted_160713.rda'))	
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -7697,8 +7697,8 @@ treecomparison.submissions.160627.addLSDtrees<- function()
 	require(data.table)
 	require(ape)
 	require(phangorn)
-	wfile		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_160713_05QD.rda'
-	indir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/LSD'
+	wfile		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_160713_05QD.rda'
+	indir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/LSD'
 	
 	load(wfile)
 	infiles			<- data.table(FILE=list.files(indir, pattern='LSD.date.newick', full.names=TRUE))
@@ -8013,7 +8013,7 @@ treecomparison.submissions.151101<- function()
 	#
 	#	get true trees
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15'
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	tfiles	<- data.table( FILE_T=tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('Vill.*DATEDTREE', tfiles) ] )
 	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
@@ -8063,13 +8063,13 @@ treecomparison.submissions.151101<- function()
 	#
 	#	get submitted trees
 	#	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
 	infiles	<- list.files(indir, pattern='treefile$', recursive=1, full.names=1)
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201510'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201510'
 	infiles	<- c(infiles, list.files(indir, pattern='treefile$', recursive=1, full.names=1))	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
 	infiles	<- c(infiles, list.files(indir, pattern='*tree*', recursive=1, full.names=1))
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
 	infiles	<- c(infiles, list.files(indir, pattern='*RAxML_bestTree*', recursive=1, full.names=1))
 	infiles	<- c(infiles, list.files(indir, pattern="best_tree.newick", recursive=1, full.names=1))
 	infiles	<- data.table(FILE=infiles)
@@ -8080,7 +8080,7 @@ treecomparison.submissions.151101<- function()
 			})
 	names(strs)	<- infiles[, FILE]
 	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
 	tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
 	tmp		<- data.table(FILE=tmp)	
 	tmp.trees			<- lapply(tmp[, FILE], function(x)
@@ -8257,7 +8257,7 @@ treecomparison.submissions.151101<- function()
 	tmp				<- treedist.robinsonfouldclusters.wrapper(submitted.info, ttrs, strs, tinfo)
 	sclu.info		<- merge(submitted.info, tmp, by='IDX')
 	#
-	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151101.rda'
+	outfile	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151101.rda'
 	save(strs, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
 }
 treecomparison.submissions.151016<- function()	
@@ -8268,7 +8268,7 @@ treecomparison.submissions.151016<- function()
 	#
 	#	get true trees
 	#
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15'
 	tfiles	<- list.files(indir, pattern='newick$', full.names=TRUE)
 	tfiles	<- data.table( FILE_T=tfiles[ grepl('SUBSTTREE', tfiles) | grepl('Vill_99', tfiles) | grepl('Vill.*DATEDTREE', tfiles) ] )
 	tfiles[, SC:= toupper(gsub('_SUBSTTREE|_DATEDTREE','',gsub('.newick','',basename(FILE_T))))]
@@ -8318,11 +8318,11 @@ treecomparison.submissions.151016<- function()
 	#
 	#	get submitted trees
 	#	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
 	infiles	<- list.files(indir, pattern='treefile$', recursive=1, full.names=1)
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
 	infiles	<- c(infiles, list.files(indir, pattern='*tree*', recursive=1, full.names=1))
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
 	infiles	<- c(infiles, list.files(indir, pattern='*RAxML_bestTree*', recursive=1, full.names=1))
 	infiles	<- c(infiles, list.files(indir, pattern="best_tree.newick", recursive=1, full.names=1))
 	infiles	<- data.table(FILE=infiles)
@@ -8333,7 +8333,7 @@ treecomparison.submissions.151016<- function()
 			})
 	names(strs)	<- infiles[, FILE]
 	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
 	tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
 	tmp		<- data.table(FILE=tmp)	
 	tmp.trees			<- lapply(tmp[, FILE], function(x)
@@ -8538,7 +8538,7 @@ treecomparison.submissions.151016<- function()
 	#
 	#
 	#
-	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151023.rda'
+	outfile	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151023.rda'
 	save(strs, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -8546,18 +8546,18 @@ treecomparison.submissions.151016<- function()
 ##--------------------------------------------------------------------------------------------------------
 treecomparison.submissions.update.160430<- function()
 {
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag			<- '160430'
 	#
 	# collect results so far
 	#	
-	file			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151203.rda'
+	file			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151203.rda'
 	load(file)	
 	#
 	# to tinfo add actual transmitters
 	#
 	# check TRAIN1
-	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
+	load( '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN1_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN1' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -8575,7 +8575,7 @@ treecomparison.submissions.update.160430<- function()
 	tinfo.add		<- merge(tinfo.add, subset(ch, select=IDPOP), by='IDPOP')
 	tinfo.add[, SC:='150701_REGIONAL_TRAIN1']
 	# check TRAIN2
-	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
+	load( '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN2_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN2' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -8605,7 +8605,7 @@ treecomparison.submissions.update.160430<- function()
 	tmp[, SC:='150701_REGIONAL_TRAIN4']
 	tinfo.add		<- rbind(tinfo.add, tmp)
 	# check TRAIN3
-	load( '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
+	load( '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/freeze_July15/150701_Regional_TRAIN3_SIMULATED_INTERNAL.R' )	
 	ch				<- subset(tinfo, SC=='150701_REGIONAL_TRAIN3' & BRL_T=='time', TAXA)
 	ch[, IDPOP:= as.integer(gsub('IDPOP_','',sapply(strsplit(TAXA,'|',fixed=1),'[[',1)))]
 	ch[, GENDER_CH:= sapply(strsplit(TAXA,'|',fixed=1),'[[',2)]
@@ -8688,7 +8688,7 @@ treecomparison.submissions.update.160430<- function()
 	#
 	# save
 	#
-	outfile			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_160430.rda'
+	outfile			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_160430.rda'
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, ttdists1, RFttdists, file=outfile)
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -8696,14 +8696,14 @@ treecomparison.submissions.update.160430<- function()
 ##--------------------------------------------------------------------------------------------------------
 treecomparison.submissions.update.151203<- function()
 {
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag			<- '151203'
 	#
 	# collect results so far
 	#
-	file			<- "~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151119_SRFQD.rda"
+	file			<- "~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151119_SRFQD.rda"
 	load(file)
-	load("~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151203_CCinfowithTTdists.rda")
+	load("~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151203_CCinfowithTTdists.rda")
 	# loads myinfo ttdists1 RFttdists
 	submitted.info	<- copy(myinfo)
 	setnames(submitted.info, c('RF','NRF','NQD','kc0','kc1','kc_x','kc_y','rf_x','rf_y'), c('SB_RF','SB_NRF','SB_NQD','LSD_KC_L0','LSD_KC_L1','LSD_KC_L0_MDSx','LSD_KC_L0_MDSy','LSD_RF_MDSx','LSD_RF_MDSy'))
@@ -8725,7 +8725,7 @@ treecomparison.submissions.update.151203<- function()
 	tinfo.new			<- copy(tinfo)
 	submitted.info.new	<- copy(submitted.info)
 	sclu.info.new		<- copy(sclu.info)
-	outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	z			<- load(paste(outdir, 'submitted_151119_S.rda', sep='/'))	
 	stopifnot( nrow(subset(merge(subset(submitted.info, select=c('FILE','IDX')), subset(submitted.info.new, select=c('FILE','IDX')), by='FILE'), IDX.x!=IDX.y))==0 )	
 	submitted.info		<- merge(submitted.info.new, subset(submitted.info, select=c('IDX','NQD','lm_intercept','lm_slope','lm_rsq')), by='IDX')
@@ -8737,7 +8737,7 @@ treecomparison.submissions.update.151203<- function()
 	#
 	# save
 	#
-	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151203.rda'
+	outfile	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151203.rda'
 	save(strs, strs_lsd_brl, strs_lsd_date, ttrs, tinfo, submitted.info, sclu.info, ttdists1, RFttdists, file=outfile)	
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -8752,7 +8752,7 @@ treecomparison.ana.160627.sclu<- function()
 	require(ggtree)
 	require(phangorn)
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag			<- '160713'	
 	load(file.path(edir,'submitted_160713_07MSELSD.rda'))
 		
@@ -9081,7 +9081,7 @@ treecomparison.ana.161130.sclu<- function()
 	require(ggtree)
 	require(phangorn)
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	timetag			<- '161123'		
 	#	
 	#	merge
@@ -9494,7 +9494,7 @@ treecomparison.ana.170424.sclu<- function()
 	require(ggtree)
 	require(phangorn)
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	timetag			<- '170424'		
 	#	
 	#	merge
@@ -9617,7 +9617,7 @@ treecomparison.ana.161130.strs<- function()
 	require(phangorn)
 	#save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=file.path(edir,'submitted_161123_09SBRL.rda'))
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	timetag			<- '161123'		
 	#	
 	#	merge
@@ -9975,7 +9975,7 @@ treecomparison.ana.170424.strs<- function()
 	require(phangorn)
 	#save(strs, strs_rtt, strs_lsd, ttrs, trungps, tinfo, tbrl, tfiles, submitted.info, sclu.info, lba, file=file.path(edir,'submitted_161123_09SBRL.rda'))
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	timetag			<- '170424'		
 	#	
 	#	merge
@@ -10143,7 +10143,7 @@ treecomparison.ana.160627.strs<- function()
 	require(ggtree)
 	require(phangorn)
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	#timetag		<- '160627'
 	timetag			<- '160713'		
 	load(file.path(edir,'submitted_160713_09SBRL.rda'))
@@ -10364,7 +10364,7 @@ treecomparison.ana.160627.strs<- function()
 	#	confirm proportion unassembled
 	if(0)
 	{
-		dre		<- data.table(FA=list.files('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations', pattern='fa$', full.names=TRUE))	
+		dre		<- data.table(FA=list.files('~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations', pattern='fa$', full.names=TRUE))	
 		dre[, GENE:= sapply(strsplit(basename(FA),'_'),'[[',4)]
 		dre[, RUNGAPS:= sapply(strsplit(basename(FA),'_'),'[[',3)]
 		set(dre, NULL, 'RUNGAPS', dre[, as.numeric(gsub('TRAIN2','',RUNGAPS))/100])
@@ -10784,7 +10784,7 @@ treecomparison.ana.160627<- function()
 	require(ggtree)
 	require(phangorn)
 	
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	#timetag		<- '160627'
 	timetag			<- '160713'
 	
@@ -10929,7 +10929,7 @@ treecomparison.ana.160502<- function()
 	require(ggtree)
 	require(phangorn)
 
-	edir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	#timetag			<- '160502'
 	#load(paste(edir,'/','submitted_160430.rda',sep=''))
 	timetag			<- '160627'	
@@ -11052,7 +11052,7 @@ treecomparison.ana.151203<- function()
 	require(gamlss)
 	require(scales)
 	
-	edir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
+	edir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'
 	timetag	<- '151203'
 	load(paste(edir,'/','submitted_151203.rda',sep=''))
 	#
@@ -11221,7 +11221,7 @@ treecomparison.ana.151019<- function()
 	require(ggplot2)
 	require(gamlss)
 	
-	edir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
+	edir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation'	
 	if(0)
 	{		
 		timetag	<- '151101'
@@ -11251,7 +11251,7 @@ treecomparison.ana.151019<- function()
 		sclu.info[, BILL.x:=NULL]
 		setnames(sclu.info, 'BILL.y','BILL')
 		sclu.info		<- merge(sclu.info, subset(tmp2, select=c('IDX','IDCLU','NQDC')), by=c('IDX','IDCLU'))
-		outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151101_BLQD.rda'
+		outfile	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation/submitted_151101_BLQD.rda'
 		save(strs, ttrs, tinfo, submitted.info, sclu.info, file=outfile)
 	}
 	
@@ -11656,11 +11656,11 @@ treecomparison.submissions.150930<- function()
 	require(data.table)
 	require(ape)
 	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/IQTree/IQTree201507'
 	infiles	<- list.files(indir, pattern='treefile$', recursive=1, full.names=1)
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/PhyML'
 	infiles	<- c(infiles, list.files(indir, pattern='*tree*', recursive=1, full.names=1))
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/RAxML'
 	infiles	<- c(infiles, list.files(indir, pattern='*RAxML_bestTree*', recursive=1, full.names=1))	
 	infiles	<- data.table(FILE=infiles)
 	submitted.trees			<- lapply(infiles[, FILE], function(x)
@@ -11670,7 +11670,7 @@ treecomparison.submissions.150930<- function()
 			})
 	names(submitted.trees)	<- infiles[, FILE]
 	
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/MetaPIGA'
 	tmp		<-  list.files(indir, pattern='*result*', recursive=1, full.names=1)
 	tmp		<- data.table(FILE=tmp)
 	
@@ -11710,6 +11710,6 @@ treecomparison.submissions.150930<- function()
 	tmp		<- submitted.info[, which(grepl('150701_VILL_SCENARIO[A-Z]', SC))]
 	set(submitted.info, tmp, 'SC', submitted.info[tmp, gsub('150701_VILL_SCENARIO','150701_VILL_SCENARIO-',SC)])
 	
-	outfile	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/submitted_150911.rda'
+	outfile	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/submitted_150911.rda'
 	save(submitted.trees, submitted.info, file=outfile)
 }

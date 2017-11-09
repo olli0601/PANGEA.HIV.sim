@@ -2,12 +2,12 @@ read.example.201502<- function()
 {
 	file	<- '~/Dropbox\ (Infectious\ Disease)/PANGEAHIVsim/201502/PANGEAHIVsim_Submission_Example.csv'
 	file	<- '/Users/Oliver/Downloads/reg5_results0.csv'
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_ColijnV2.csv'
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/cambImp_regional_mh15.csv'	
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_Vancouver.csv'
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_BD.csv'
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_ETHZurich_2.csvERROR'
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_ETHZurich.csv'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_ColijnV2.csv'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/cambImp_regional_mh15.csv'	
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_Vancouver.csv'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_BD.csv'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_ETHZurich_2.csvERROR'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/PANGEAHIVsim_Submission_ETHZurich.csv'
 	ans2	<- read.submission.Feb2015(file, verbose=0)
 }
 
@@ -19,11 +19,11 @@ read.example.201505<- function()
 
 read.example.201508<- function()
 {
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_08_results/previous_got_updated/PANGEAHIVsim_Submission_ETHZurich_201508.csv'
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_08_results/PANGEAHIVsim_Submission_RegSeqs_Colijn.csv'
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_08_results/PANGEAHIVsim_Submission_ETHZurich_20150818.csv'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_08_results/previous_got_updated/PANGEAHIVsim_Submission_ETHZurich_201508.csv'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_08_results/PANGEAHIVsim_Submission_RegSeqs_Colijn.csv'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_08_results/PANGEAHIVsim_Submission_ETHZurich_20150818.csv'
 	ans2	<- read.submission.Aug2015(file, verbose=0)
-	file	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_08_results/PANGEAHIVsim_Submission_Vancouver_Aug2015.csv'
+	file	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_08_results/PANGEAHIVsim_Submission_Vancouver_Aug2015.csv'
 	ans2	<- read.submission.May2015(file, verbose=0)
 }
 

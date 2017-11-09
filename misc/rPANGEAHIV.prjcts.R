@@ -913,8 +913,8 @@ project.PANGEA.TEST.SSApg.NJR2<- function()
 	outdir		<- '/Users/Oliver/git/HPTN071sim/tmp140914/140716_RUN001_INTERNAL'
 	#indir		<- '/Users/Oliver/git/HPTN071sim/tmp140912/140911_DSPS_RUN002_INTERNAL'  
 	#outdir		<- '/Users/Oliver/git/HPTN071sim/tmp140912/140911_DSPS_RUN002_INTERNAL'
-	indir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional_unblinded'  
-	outdir		<- '~/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures'	
+	indir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Regional_unblinded'  
+	outdir		<- '~/Dropbox (SPH Imperial College)/2015_PANGEA_MCE_manuscript/figures'	
 	
 	
 	infiles		<- list.files(indir, '.*INTERNAL.R$', full.names=FALSE)
@@ -1794,10 +1794,10 @@ project.PANGEA.TEST.pipeline.Feb2015.dev<- function()
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.treecomparison.runninggaps2.getfasta<- function()
 {
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
 	infiles	<- data.table(FFA=list.files(indir, pattern='fa$', full.names=TRUE))
 	infiles	<- subset(infiles, grepl('FULL',FFA))
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
+	outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations2'
 	#	
 	infiles[, DUMMY:= 1L]
 	infiles	<- merge(infiles, as.data.table(expand.grid(DUMMY=1L, EXCL=seq(0.5, 0.9, 0.1))), by='DUMMY', allow.cartesian=TRUE)
@@ -1806,7 +1806,7 @@ project.PANGEA.treecomparison.runninggaps2.getfasta<- function()
 	#	read each file, rm taxa with more than z missing sites
 	#	and write to file	
 	invisible(infiles[, {
-				#FFA		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations/150701_Regional_TRAIN260_FULL_SIMULATED.fa'
+				#FFA		<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations/150701_Regional_TRAIN260_FULL_SIMULATED.fa'
 				#EXCL		<- .9
 				#TRAIN_ID<- 'TRAIN260'
 				cat('\nTRAIN_ID', TRAIN_ID[1])
@@ -1829,10 +1829,10 @@ project.PANGEA.treecomparison.runninggaps2.getfasta<- function()
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.treecomparison.runninggaps3.getfasta<- function()
 {
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations'
 	infiles	<- data.table(FFA=list.files(indir, pattern='fa$', full.names=TRUE))
 	infiles	<- subset(infiles, grepl('FULL',FFA))
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
+	outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 	#	
 	infiles[, DUMMY:= 1L]
 	#infiles	<- merge(infiles, as.data.table(expand.grid(DUMMY=1L, EXCL=seq(0.2, 0.4, 0.2))), by='DUMMY', allow.cartesian=TRUE)
@@ -1843,7 +1843,7 @@ project.PANGEA.treecomparison.runninggaps3.getfasta<- function()
 	#	read each file, rm taxa with more than z missing sites
 	#	and write to file	
 	invisible(infiles[, {
-						#FFA		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations/150701_Regional_TRAIN260_FULL_SIMULATED.fa'
+						#FFA		<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations/150701_Regional_TRAIN260_FULL_SIMULATED.fa'
 						#EXCL		<- .05; TRAIN_ID<- 'TRAIN260'
 						cat('\nTRAIN_ID', TRAIN_ID[1])
 						sq	<- read.dna(FFA[1], format='fa')				
@@ -2021,9 +2021,9 @@ project.PANGEA.treecomparison.gaps<- function()
 	#
 	if(0)
 	{				
-		indir.refalgn		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PipelineInput'		
+		indir.refalgn		<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PipelineInput'		
 		infile.refalgn		<- 'HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta'
-		indir.basefreq		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_BaseFrequencies'
+		indir.basefreq		<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEA_data/PANGEAconsensuses_2015-09_Imperial/PANGEA_HIV_n4562_Imperial_v150908_BaseFrequencies'
 		outdir				<- '/Users/Oliver/git/HPTN071sim/treecomparison/PANGEAcov'
 		
 		tmp					<- c(10,20,30,40,50)
@@ -2742,13 +2742,13 @@ project.PANGEA.treecomparison.gaps.simulate.gtrfixed<- function()
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.treecomparison.run.FASTtree<- function()
 {
-	indir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
+	indir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+	outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
 	infiles	<- data.table(F=list.files(indir, pattern='^150701_Regional_TRAIN.*fa', full.names=TRUE))
 	infiles	<- subset(infiles, !grepl('TRAIN3|TRAIN5',F))
 	
 	infiles	<- infiles[,{
-				#F	<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa'
+				#F	<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN2_SIMULATED.fa'
 				#M	<- 'raw'
 				cat('process sequences', F, '\n')
 				#	load simulated alignment
@@ -3412,7 +3412,7 @@ project.PANGEA.TEST.pipeline.June2016.Josh<- function()
 					tmpdir			<- paste(tmpdir,label,sep='')
 					dir.create(tmpdir, showWarnings=FALSE)																		
 					file			<- sim.regional(tmpdir, pipeline.args=pipeline.args)
-					system(file)																										
+					#system(file)																										
 				}, by='label']
 		# produce 10 replicates for each sequence coverage level
 		# start with 40% which should correspond to 22.4%
@@ -3435,6 +3435,36 @@ project.PANGEA.TEST.pipeline.June2016.Josh<- function()
 					system(file)					
 					#																										
 				}, by='label']
+		
+		#
+		#	new sampling model
+		pipeline.args	<- sim.regional.args( 	seed=43, 
+				s.MODEL='Prop2SuggestedSampling', 
+				seqtime.mode="Weibull_2.8_4",
+				report.prop.recent=1.0,
+				epi.acute='high', epi.intervention='none', 
+				epi.import=0.05, root.edge.fixed=0,												
+				wher.mu=log(0.00447743)-0.5^2/2, wher.sigma=0.5, bwerm.mu=log(0.002239075)-0.3^2/2, bwerm.sigma=0.3, er.gamma=4,
+				dbg.GTRparam=0, dbg.rER=0, 
+				index.starttime.mode='fix1970', startseq.mode='one')								
+		pipeline.vary	<- data.table(	s.PREV.max=c(0.8), 
+										cov=c(0.65))							
+		pipeline.vary	<- merge(pipeline.vary, as.data.table(expand.grid(s.PREV.max=c(0.8), seed=seq(43, length.out=10))), by='s.PREV.max')
+		pipeline.vary[, label:= paste('-cov',100*cov,'-seed',seed,sep='')]
+		dummy			<- pipeline.vary[, {				
+					set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.PREV.max))
+					set(pipeline.args, which( pipeline.args$stat=='s.seed' ), 'v', as.character(seed))
+					print(pipeline.args)										
+					
+					tmpdir			<- '/Users/Oliver/duke/tmp/PANGEA-AcuteHigh-InterventionNone'
+					tmpdir			<- paste(tmpdir,label,sep='')
+					dir.create(tmpdir, showWarnings=FALSE)																		
+					file			<- sim.regional(tmpdir, pipeline.args=pipeline.args)
+					#system(file)					
+					#																										
+				}, by='label']
+		
+		
 }
 ##--------------------------------------------------------------------------------------------------------
 project.PANGEA.TEST.pipeline.Apr2015.Manon.postprocess<- function()
@@ -3546,7 +3576,7 @@ project.PANGEA.TEST.pipeline.Feb2015.plotsim<- function()
 			facet_wrap(~legend, scales='free',ncol=3) +
 			theme_bw() + labs(x='', y='',colour='epidemic scenario', title='Regional\n(since 1985)\n') +
 			theme(legend.position='bottom')
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/results'
+	outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/results'
 	ggsave(file=paste(outdir,'/regional_sincestart.pdf',sep=''), w=10, h=10)
 	
 	df		<- subset(df.epi, variable%in%c('POP','PREV','INC','PREVp','INCp','SEQp','ARTcov','UNDIAGp','ACUTEp','IMPORTp') & MNTH>=2014.5)
@@ -3563,7 +3593,7 @@ project.PANGEA.TEST.pipeline.Feb2015.plotsim<- function()
 			facet_wrap(~legend, scales='free',ncol=3) +
 			theme_bw() + labs(x='', y='',colour='epidemic scenario', title='Regional\n(since start of intervention)\n') +
 			theme(legend.position='bottom')
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/results'
+	outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/results'
 	ggsave(file=paste(outdir,'/regional_sinceintervention.pdf',sep=''), w=10, h=10)
 	
 }	
@@ -3679,7 +3709,7 @@ project.PANGEA.TEST.pipeline.Feb2015.evaluate<- function()
 {
 	require(RColorBrewer)
 	dfa		<- project.PANGEA.TEST.pipeline.Feb2015.evaluate.read()
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_05_results/results'
+	outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_05_results/results'
 	save(dfa, file=paste(outdir,'/submissions.R',sep=''))
 	load(paste(outdir,'/submissions.R',sep=''))
 	#	set answers to numerical
@@ -6159,9 +6189,9 @@ project.PANGEA.TEST.Reproducible<- function()
 project.PANGEA.TEST.PropAcute.Village<- function()
 {	
 	#	add dated tree files
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Village'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Village'
 	dfi				<- data.table(FILE=list.files(indir, '.*5yr.nex$', full.names=TRUE, recursive=TRUE))
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Village_unblinded/Post-Dynamics-Info/Vill_1-4_TrueTrees'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Village_unblinded/Post-Dynamics-Info/Vill_1-4_TrueTrees'
 	dfi				<- rbind(dfi, data.table(FILE=list.files(indir, 'nex$', full.names=TRUE, recursive=TRUE)))	
 	dfi[, SC:= substr(gsub('Vill_','',regmatches(FILE,regexpr('Vill_[0-9]+_', FILE))),1,2)]
 	#	add basic epi information
@@ -6183,7 +6213,7 @@ project.PANGEA.TEST.PropAcute.Village<- function()
 	set(dfi, NULL, 'INT', dfi[, factor(INT, labels=c('Intervention Scale Up\nfast','Intervention Scale Up\nslow','Intervention Scale Up\nnone'), levels=c('Intervention=fast','Intervention=slow','Intervention=none'))])
 	dfi[, AC:= regmatches(SCL,regexpr('Acute=[a-z]+',SCL))]	
 	#	add transmission line list files
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Village_unblinded/Transmission-Lists'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Village_unblinded/Transmission-Lists'
 	tmp				<- data.table(FILE_LIST=list.files(indir, '.csv$', full.names=TRUE, recursive=TRUE))
 	tmp[, SC:= gsub('Vill_','',regmatches(FILE_LIST,regexpr('Vill_[0-9]+', FILE_LIST)))]
 	dfi				<- merge(dfi, tmp, by='SC')
@@ -6213,7 +6243,7 @@ project.PANGEA.TEST.PropAcute.Village<- function()
 	#
 	gds	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
 			{
-				#FILE	<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Village_unblinded/Post-Dynamics-Info/Vill_1-4_TrueTrees/Vill_03_Feb2015.nex'
+				#FILE	<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Village_unblinded/Post-Dynamics-Info/Vill_1-4_TrueTrees/Vill_03_Feb2015.nex'
 				tmp				<- dfi[i, FILE]
 				ph				<- read.nexus(tmp)
 				tmp				<- cophenetic.phylo(ph)
@@ -6250,7 +6280,7 @@ project.PANGEA.TEST.PropAcute.Village<- function()
 			scale_y_continuous(expand=c(0,0)) +
 			scale_alpha_manual(values=rep(1,trms[, length(unique(SC))]), guide = FALSE) +
 			theme_bw() + theme(legend.position='bottom')
-	outdir	<- '~/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures'
+	outdir	<- '~/Dropbox (SPH Imperial College)/2015_PANGEA_MCE_manuscript/figures'
 	file	<- file.path(outdir, '150715_V_Time2TransmissionByACSC.pdf')
 	ggsave(file=file, w=7, h=7)	
 	ggplot(subset(trms, !is.na(SAMPLED_REC) & SCL!="Intervention=none, Acute=low" & TIME_TR>20), aes(x=T2REC, colour=SCL, alpha=SC)) + stat_ecdf() + 
@@ -6263,7 +6293,7 @@ project.PANGEA.TEST.PropAcute.Village<- function()
 			coord_cartesian(xlim=c(0,20)) +
 			scale_alpha_manual(values=rep(1,trms[, length(unique(SC))]), guide = FALSE) +
 			theme_bw() + theme(legend.position='bottom')
-	outdir	<- '~/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures'
+	outdir	<- '~/Dropbox (SPH Imperial College)/2015_PANGEA_MCE_manuscript/figures'
 	file	<- file.path(outdir, '150715_V_Time2TransmissionSequencedByACSC.pdf')
 	ggsave(file=file, w=7, h=7)
 	#
@@ -6294,13 +6324,13 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 	label.idx.idpop	<- 1
 	
 	#	get blinding codes
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional_unblinded'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Regional_unblinded'
 	file			<- paste(indir, '/answers_Regional_Feb2015_rFormat.csv', sep='')
 	dfi.code		<- read.csv(file.path(indir, 'answers_Regional_Feb2015_rFormat.csv'))	
 	dfi.code		<- subset(dfi.code, select=c('SC','CONFIG','SC_RND','GSUB_FROM'))
 	setnames(dfi.code, c('SC','SC_RND'), c('SC_TRL','SC'))	
 	#	add dated tree files
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Regional'
 	dfi				<- data.table(FILE=list.files(indir, '.*DATEDTREE.newick$', full.names=FALSE, recursive=TRUE))
 	dfi[, SC:= regmatches(FILE,regexpr('sc[A-Z]', FILE))]
 	set(dfi, NULL, 'SC', dfi[, sapply(strsplit(SC, '-'),'[[',1)])	
@@ -6309,12 +6339,12 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 	tmp				<- data.table(SC_TRL=c('scA','scB','scC','scD','scE','scF'),SCL=c('Intervention=fast, Acute=low','Intervention=fast, Acute=high','Intervention=slow, Acute=low','Intervention=slow, Acute=high','Intervention=none, Acute=low','Intervention=none, Acute=high'))
 	dfi				<- merge(dfi, tmp, by='SC_TRL')
 	#	add INTERNAL files
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional_unblinded'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Regional_unblinded'
 	dfi.internal	<- data.table(FILE_INTRNL=list.files(indir, '.*SIMULATED_INTERNAL.R$', full.names=TRUE, recursive=TRUE))
 	dfi.internal[, GSUB_FROM:= regmatches(FILE_INTRNL, regexpr('sc[A-Z]-[a-zA-Z0-9]+',FILE_INTRNL))]
 	dfi				<- merge(dfi, dfi.internal, by='GSUB_FROM')
 	#	add metadata files
-	indir			<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
+	indir			<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Regional'
 	dfi.meta		<- data.table(FILE_META=list.files(indir, '.*metadata.csv$', full.names=TRUE, recursive=TRUE))
 	dfi.meta[, SC:= gsub('sc','',regmatches(FILE_META,regexpr('sc[A-Z]', FILE_META)))]
 	dfi				<- merge(dfi, dfi.meta, by='SC')
@@ -6344,7 +6374,7 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 	#
 	gds	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
 					{
-						tmp				<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
+						tmp				<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Regional'
 						#file	<- file.path(tmp,'150129_PANGEAsim_Regional_SecondObj_scH_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scH_DATEDTREE.newick')
 						file			<- paste(tmp, dfi[i, FILE], sep='/' )
 						cat(paste('\nprocess',file))
@@ -6392,7 +6422,7 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 	#
 	coal	<- do.call('rbind',lapply(seq_len(nrow(dfi)), function(i)
 					{
-						tmp				<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional'
+						tmp				<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Regional'
 						#FILE	<- '150129_PANGEAsim_Regional_SecondObj_scH_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scH_DATEDTREE.newick'
 						file			<- paste(tmp, dfi[i, FILE], sep='/' )
 						cat(paste('\nprocess',file))
@@ -6432,7 +6462,7 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 			scale_y_continuous(expand=c(0,0)) +	
 			coord_cartesian(xlim=c(0,20)) +
 			theme_bw() + theme(legend.position='bottom')
-	outdir	<- '~/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures'
+	outdir	<- '~/Dropbox (SPH Imperial College)/2015_PANGEA_MCE_manuscript/figures'
 	file	<- file.path(outdir, '150715_R_Time2TransmissionByAcute.pdf')
 	ggsave(file=file, w=5, h=12)
 	#	plot CDF among all infected by data set
@@ -6520,7 +6550,7 @@ project.PANGEA.TEST.PropAcute.Regional<- function()
 	#	proportion recent infections
 	#
 	meta	<- dfi[, {
-				#FILE_META<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEAHIVsim/201502/Regional/150129_PANGEAsim_Regional_SecondObj_scT_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scT_SIMULATED_metadata.csv'
+				#FILE_META<- '/Users/Oliver/Dropbox (SPH Imperial College)/PANGEAHIVsim/201502/Regional/150129_PANGEAsim_Regional_SecondObj_scT_SIMULATED_DATEDTREE/150129_PANGEAsim_Regional_SecondObj_scT_SIMULATED_metadata.csv'
 				subset(as.data.table(read.csv(FILE_META)), select=c(IDPOP, RECENT_TR))
 			}, by=c('SC','SCL', 'CONFIG', 'FILE_META')]
 	setnames(meta, 'IDPOP', 'IDREC')

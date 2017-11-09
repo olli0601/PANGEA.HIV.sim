@@ -33,7 +33,7 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate<- function()
 	set(dfa, dfa[, which(is.na(SMPL_M))], 'SMPL_M', 'extreme')
 	set(dfa, NULL, 'SMPL_M', dfa[, factor(SMPL_M, levels=c('much','extreme'), labels=c('much','extreme'))])
 	#	save submissions
-	outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim_internal/documents/external/2015_08_results/results'
+	outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim_internal/documents/external/2015_08_results/results'
 	save(dfa, file=paste(outdir,'/submissions.R',sep=''))
 	load(paste(outdir,'/submissions.R',sep=''))
 	
@@ -2729,7 +2729,7 @@ project.PANGEA.TEST.pipeline.Aug2015.evaluate.read<- function()
 	
 	#	describe regional simulations in terms of fast/low intervention high/low acute	
 	set.seed(42)
-	dfi			<- data.table(FILE=list.files('/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2014/2014_Gates/methods_comparison_pipeline/FINAL', '.*zip$', full.names=FALSE))	
+	dfi			<- data.table(FILE=list.files('/Users/Oliver/Dropbox (SPH Imperial College)/OR_Work/2014/2014_Gates/methods_comparison_pipeline/FINAL', '.*zip$', full.names=FALSE))	
 	dfi[, SC:= sapply(strsplit(FILE, '_'),'[[',3)]
 	dfi[, CONFIG:= sapply(strsplit(SC, '-'),'[[',2)]
 	set(dfi, NULL, 'SC', dfi[, sapply(strsplit(SC, '-'),'[[',1)])

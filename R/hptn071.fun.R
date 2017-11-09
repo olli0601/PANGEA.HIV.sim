@@ -553,7 +553,7 @@ PANGEA.GTR.params<- function()
 				geom_histogram(aes(y = ..density..), bins=50) +
 				facet_grid(GENE+CODON_POS~variable, scales='free') + 
 				theme_bw() + labs(x='', y='sampling distribution')
-		ggsave(file='/Users/Oliver/Dropbox (Infectious Disease)/2015_PANGEA_MCE_manuscript/figures/Supp_Figure_Regional_GTR.pdf', w=10, h=10)
+		ggsave(file='/Users/Oliver/Dropbox (SPH Imperial College)/2015_PANGEA_MCE_manuscript/figures/Supp_Figure_Regional_GTR.pdf', w=10, h=10)
 		
 	}
 	log.df
@@ -689,7 +689,7 @@ PANGEA.ImportSimulator.SimulateIndexCase<- function(df.ind, df.trm, epi.import)
 ##--------------------------------------------------------------------------------------------------------
 PANGEA.Seqsampler.SimulateGuideToSamplingTimes.v2<- function(df.ind, seqtime.mode)
 {
-	stopifnot(grepl('DUnif|Exp|AtDiag|AtART|AtTrm|AtYear',seqtime.mode))
+	stopifnot(grepl('DUnif|Exp|AtDiag|AtART|AtTrm|AtYear|Weibull',seqtime.mode))
 	cat(paste('\nUsing seqtime.mode=', seqtime.mode ))
 	if(grepl('Exp',seqtime.mode))
 	{
@@ -745,6 +745,38 @@ PANGEA.Seqsampler.SimulateGuideToSamplingTimes.v2<- function(df.ind, seqtime.mod
 		set( df.ind, tmp, 'T1_SEQ', NA_real_)
 		tmp	<- df.ind[, which(T1_SEQ>ART1_T)]											#	no sequences if the proposed date is after the first ART date
 		set(df.ind, tmp, 'T1_SEQ', df.ind[tmp,ART1_T])		
+	}
+	if(grepl('AtDiagOrWeibull',seqtime.mode))
+	{
+		shape	<- as.numeric( strsplit(seqtime.mode,'_')[[1]][2] )
+		scale	<- as.numeric( strsplit(seqtime.mode,'_')[[1]][3] )		
+		df.ind[, T1_SEQ:= df.ind[, DIAG_T]]
+		tmp		<- df.ind[, which(is.na(T1_SEQ) & DOD-TIME_TR<3)]
+		set( df.ind, tmp, 'T1_SEQ', df.ind[tmp, runif(length(tmp), TIME_TR, DOD)] )	#	define a random sequencing time		
+		repeat{			
+			tmp	<- df.ind[, which(!is.na(TIME_TR) & is.na(T1_SEQ))]
+			cat('\tmissing T1_SEQ=', length(tmp))
+			set(df.ind, tmp, 'T1_SEQ', df.ind[tmp,TIME_TR]+rweibull(length(tmp), shape, scale))
+			tmp	<- df.ind[, which(T1_SEQ>DOD | T1_SEQ>ART1_T )]
+			set(df.ind, tmp, 'T1_SEQ', NA_real_)
+			if(!length(tmp))	break
+		}		
+	}
+	if(grepl('Weibull',seqtime.mode))
+	{
+		shape	<- as.numeric( strsplit(seqtime.mode,'_')[[1]][2] )
+		scale	<- as.numeric( strsplit(seqtime.mode,'_')[[1]][3] )
+		df.ind[, T1_SEQ:= NA_real_]
+		tmp		<- df.ind[, which(is.na(T1_SEQ) & DOD-TIME_TR<3)]
+		set( df.ind, tmp, 'T1_SEQ', df.ind[tmp, runif(length(tmp), TIME_TR, DOD)] )	#	define a random sequencing time		
+		repeat{			
+			tmp	<- df.ind[, which(!is.na(TIME_TR) & is.na(T1_SEQ))]
+			cat('\tmissing T1_SEQ=', length(tmp))
+			set(df.ind, tmp, 'T1_SEQ', df.ind[tmp,TIME_TR]+rweibull(length(tmp), shape, scale))
+			tmp	<- df.ind[, which(T1_SEQ>DOD | T1_SEQ>ART1_T )]
+			set(df.ind, tmp, 'T1_SEQ', NA_real_)
+			if(!length(tmp))	break
+		}		
 	}
 	if(seqtime.mode=='AtART')
 	{
@@ -824,7 +856,8 @@ PANGEA.Seqsampler.sample.prop.to.T1SEQ<- function(df.ind, df.epi, pipeline.args,
 	#	setup number of sequences to be sampled for each year
 	df.sample	<- subset( df.epi, YR>= pipeline.args['yr.start',][, as.numeric(v)] & YR<pipeline.args['yr.end',][, as.numeric(v)] )
 	set(df.sample, NULL, 's.nTOTAL', 0)	
-	set(df.sample, NULL, 's.nTOTAL', rbinom(nrow(df.sample), df.sample[, T1_SEQ], sp) )
+	set(df.sample, NULL, 's.nTOTAL', round(df.sample[, T1_SEQ]*sp, d=0) )
+	#set(df.sample, NULL, 's.nTOTAL', rbinom(nrow(df.sample), df.sample[, T1_SEQ], sp) )
 	if(verbose)
 		cat(paste('\nSampling sequences, scheduled number is n=', df.sample[, sum(s.nTOTAL)]))
 	stopifnot(df.sample[, all(s.nTOTAL>=0)])
@@ -852,11 +885,9 @@ PANGEA.Seqsampler.sample.prop.to.T1SEQ<- function(df.ind, df.epi, pipeline.args,
 	stopifnot( df.inds[, !any(TIME_SEQ<TIME_TR, na.rm=TRUE)] )
 	if(verbose)
 	{
-		cat(paste('\n total number of HIV+ after start in df.inds=', nrow(subset(df.inds, IDPOP>=0 & !is.na(TIME_TR) & floor(TIME_TR)>=pipeline.args['yr.start',][, as.numeric(v)] ))))
-		cat(paste('\n total number of sampled HIV+ after start in df.inds=', nrow(subset(df.inds, IDPOP>=0 & !is.na(TIME_TR) & floor(TIME_TR)>=pipeline.args['yr.start',][, as.numeric(v)] & !is.na(TIME_SEQ)))))		
-		cat(paste('\n total number of non-sampled HIV+ after start in df.inds=', nrow(subset(df.inds, !is.na(TIME_TR) & is.na(TIME_SEQ) & IDPOP>=0 & floor(TIME_TR)>=pipeline.args['yr.start',][, as.numeric(v)] ))))
-		cat(paste('\n total number of non-sampled HIV+ after start with TIME_TR before end in df.inds=', nrow(subset(df.inds, !is.na(TIME_TR) & is.na(TIME_SEQ) & IDPOP>=0 & TIME_TR<pipeline.args['yr.end',][, as.numeric(v)] & floor(TIME_TR)>=pipeline.args['yr.start',][, as.numeric(v)] ))))
-		cat(paste('\n total number of non-sampled HIV+ after start with T1_SEQ before end in df.inds=', nrow(subset(df.inds, !is.na(TIME_TR) & is.na(TIME_SEQ) & IDPOP>=0 & T1_SEQ<pipeline.args['yr.end',][, as.numeric(v)] & floor(TIME_TR)>=pipeline.args['yr.start',][, as.numeric(v)] ))))
+		cat(paste('\n total number of HIV+ in [yr.start,yr.end] in df.inds=', nrow(subset(df.inds, IDPOP>=0 & !is.na(TIME_TR) & floor(TIME_TR)>=pipeline.args['yr.start',][, as.numeric(v)] & TIME_TR<pipeline.args['yr.end',][, as.numeric(v)]	))))
+		cat(paste('\n total number of sampled HIV+ in [yr.start,yr.end] in df.inds=', nrow(subset(df.inds, IDPOP>=0 & !is.na(TIME_TR) & floor(TIME_TR)>=pipeline.args['yr.start',][, as.numeric(v)] & TIME_TR<pipeline.args['yr.end',][, as.numeric(v)] & !is.na(TIME_SEQ)))))		
+		cat(paste('\n total number of non-sampled HIV+ in [yr.start,yr.end] in df.inds=', nrow(subset(df.inds, !is.na(TIME_TR) & is.na(TIME_SEQ) & IDPOP>=0 & TIME_TR<pipeline.args['yr.end',][, as.numeric(v)] & floor(TIME_TR)>=pipeline.args['yr.start',][, as.numeric(v)] ))))		
 	}
 	list(df.inds=df.inds, df.sample=df.sample)
 }

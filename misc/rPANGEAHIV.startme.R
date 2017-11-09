@@ -20,7 +20,7 @@ CODE.HOME	<<- "/Users/Oliver/git/PANGEA.HIV.sim"
 #the home directory of all projects
 HOME		<<- "/Users/Oliver/git/HPTN071sim/"
 #HOME		<<- "/work/or105/Gates_2014"
-DATA		<<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut'
+DATA		<<- '/Users/Oliver/Dropbox (SPH Imperial College)/OR_Work/2015/2015_PANGEA_haircut'
 #DATA		<<- '/work/or105/Gates_2014/2015_PANGEA_haircut'
 #DATA		<<- '/work/or105/Gates_2014/tree_comparison'
 

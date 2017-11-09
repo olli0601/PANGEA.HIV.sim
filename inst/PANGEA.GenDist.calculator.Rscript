@@ -8,7 +8,7 @@ repn		<- 10
 bsn			<- 1e2
 batch.n		<- 3200
 batch.i		<- 1
-indir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
+indir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'	
 infile.fa	<- '150701_Regional_TRAIN4_SIMULATED.fa'
 infile.ge	<- gsub('\\.fa','_gene.txt',infile.fa)
 outdir		<- indir

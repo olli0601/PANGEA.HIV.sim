@@ -154,6 +154,19 @@ sim.regional.args<- function(			yr.start=1985, yr.end=2020, seed=42,
 		ggplot(subset(tmp, variable=='y2'), aes(x=-x, y=value, group=variable)) + geom_line() + scale_y_continuous(breaks=c(1e2, 2e2, 3e2, 4e2), limits=c(0,4e2)) + scale_x_continuous(breaks=seq(-20,20,1)) + labs(x='\ntime since infection\n(years)',y='effective population size\n')
 		ggsave(file='~/git/PANGEA.HIV.sim/man/fig_EffPopSize.png', width=8, height=4)
 	}
+	#	explore time to sequencing in 2000 to set Weibull for earlier years
+	if(0)
+	{
+		require(fitdistrplus)
+		tmp		<- subset(df.ind, !is.na(DIAG_T) & DIAG_T<2001)
+		tmp[, X:= DIAG_T-TIME_TR] 
+		tmp2	<- fitdist(tmp$X, distr="weibull")$estimate
+		tmp2	<- data.table(X=seq(0,15,0.1),Y=dweibull(seq(0,15,0.1),tmp2[1],tmp2[2]), SH=tmp2[1],SC=tmp2[2])
+		ggplot(tmp, aes(x=X)) + 
+				geom_histogram(aes(y= ..density..)) +
+				geom_line(data=tmp2, aes(X=X, y=Y))
+		#	shape 1.648736 scale 6.693882
+	}
 	#	plot increasing sampling fraction to choose pars
 	if(0)
 	{
@@ -196,7 +209,7 @@ pipeline.various<- function()
 		#cat(paste(strsplit(tmp, ' +')[[1]], collapse='","'))
 		
 		require(big.phylo)
-		outdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
+		outdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/FastTree'
 		outdir	<- '/work/or105/Gates_2014/tree_comparison/FastTree'
 		infiles	<- data.table(expand.grid(F=list.files(outdir, pattern='fasta$', full.names=TRUE), REP=1:10, stringsAsFactors=FALSE))
 		infiles	<- infiles[, {				
@@ -242,7 +255,7 @@ pipeline.various<- function()
 		require(big.phylo)
 		
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/mvr'
-		#wdir	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
+		#wdir	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/tree_mvr'
 		infile	<- '150701_Regional_TRAIN4_SIMULATED_tps.rda'
 		infile	<- '150701_Regional_TRAIN2_SIMULATED_tps.rda'
 		load(file.path(wdir, infile))
@@ -277,7 +290,7 @@ pipeline.various<- function()
 		require(data.table)
 		require(big.phylo)
 		#wdir	<- '~/duke/tmp'		 
-		#file	<- file.path('~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/evaluation','/','submitted_160713_05QD.rda')		
+		#file	<- file.path('~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/evaluation','/','submitted_160713_05QD.rda')		
 		wdir	<- '/work/or105/Gates_2014/tree_comparison/lsd'
 		#wdir	<- '/Users/Oliver/git/HPTN071sim/treecomparison/lsd'
 		#file	<- '/work/or105/Gates_2014/tree_comparison/submitted_170101.rda'
@@ -336,7 +349,7 @@ pipeline.various<- function()
 	if(0)	#	run ExamML with partition for tree comparison
 	{		
 		require(big.phylo)		
-		#indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
+		#indir.wgaps	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/running_gaps_simulations3'
 		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps3'
 		#indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps4'
 		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/rungaps5'
@@ -367,7 +380,7 @@ pipeline.various<- function()
 	if(0)	#	run ExamML with partition for tree comparison in replicate of 10
 	{		
 		require(big.phylo)		
-		indir.wgaps	<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations_simpleGTR'
+		indir.wgaps	<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations_simpleGTR'
 		indir.wgaps	<- '/work/or105/Gates_2014/tree_comparison/simpleGTR'
 		infiles		<- data.table(FILE=list.files(indir.wgaps, pattern='\\.fasta$'))
 		infiles[, PARTITION:= gsub('\\.fasta','_gene.txt',FILE)]
@@ -395,7 +408,7 @@ pipeline.various<- function()
 	if(0)	#	run ExamML with partition for prev unsuccessful runs
 	{		
 		require(big.phylo)		
-		outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+		outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 		outdir		<- '/work/or105/Gates_2014/tree_comparison/simpleGTR'
 		indir.wgaps	<- outdir
 		infiles		<- data.table(OF=c("161121_GTRFIXED2_FULL_SIMULATED_REP5", "161121_GTRFIXED3_FULL_SIMULATED_REP1", "161121_GTRFIXED3_FULL_SIMULATED_REP2", "161121_GTRFIXED3_FULL_SIMULATED_REP5"))
@@ -418,7 +431,7 @@ pipeline.various<- function()
 	if(0)	#	run ExamML with partition for prev unsuccessful runs
 	{		
 		require(big.phylo)		
-		outdir		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
+		outdir		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations'
 		outdir		<- '/work/or105/Gates_2014/tree_comparison/rungaps2'
 		indir.wgaps	<- outdir
 		infiles		<- data.table(OF=c("150701_Regional_TRAIN21750_FULL_SIMULATED","150701_Regional_TRAIN21780_FULL_SIMULATED",
@@ -494,7 +507,7 @@ pipeline.various<- function()
 		require(ape)
 		require(big.phylo)	
 		
-		infile		<- '~/Dropbox (Infectious Disease)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN1_SIMULATED.fa'
+		infile		<- '~/Dropbox (SPH Imperial College)/PANGEAHIVsim/201507_TreeReconstruction/simulations/150701_Regional_TRAIN1_SIMULATED.fa'
 		infile		<- '/work/or105/Gates_2014/tree_comparison/partiallen/150701_Regional_TRAIN1_SIMULATED.fa'
 		infile		<- '/work/or105/Gates_2014/tree_comparison/rungaps4/161121_Regional_TRAIN600_SIMULATED.fa'
 		infile		<- '/work/or105/Gates_2014/tree_comparison/rungaps5/161121_Regional_TRAIN700_FULL_SIMULATED.fa'
