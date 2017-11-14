@@ -3403,7 +3403,7 @@ project.PANGEA.TEST.pipeline.June2016.Josh<- function()
 		# proposed standard run and control simulation
 		pipeline.vary	<- data.table(	label=					paste('-s',100*c(0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8),'-seed',43,sep=''),										
 										s.PREV.max= 			c(0.05,0.1,0.2,0.3,0.5,0.6,0.7,0.8))			
-		dummy			<- pipeline.vary[, {				
+		dummy			<- pipeline.vary[1, {				
 					set(pipeline.args, which( pipeline.args$stat=='s.PREV.max' ), 'v', as.character(s.PREV.max))
 					set(pipeline.args, which( pipeline.args$stat=='s.seed' ), 'v', as.character(43))
 					print(pipeline.args)										
